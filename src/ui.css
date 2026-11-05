@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '../web/verification.css';
 @source "../web/app.js";
 @source "../web/index.html";
 @theme {
@@ -407,17 +408,6 @@ th:nth-child(5) {
   gap: 5px;
   flex-wrap: wrap;
   margin-top: 8px;
-}
-.fact-icon {
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--info-bg);
-  color: var(--info);
 }
 .empty {
   padding: 48px 24px;

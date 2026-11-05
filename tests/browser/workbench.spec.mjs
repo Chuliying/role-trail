@@ -301,3 +301,87 @@ test('outcomes and application package show missing work without claiming applic
   await expect(page.getByRole('textbox', { name: 'New preparation task' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('shared verification icons expose sourced custom checks by keyboard and touch', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/');
+  const state = await (await page.request.get('/api/state')).json(),
+    now = new Date().toISOString();
+  const f = (key, label) => ({
+    key,
+    label,
+    status: 'confirmed',
+    checkedAt: now,
+    source: 'https://example.org/evidence',
+    evidence: 'Synthetic verification evidence',
+  });
+  const response = await page.request.post('/api/action', {
+    headers: { Origin: 'http://127.0.0.1:4319', 'X-Role-Trail': '1' },
+    data: {
+      revision: state.revision,
+      action: {
+        type: 'research',
+        run: { id: 'icon-fixture', coverage: [] },
+        jobs: [
+          {
+            company: 'Icon fixture',
+            title: 'Icon role',
+            url: 'https://example.org/icons',
+            source: 'manual',
+            description: 'Synthetic job',
+            descriptionKind: 'full',
+            availability: {
+              status: 'open',
+              source: 'https://example.org/evidence',
+              evidence: 'Recruiting',
+              checkedAt: now,
+            },
+            checks: [
+              f('frontend', 'Frontend responsibility'),
+              f('language', 'English working language'),
+              f('healthcare', 'Healthcare domain'),
+              { ...f('salary', 'Compensation'), status: 'unknown' },
+            ],
+          },
+        ],
+      },
+    },
+  });
+  expect(response.status()).toBe(200);
+  await page.reload();
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const frontend = page.locator('[data-verify-key="frontend"]').first();
+    await expect(frontend.locator('svg')).toBeVisible();
+    await expect(page.locator('[data-verify-key="healthcare"]')).toContainText('Healthcare domain');
+    await expect(page.locator('[data-verify-key="salary"]')).toHaveCount(0);
+    await frontend.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#verification-evidence')).toBeFocused();
+    await expect(page.locator('#verification-evidence')).toContainText(
+      'Synthetic verification evidence',
+    );
+    await page.getByRole('button', { name: 'Close opportunity' }).click();
+    await page.locator('[data-verify-key="healthcare"]').click();
+    await expect(page.locator('#verification-evidence')).toBeFocused();
+    await page.getByRole('button', { name: 'Close opportunity' }).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    const box = await frontend.boundingBox();
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+  const touch = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const mobile = await touch.newPage();
+  await mobile.goto('http://127.0.0.1:4319/');
+  await mobile.locator('[data-verify-key="healthcare"]').tap();
+  await expect(mobile.locator('#verification-evidence')).toBeFocused();
+  await touch.close();
+});

@@ -1,0 +1,9 @@
+# Shared verification component
+
+The public app used generic, noninteractive checkmarks while the private app maintained a separate icon list and a different expiry boundary. Both now consume one DOM component, semantic icon vocabulary, evidence gate and stylesheet from the public repository. Private schema translation and localized labels remain in its adapter.
+
+Common keys and aliases map to icons. Unknown keys keep visible labels. An opening badge requires open status, HTTP(S) source, nonempty evidence and a nonfuture check within 7 days; other checks require confirmed status within 30 days. Missing, excluded, closed and stale facts are not passed badges. Controls use 44px targets and open evidence by keyboard or touch. Rendering uses textContent and fixed SVG paths, never source HTML.
+
+RED: missing exports failed the new verification unit tests. GREEN: public tests and browser integration pass. Private delivery pins and hashes both component and CSS so independent edits fail the drift check. Personal data and decisions are unchanged.
+
+Public verification: 44 Node tests and 7 browser tests passed, including keyboard and real touch-context interaction. Build, formatting and npm audit passed (0 vulnerabilities). Private synthetic browser checks passed at 390px and 1440px with no page errors or horizontal overflow. The touch test exposed a stretched card link intercepting the new controls; shared control stacking was corrected and both browser suites passed again. Private pin verification and protected deployment are pending.

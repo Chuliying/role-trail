@@ -1,0 +1,54 @@
+/* Shared by both workbenches; use host semantic colors and the same 44px targets. */
+.rt-verifications {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.rt-verifications .rt-verification {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text, var(--ink, currentColor));
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.rt-verifications .rt-verification:hover {
+  background: var(--surface-muted, var(--selected, #e0e5ed));
+}
+.rt-verifications .rt-verification:focus-visible {
+  outline: 3px solid var(--focus, var(--action, currentColor));
+  outline-offset: 1px;
+}
+.rt-verification svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rt-verifications .rt-verification-empty {
+  color: var(--text-muted, var(--muted, currentColor));
+  font-size: 13px;
+}

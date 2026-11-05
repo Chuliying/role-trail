@@ -1,3 +1,4 @@
+import { createVerificationGroup } from './verification.mjs';
 import { researchOutcomes, applicationReadiness } from './outcomes.mjs';
 import { positiveFresh, currentScore, canonical } from './status.mjs';
 const staleResumes = new Set();
@@ -412,19 +413,14 @@ function jobs() {
             el(
               'div',
               { class: 'facts' },
-              j.checks
-                .filter((c) => positiveFresh(c))
-                .map((c) =>
-                  el(
-                    'span',
-                    {
-                      class: 'fact-icon',
-                      title: c.label + ': ' + c.evidence,
-                      'aria-label': c.label + ' verified',
-                    },
-                    '✓',
-                  ),
-                ),
+              createVerificationGroup(j, {
+                onOpen: async () => {
+                  await showJob(j.id);
+                  const evidence = document.getElementById('verification-evidence');
+                  evidence?.scrollIntoView({ block: 'start' });
+                  evidence?.focus({ preventScroll: true });
+                },
+              }),
               archived(j) ? badge('Archived', 'danger') : null,
             ),
           ),
@@ -649,7 +645,7 @@ async function showJob(id) {
     ),
     el(
       'div',
-      { class: 'detail-section' },
+      { class: 'detail-section', id: 'verification-evidence', tabindex: '-1' },
       el('h2', {}, 'Eligibility & availability'),
       badge(
         j.availability.status === 'open' && !positiveFresh(j.availability, 7)

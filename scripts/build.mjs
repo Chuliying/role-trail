@@ -18,10 +18,18 @@ for (const file of [
   'web/app.js',
   'web/status.mjs',
   'web/outcomes.mjs',
+  'web/verification.mjs',
+  'web/verification.css',
   'api/index.mjs',
 ])
   await access(file);
-for (const file of ['web/app.js', 'web/status.mjs', 'web/outcomes.mjs', 'api/index.mjs'])
+for (const file of [
+  'web/app.js',
+  'web/status.mjs',
+  'web/outcomes.mjs',
+  'web/verification.mjs',
+  'api/index.mjs',
+])
   execFileSync(process.execPath, ['--check', file]);
 const config = JSON.parse(await readFile('vercel.json', 'utf8'));
 if (config.outputDirectory !== 'web') throw Error('Only public static assets may be deployed');
