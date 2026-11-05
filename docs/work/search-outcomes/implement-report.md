@@ -14,6 +14,6 @@ Application overview links to resume adjustments, interview preparation, tasks a
 - `npm run test:ui`: 6 tests pass, including 390px layout, package navigation, historical state and outcomes.
 - `npm audit`: zero known vulnerabilities.
 - Independent review reproduced a duplicate URL import crash and partial-history discovery inflation. Both received regression tests and an independent recheck (10 targeted tests passed). Public PDF existence is no longer inferred from a renderable resume.
-- The consuming private installation separately passed 85 Node tests, isolated database integration, and synthetic browser checks at 390px and 1440px. Its data remains outside this repository.
+- The consuming private installation separately passed 86 Node tests, isolated database integration, and synthetic browser checks at 390px and 1440px. Its data remains outside this repository.
 
-Deployment and final source synchronization are recorded after release verification.
+Release verified: public source pushed; the consuming private site serves the new outcome and package views behind its existing full deployment authentication. Its original PDF hashes match authenticated downloads. New private drafts remain pending review; research, personal decisions, progress and prior documents were preserved. The shared module is pinned by source commit and SHA-256, with a drift test. No repo/database migration was performed.
