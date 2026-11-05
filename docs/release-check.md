@@ -45,3 +45,7 @@ The bundled skill now connects personal preferences, deployment guidance, host L
 A separate agent exercised a synthetic London data-analyst installation with a fresh workspace and Git history. It saved research, assessments, tailored resumes and preparation, rendered a one-page A4 PDF, and checked browser persistence. Failed/unexecuted sources remained visible. Retry/conflict/stale-binding/invalid-batch checks preserved state. One missing direct-API header in the documentation was found and corrected. See [implementation and sandbox evidence](work/agent-onboarding/implement-report.md).
 
 These are isolated local tests. No new Vercel account, live search-provider account or real timed LLM trigger was verified, and no existing private installation was changed.
+
+## Search outcomes and application packages — 2026-11-05
+
+42 Node tests and 6 browser tests pass. Build and dependency audit pass (zero known vulnerabilities). Independent review caught canonical-URL alias imports and incomplete-history discovery inflation; regression tests and a separate recheck confirm both fixes. The public package overview explicitly leaves saved-PDF evidence unverified; its print/save export is not proof of a file or submission. See [scope and evidence](work/search-outcomes/implement-report.md).

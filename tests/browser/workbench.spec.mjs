@@ -278,3 +278,26 @@ test('agent preparation appears in the workspace and shows stale after a new res
   await page.getByRole('button', { name: 'Practice fixture', exact: true }).click();
   await expect(page.getByText('Preparation v1 · stale', { exact: true })).toBeVisible();
 });
+
+test('outcomes and application package show missing work without claiming application', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Research', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Seven-day outcomes' })).toBeVisible();
+  await expect(page.getByText('New high-fit roles ·', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
+  await page.getByRole('button', { name: 'Design Engineer', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Application package', exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('.package-overview')).toContainText('No application recorded.');
+  await expect(page.locator('.package-overview')).toContainText('Create a tailored resume');
+  await page
+    .locator('.package-overview')
+    .getByRole('button', { name: 'Tasks', exact: true })
+    .click();
+  await expect(page.getByRole('textbox', { name: 'New preparation task' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

@@ -36,6 +36,7 @@ const assets = {
   '/index.html': ['index.html', 'text/html'],
   '/app.js': ['app.js', 'text/javascript'],
   '/status.mjs': ['status.mjs', 'text/javascript'],
+  '/outcomes.mjs': ['outcomes.mjs', 'text/javascript'],
   '/style.css': ['style.css', 'text/css'],
 };
 export async function body(req) {

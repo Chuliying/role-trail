@@ -123,3 +123,11 @@ This implementation is original; no career-ops code is copied. Credits do not im
 The interview preparation method adapts [How to Get an Offer](https://github.com/AIPMAndy/how-to-get-offer) by AIPMAndy / AI 酋长 Andy under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), adding cited experience, separate eligibility and decisions, and versioned records. No upstream application code is included.
 
 [Himalayas](https://himalayas.app) supplies attributed listings when configured. Preserve its source and application links. Dependency licenses are retained by npm. Project source: [MIT](LICENSE).
+
+## Search outcomes and application packages
+
+Research shows a rolling seven-calendar-day window in your configured time zone. Expand each count to see the roles behind it: unique newly discovered high-fit roles, those currently meeting all checks, those you currently shortlisted/applied to, and unknown or stale checks resolved positively or negatively. These are not application conversion rates or newly posted-job counts. Repeated observations and historical imports do not count as new opportunities. Legacy runs without snapshots are explicitly incomplete; revisits do not become new discoveries.
+
+Each role has an application-package overview with resume adjustments, interview preparation, tasks and the original application link. It separates missing materials, resume approval, eligibility and user-reported submission. Stale content requires regeneration. The public workspace provides print/save-PDF export, but does not track the resulting PDF file: it keeps that checklist item unverified rather than inferring success from HTML. Export and inspect the PDF before applying manually.
+
+The calculation rules live in `web/outcomes.mjs`; integrations can use that data-only module without adopting another workspace's profile or private records.

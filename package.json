@@ -14,8 +14,8 @@
     "start": "node bin/role-trail.mjs serve",
     "build": "node scripts/build.mjs",
     "test:ui": "playwright test",
-    "format": "prettier --write src bin web/app.js web/index.html api scripts tests playwright.config.mjs",
-    "format:check": "prettier --check src bin web/app.js web/index.html api scripts tests playwright.config.mjs"
+    "format": "prettier --write src bin web/app.js web/outcomes.mjs web/index.html api scripts tests playwright.config.mjs",
+    "format:check": "prettier --check src bin web/app.js web/outcomes.mjs web/index.html api scripts tests playwright.config.mjs"
   },
   "license": "MIT",
   "description": "Private job-search workbench with evidence-backed decisions, resumes and portable scheduling",

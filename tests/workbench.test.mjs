@@ -189,3 +189,20 @@ test('tracking parameters do not create duplicate jobs', () => {
   const b = api.normalizeJob({ ...job, url: 'https://example.com/job?id=42&utm_medium=email' });
   assert.equal(a.id, b.id);
 });
+
+test('research snapshot deduplicates canonical URL aliases and records actual discovery', () => {
+  let s = api.emptyState();
+  s = api.transition(s, {
+    type: 'research',
+    run: { id: 'aliases', coverage: [] },
+    jobs: [
+      { ...job, url: job.url + '?utm_source=a' },
+      { ...job, url: job.url + '?utm_source=b' },
+    ],
+  });
+  assert.equal(s.jobs.length, 1);
+  assert.equal(s.runs[0].observations.length, 1);
+  assert.equal(s.runs[0].observations[0].discovered, true);
+  s = api.transition(s, { type: 'research', run: { id: 'again', coverage: [] }, jobs: [job] });
+  assert.equal(s.runs[1].observations[0].discovered, false);
+});

@@ -402,6 +402,7 @@ export function transition(current, a) {
       throw Error('Duplicate run ID with different or unrecorded content');
     }
     if (!Array.isArray(a.jobs) || a.jobs.length > 500) throw Error('Invalid jobs');
+    const existingIds = new Set(s.jobs.map((j) => j.id));
     for (const raw of a.jobs) {
       const j = normalizeJob(raw),
         old = s.jobs.find((x) => x.id === j.id);
@@ -450,7 +451,23 @@ export function transition(current, a) {
         s.jobs[s.jobs.indexOf(old)] = j;
       } else s.jobs.push(j);
     }
-    s.runs.push({ ...a.run, contentHash, finishedAt: a.run.finishedAt || now() });
+    s.runs.push({
+      ...a.run,
+      contentHash,
+      finishedAt: a.run.finishedAt || now(),
+      observations: [...new Set(a.jobs.map((raw) => normalizeJob(raw).id))].map((id) => {
+        const j = s.jobs.find((j) => j.id === id);
+        return {
+          id: j.id,
+          discovered: !existingIds.has(j.id),
+          url: j.url,
+          company: j.company,
+          title: j.title,
+          checks: j.checks,
+          availability: j.availability,
+        };
+      }),
+    });
   } else if (a.type === 'profile') {
     keys(a, ['type', 'profile']);
     profileCheck(a.profile);

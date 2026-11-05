@@ -1,3 +1,4 @@
+import { researchOutcomes, applicationReadiness } from './outcomes.mjs';
 import { positiveFresh, currentScore, canonical } from './status.mjs';
 const staleResumes = new Set();
 let collecting = false;
@@ -792,6 +793,7 @@ async function showJob(id) {
     { class: 'detail-section' },
     el('h2', {}, 'Interview preparation'),
   );
+  let preparationStale = true;
   if (preparation) {
     const stale =
       !r ||
@@ -803,6 +805,7 @@ async function showJob(id) {
         (await sha(
           preparation.capabilityIds.map((id) => state.capabilities.find((c) => c.id === id)),
         ));
+    preparationStale = stale;
     prepSection.append(
       el(
         'p',
@@ -837,6 +840,78 @@ async function showJob(id) {
       ),
     );
   d.append(prepSection);
+  const readiness = applicationReadiness({
+    resume: {
+      exists: !!r,
+      pdf: false,
+      adjustments: !!r?.adjustments?.length,
+      reviewStatus: r?.reviewStatus,
+      stale: !!r && staleResumes.has(r.jobId + ':' + r.version),
+    },
+    preparation: { exists: !!preparation, stale: preparationStale },
+    tasks: state.tasks.filter((t) => t.jobId === id),
+    qualification: qualification(j),
+    submitted:
+      !!state.submissions?.some((x) => x.jobId === id) || state.reviews[id]?.status === 'applied',
+  });
+  const names = {
+    resume: 'Create a tailored resume',
+    resume_stale: 'Regenerate the stale resume',
+    pdf: 'Save and inspect the PDF; saved-file evidence is not tracked in this workspace',
+    adjustments: 'Explain the resume adjustments',
+    resume_changes: 'Revise the resume',
+    preparation: 'Prepare interview examples and employer questions',
+    preparation_stale: 'Update interview preparation',
+    tasks: 'Complete the preparation tasks',
+    review: 'Review and approve the resume',
+    qualification: 'Resolve eligibility checks',
+  };
+  const overview = el(
+    'section',
+    { class: 'detail-section package-overview' },
+    el('h2', {}, 'Application package'),
+    el(
+      'p',
+      {},
+      `Materials: ${readiness.materialsReady ? 'complete' : 'incomplete'} · Resume review: ${r?.reviewStatus || 'not started'} · Eligibility: ${qualification(j)}`,
+    ),
+    el(
+      'p',
+      { class: 'muted' },
+      readiness.submitted
+        ? 'Application reported by you; no application was sent by this tool.'
+        : 'No application recorded. Preparing or approving documents does not submit them.',
+    ),
+  );
+  if (readiness.missing.length)
+    overview.append(
+      el(
+        'ul',
+        {},
+        readiness.missing.map((k) => el('li', {}, names[k])),
+      ),
+    );
+  else overview.append(el('p', {}, 'Ready for your final check and manual application.'));
+  if (r)
+    overview.append(
+      link('Print / save PDF ↗', '/api/resume?job=' + id + '&version=' + r.version),
+      el(
+        'p',
+        { class: 'muted' },
+        'PDF export is available; this does not confirm that a PDF was saved or sent.',
+      ),
+    );
+  overview.append(
+    el(
+      'div',
+      { class: 'actions' },
+      button('Resume & adjustments', () => resume.scrollIntoView({ block: 'start' })),
+      button('Interview preparation', () => prepSection.scrollIntoView({ block: 'start' })),
+      button('Tasks', () => taskSection.scrollIntoView({ block: 'start' })),
+      link('Open application source ↗', j.url),
+    ),
+  );
+  d.prepend(overview);
   if (!$('#detail').open) $('#detail').showModal();
 }
 function todo(t) {
@@ -913,6 +988,96 @@ function tasks() {
       el('p', { class: 'empty' }, 'Shortlist an opportunity or add a task from its detail view.'),
     );
 }
+
+function qualification(j) {
+  if (
+    j.availability.status === 'closed' ||
+    (j.expiresAt && Date.parse(j.expiresAt) < Date.now()) ||
+    j.checks.some((c) => c.status === 'excluded')
+  )
+    return 'excluded';
+  const required = state.profile?.requiredChecks || [];
+  return j.checks.length &&
+    required.every((k) => j.checks.some((c) => c.key === k.key)) &&
+    j.checks.every((c) => positiveFresh(c) && c.source && c.evidence) &&
+    positiveFresh(j.availability, 7) &&
+    j.availability.source &&
+    j.availability.evidence
+    ? 'verified'
+    : 'unknown';
+}
+function outcomeSummary() {
+  const q = researchOutcomes({
+    jobs: state.jobs.map((j) => ({
+      id: j.id,
+      url: j.url,
+      company: j.company,
+      title: j.title,
+      firstSeenAt: j.firstSeenAt,
+      score: currentScore(j),
+      decision: state.reviews[j.id]?.status,
+      excluded: qualification(j) === 'excluded',
+      verified: qualification(j) === 'verified',
+    })),
+    history: state.runs.some((r) => Array.isArray(r.observations))
+      ? state.runs.map((r) => ({ ...r, jobs: r.observations || [] }))
+      : null,
+    historyComplete: state.runs.every((r) => Array.isArray(r.observations)),
+    timeZone: state.profile?.timezone || 'UTC',
+  });
+  const box = el(
+    'section',
+    { class: 'card outcome-summary' },
+    el('h2', {}, 'Seven-day outcomes'),
+    el('p', { class: 'muted' }, `${q.startDate} – ${q.endDate} · ${q.timeZone}`),
+  );
+  box.append(
+    el(
+      'p',
+      { class: 'muted' },
+      'Newly discovered roles, not newly posted jobs. Counts use current fit and eligibility; imports and repeat observations are excluded.',
+    ),
+  );
+  if (!q.historyAvailable) {
+    box.append(
+      el(
+        'p',
+        {},
+        'Historical observations were not saved. Outcomes will be recorded with the next research import.',
+      ),
+    );
+    return box;
+  }
+  if (!q.historyComplete)
+    box.append(
+      el(
+        'p',
+        {},
+        'Partial history: earlier runs lack observation snapshots. These counts are a lower bound.',
+      ),
+    );
+  for (const [key, label] of [
+    ['newHighFit', 'New high-fit roles'],
+    ['qualifying', 'Currently meet all checks'],
+    ['kept', 'Currently shortlisted or applied'],
+    ['resolvedPositive', 'Checks resolved positively'],
+    ['resolvedNegative', 'Checks resolved negatively'],
+  ]) {
+    const detail = el('details', {}, el('summary', {}, `${label} · ${q[key].length}`));
+    for (const item of q[key])
+      detail.append(
+        button(
+          `${item.company} · ${item.title}${item.key ? ' · ' + item.label + ' → ' + item.to : ''}`,
+          () => showJob(item.id),
+        ),
+      );
+    if (!q[key].length)
+      detail.append(el('p', { class: 'muted' }, 'No supported records in this window.'));
+    box.append(detail);
+  }
+  return box;
+}
+
 function research() {
   main.replaceChildren(
     heading(
@@ -921,6 +1086,7 @@ function research() {
       button('Search now', collect, 'primary'),
     ),
   );
+  main.append(outcomeSummary());
   for (const run of [...state.runs].reverse()) {
     main.append(
       el(

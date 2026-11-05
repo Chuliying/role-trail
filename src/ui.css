@@ -745,3 +745,19 @@ dialog::backdrop {
     flex-basis: 100%;
   }
 }
+
+.outcome-summary details {
+  margin-block: 1rem;
+}
+.outcome-summary button {
+  display: block;
+  margin-block: 0.75rem;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.package-overview {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
