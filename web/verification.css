@@ -32,7 +32,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .rt-verifications .rt-verification:hover {
-    background: var(--surface-muted, var(--selected, #e0e5ed));
+    background: var(--surface-muted, #e9e4da);
   }
 }
 .rt-verifications .rt-verification:focus-visible {

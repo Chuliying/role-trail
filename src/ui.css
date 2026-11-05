@@ -5,6 +5,8 @@
 @theme {
   --color-canvas: #f3efe6;
   --color-surface: #fbf9f4;
+  --color-surface-muted: #e9e4da;
+  --color-action-hover: #24324a;
   --color-ink: #1e2430;
   --color-muted: #5b6069;
   --color-line: #d8d2c7;
@@ -22,6 +24,8 @@
 :root {
   --canvas: var(--color-canvas);
   --surface: var(--color-surface);
+  --surface-muted: var(--color-surface-muted);
+  --action-hover: var(--color-action-hover);
   --ink: var(--color-ink);
   --muted: var(--color-muted);
   --line: var(--color-line);
@@ -94,10 +98,11 @@ button,
 @media (hover: hover) and (pointer: fine) {
   button:hover,
   .button:hover {
-    background: var(--selected);
+    background: var(--surface-muted);
   }
   .job-title:hover {
     background: transparent;
+    color: var(--action-hover);
     text-decoration: underline;
     text-underline-offset: 4px;
   }
@@ -113,7 +118,7 @@ button:disabled {
 }
 @media (hover: hover) and (pointer: fine) {
   .primary:hover {
-    background: #3d5070;
+    background: var(--action-hover);
   }
 }
 .quiet {
