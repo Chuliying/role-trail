@@ -28,3 +28,17 @@ See docs/release-check.md for the exact verification results. Synthetic fixtures
 - Local PDF generation requires Chromium; cloud uses authenticated printable HTML rather than bundling Chromium into a serverless function.
 
 These are explicit operational boundaries. Users do not need to implement a missing dashboard, storage layer, resume handler or scheduler loop to use the shipped core.
+
+## Review corrections and migration boundary
+
+The independent review of the initial 0.2 release found gaps that its original tests did not cover. Regression coverage now includes:
+
+- A changed JD, profile or capability invalidates the current fit assessment. Its previous score and rationale remain available as history; the list excludes stale scores from sorting and minimum-score filters. New assessments must carry the JD/profile/confirmed-capability hashes issued by `evaluate` or the UI editor. The server rejects late results after any bound input changes. Older assessments without those bindings are shown as stale until reassessed.
+- Positive opening evidence expires after 7 days; positive qualification evidence after 30 days. Missing or future timestamps cannot produce verified icons. Expiration does not clear a closed/excluded finding. These are fixed product defaults, not platform guarantees.
+- Explicit Applied decisions create a separate submission record that survives moving to Passed or archiving. `recordedAt` records the user's report, not a guessed application date. An older workspace's still-Applied decisions are retained as `legacy` records on its next mutation; already overwritten decisions cannot be reconstructed.
+- Automatic drafting keeps current pending/approved versions. Missing, stale and changes-requested drafts can produce new versions. Users can explicitly edit a resume to create a revision.
+- Newly imported research runs store a canonical payload hash. Retrying the same run ID with the same content is a no-op; changed content is rejected. Old runs without a hash remain conservatively non-retryable. This is not a full immutable research-bundle archive.
+
+These fixes do not establish drop-in compatibility with another job tracker. Before migrating an existing installation, use the [migration checklist](migration.md). In particular, this version has no importer for legacy tracker schemas, stored original PDF bytes, interview preparation packs or full research ledgers. It stores the criteria supplied for a role; it does not enforce a user's complete required-check set. A confirmed icon is evidence for that one supplied criterion, not proof of every hiring requirement.
+
+Structural hashes use sorted JSON object keys in both the browser and server, so a PostgreSQL JSONB round trip does not change an input binding. Existing resume versions with older incompatible digests are retained and require regeneration/review; the system does not silently reapprove them.

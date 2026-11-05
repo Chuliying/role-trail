@@ -35,6 +35,7 @@ const assets = {
   '/': ['index.html', 'text/html'],
   '/index.html': ['index.html', 'text/html'],
   '/app.js': ['app.js', 'text/javascript'],
+  '/status.mjs': ['status.mjs', 'text/javascript'],
   '/style.css': ['style.css', 'text/css'],
 };
 export async function body(req) {
@@ -137,7 +138,8 @@ export function handler({ store, cloud = false, key, origin }) {
           s = await store.read();
         if (s.revision !== b.revision) throw Error('Revision conflict');
         const { draftAction } = await import('./resume.mjs');
-        return send(200, await store.update(b.revision, draftAction(s, b.jobId)));
+        const draft = draftAction(s, b.jobId);
+        return send(200, draft ? await store.update(b.revision, draft) : s);
       }
       if (path === '/api/resume' && req.method === 'GET') {
         const u = new URL(req.url, 'http://localhost'),

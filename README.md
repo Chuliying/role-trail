@@ -106,6 +106,10 @@ This is an early release with no uptime or job-board access guarantee. Optional 
 
 能力判斷與履歷文字潤飾由使用者既有的 Claude Code／Codex 協作，個人貢獻仍需本人確認。排程程式已提供，但必須真的啟動 runner 或建立 host task；文件與設定檔本身不代表已啟用。資料來源成功與否會保留真實範圍，不把受阻或零筆裝成完成。
 
+## Existing tracker migration
+
+A new workspace is supported; replacing a mature installation is a separate task. Do not import another tracker's state with `restore`. Original PDF histories, preparation packs, required-check policy and full research ledgers need explicit adapters and storage before a lossless migration. See [migration gates](docs/migration.md) and [verified scope](docs/setup-parity.md).
+
 ## Attribution
 
 The paste-JD review entry and human application decision were inspired by

@@ -91,3 +91,7 @@ install an OS daemon or another paid scheduler. Credentials must belong to that 
 secret store/runtime environment, never chat, Git or shell arguments. Missing optional keys
 must not prevent unkeyed sources. Configure bounded quota/cost limits and stop at exhaustion.
 Use the shipped CLI/API actions in docs/data-contract.md and the runner in docs/scheduling.md. See docs/setup-parity.md for verified scope and per-installation acceptance.
+
+## Assessment input bindings
+
+Use the `evaluate` packet's `actionShape.binding` unchanged in the assessment action. It identifies the JD, profile and confirmed capability evidence you actually reviewed. Do not regenerate the binding merely to make an old result pass. If the server reports a stale binding, fetch a new packet and reassess the changed inputs. Older unbound scores remain historical and are excluded from current-score sorting.

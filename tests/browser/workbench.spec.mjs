@@ -1,3 +1,4 @@
+import { assessmentBinding } from '../../src/workbench.mjs';
 import { test, expect } from '@playwright/test';
 test('review, shortlist, task, tailored resume and archive survive reload', async ({ page }) => {
   const errors = [];
@@ -15,10 +16,15 @@ test('review, shortlist, task, tailored resume and archive survive reload', asyn
   await expect(page.getByRole('heading', { name: 'What changed for this role' })).toBeVisible();
   await page.getByRole('button', { name: 'Approve', exact: true }).click();
   await expect(page.getByText('Version 1 · approved')).toBeVisible();
+  await page.getByRole('button', { name: 'Generate draft', exact: true }).click();
+  await expect(page.getByText('Version 1 · approved')).toBeVisible();
   await page.getByRole('button', { name: 'Close opportunity' }).click();
   await page.getByLabel('Decision for Product Engineer').selectOption('shortlisted');
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Product Engineer', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Preparation', exact: true }).click();
+  await page.getByRole('button', { name: 'Draft all shortlisted', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('0 draft(s) generated');
   await page.reload();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Product Engineer', exact: true }).click();
@@ -92,4 +98,93 @@ test('JD input is rendered as text and default ordering uses search recency', as
   await page.getByRole('button', { name: 'Latest role', exact: true }).click();
   await expect(page.getByText('<script>window.pwned=true</script>', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.pwned)).toBeUndefined();
+});
+
+test('stale scores, old verification and application history are represented honestly', async ({
+  page,
+}) => {
+  await page.goto('/');
+  let s = await (await page.request.get('/api/state')).json();
+  const mutate = async (action) => {
+    const response = await page.request.post('/api/action', {
+      headers: { Origin: 'http://127.0.0.1:4319', 'X-Role-Trail': '1' },
+      data: { revision: s.revision, action },
+    });
+    expect(response.status()).toBe(200);
+    s = await response.json();
+  };
+  const url = 'https://example.com/jobs/review-regression';
+  const old = new Date(Date.now() - 40 * 86400000).toISOString();
+  const job = {
+    company: 'Review fixture',
+    title: 'Regression role',
+    url,
+    source: 'manual',
+    descriptionKind: 'full',
+    description: 'React UI',
+    availability: { status: 'open', source: url, evidence: 'Old source', checkedAt: old },
+    checks: [
+      {
+        key: 'remote',
+        label: 'Remote policy',
+        status: 'confirmed',
+        source: url,
+        evidence: 'Old remote source',
+        checkedAt: old,
+      },
+    ],
+  };
+  await mutate({ type: 'research', run: { id: 'review-ui-1', coverage: [] }, jobs: [job] });
+  const id = s.jobs.find((j) => j.url === url).id;
+  await mutate({
+    type: 'assessment',
+    binding: assessmentBinding(
+      s,
+      s.jobs.find((j) => j.id === id),
+    ),
+    jobId: id,
+    score: 9,
+    reason: 'React match',
+    evidence: ['Synthetic claim'],
+    gaps: [],
+    checkedAt: new Date().toISOString(),
+  });
+  for (const status of ['applied', 'passed', 'shortlisted'])
+    await mutate({ type: 'review', jobId: id, status });
+  const draft = await page.request.post('/api/draft', {
+    headers: { Origin: 'http://127.0.0.1:4319', 'X-Role-Trail': '1' },
+    data: { revision: s.revision, jobId: id },
+  });
+  expect(draft.status()).toBe(200);
+  s = await draft.json();
+  await mutate({ type: 'resumeReview', jobId: id, version: 1, status: 'approved' });
+  await mutate({
+    type: 'research',
+    run: { id: 'review-ui-2', coverage: [] },
+    jobs: [{ ...job, description: 'Embedded firmware' }],
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
+  const row = page.locator('tbody tr').filter({ hasText: 'Regression role' });
+  await expect(row.getByText('Reassess', { exact: true })).toBeVisible();
+  await expect(row.getByLabel('Remote policy verified')).toHaveCount(0);
+  await expect(row).toContainText('Application recorded');
+  await expect(row).toContainText('Resume v1 · stale');
+  await page.getByRole('button', { name: 'Regression role', exact: true }).click();
+  await expect(
+    page.getByText('Stale assessment — reassess before using this score.'),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Remote policy · stale' })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit assessment', exact: true }).click();
+  const editor = page.getByRole('textbox', { name: 'Evidence-backed assessment' });
+  const revised = JSON.parse(await editor.inputValue());
+  revised.score = 3;
+  revised.reason = 'Reassessed changed firmware role';
+  await editor.fill(JSON.stringify(revised));
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(
+    page.locator('#detail-body').getByText('Reassessed changed firmware role', { exact: true }),
+  ).toBeVisible();
+  const saved = await (await page.request.get('/api/state')).json();
+  expect(saved.jobs.find((j) => j.id === id).assessment.stale).toBe(false);
 });

@@ -112,6 +112,7 @@ test('research cannot import personal decisions; backup validation and resume bi
   assert.equal(next.reviews[id].archived, true);
   next = api.transition(next, {
     type: 'assessment',
+    binding: api.assessmentBinding(next, next.jobs[0]),
     jobId: id,
     score: 8,
     reason: 'Python evidence matches responsibilities',
@@ -121,7 +122,12 @@ test('research cannot import personal decisions; backup validation and resume bi
   });
   assert.equal(next.reviews[id].status, 'review');
   assert.throws(
-    () => api.transition(next, { type: 'research', run: { id: 'r', coverage: [] }, jobs: [job] }),
+    () =>
+      api.transition(next, {
+        type: 'research',
+        run: { id: 'r', coverage: [] },
+        jobs: [{ ...job, title: 'Different role' }],
+      }),
     /run/i,
   );
   assert.throws(() => api.validateState({ schemaVersion: 99 }));

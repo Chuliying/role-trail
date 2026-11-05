@@ -1,4 +1,4 @@
-import { jdHash, hash } from './workbench.mjs';
+import { jdHash, hash, resumeStale } from './workbench.mjs';
 export const escapeHTML = (s) =>
   String(s).replace(
     /[&<>"']/g,
@@ -7,6 +7,15 @@ export const escapeHTML = (s) =>
 export function draftAction(state, jobId) {
   const job = state.jobs.find((j) => j.id === jobId);
   if (!job || !state.profile) throw Error('Profile and job required');
+  const latest = state.resumes
+    .filter((r) => r.jobId === jobId)
+    .sort((a, b) => b.version - a.version)[0];
+  if (
+    latest &&
+    ['pending', 'approved'].includes(latest.reviewStatus) &&
+    !resumeStale(state, latest)
+  )
+    return null;
   const confirmed = state.capabilities.filter((c) => c.status === 'confirmed');
   if (!confirmed.length) throw Error('Confirm evidence-backed capabilities first');
   const words = new Set(job.description.toLowerCase().match(/[\p{L}\p{N}+#.]+/gu) || []);

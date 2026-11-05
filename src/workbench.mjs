@@ -1,11 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename, unlink, lstat } from 'node:fs/promises';
 import { join } from 'node:path';
+import { positiveFresh, canonical } from '../web/status.mjs';
 import { validateSchedule } from './schedule-config.mjs';
 import { privateWorkspace, validateProfile, validateFeeds } from './onboarding.mjs';
 export const hash = (x) =>
   createHash('sha256')
-    .update(typeof x === 'string' ? x : JSON.stringify(x))
+    .update(typeof x === 'string' ? x : JSON.stringify(canonical(x)))
     .digest('hex');
 export const now = () => new Date().toISOString();
 export const object = (x) => x && typeof x === 'object' && !Array.isArray(x);
@@ -59,6 +60,7 @@ export const emptyState = () => ({
   capabilities: [],
   jobs: [],
   reviews: {},
+  submissions: [],
   tasks: [],
   resumes: [],
   runs: [],
@@ -177,6 +179,19 @@ export function normalizeJob(j) {
   };
 }
 export const jdHash = (j) => hash([j.company, j.title, j.description]);
+export const assessmentClaims = (s) =>
+  s.capabilities
+    .filter((c) => c.status === 'confirmed')
+    .map(({ id, claim, tags, evidence, status }) => ({ id, claim, tags, evidence, status }));
+export const assessmentBinding = (s, j) => ({
+  jdHash: jdHash(j),
+  profileHash: profileHash(s.profile),
+  capabilityHash: hash(assessmentClaims(s)),
+});
+const matchesBinding = (s, j, binding) => {
+  const current = assessmentBinding(s, j);
+  return binding && Object.keys(current).every((k) => binding[k] === current[k]);
+};
 export function jobStatus(j, review = {}) {
   if (
     review.archived ||
@@ -186,8 +201,8 @@ export function jobStatus(j, review = {}) {
   )
     return 'archived';
   return j.checks.length &&
-    j.checks.every((c) => c.status === 'confirmed') &&
-    j.availability.status === 'open'
+    j.checks.every((c) => positiveFresh(c)) &&
+    positiveFresh(j.availability, 7)
     ? 'verified'
     : 'needs_review';
 }
@@ -200,6 +215,7 @@ export function validateState(s) {
     'capabilities',
     'jobs',
     'reviews',
+    'submissions',
     'tasks',
     'resumes',
     'runs',
@@ -217,11 +233,29 @@ export function validateState(s) {
     const n = normalizeJob(base);
     if (n.id !== j.id || ids.has(j.id)) throw Error('Invalid job ID');
     ids.add(j.id);
-    if (assessment) validateAssessment(assessment);
+    if (assessment) {
+      validateAssessment(assessment);
+      if (!matchesBinding(s, j, assessment.binding)) assessment.stale = true;
+    }
   }
   for (const [id, r] of Object.entries(s.reviews)) {
     if (!ids.has(id) || !statuses.includes(r.status) || typeof r.archived !== 'boolean')
       throw Error('Invalid review');
+  }
+  if (s.submissions !== undefined) {
+    if (!Array.isArray(s.submissions)) throw Error('Invalid submissions');
+    const seen = new Set();
+    for (const entry of s.submissions) {
+      keys(entry, ['jobId', 'recordedAt', 'source']);
+      if (
+        !ids.has(entry.jobId) ||
+        seen.has(entry.jobId) ||
+        !['manual', 'legacy'].includes(entry.source)
+      )
+        throw Error('Invalid submission');
+      date(entry.recordedAt);
+      seen.add(entry.jobId);
+    }
   }
   for (const t of s.tasks)
     if (
@@ -278,7 +312,9 @@ function validateRun(r) {
   }
 }
 function validateAssessment(a) {
-  keys(a, ['score', 'reason', 'evidence', 'gaps', 'checkedAt']);
+  keys(a, ['score', 'reason', 'evidence', 'gaps', 'checkedAt', 'stale', 'binding']);
+  if (a.stale !== undefined && typeof a.stale !== 'boolean')
+    throw Error('Invalid assessment state');
   if (
     !Number.isInteger(a.score) ||
     a.score < 1 ||
@@ -292,9 +328,28 @@ function validateAssessment(a) {
   )
     throw Error('Assessment requires score and evidence');
   date(a.checkedAt);
+  if (a.binding !== undefined) {
+    keys(a.binding, ['jdHash', 'profileHash', 'capabilityHash']);
+    if (
+      ['jdHash', 'profileHash', 'capabilityHash'].some(
+        (k) => !/^[a-f0-9]{64}$/.test(a.binding[k] || ''),
+      )
+    )
+      throw Error('Invalid assessment binding');
+  }
 }
 export function transition(current, a) {
   const s = structuredClone(current);
+  s.submissions ||= [];
+  // Preserve explicit legacy Applied decisions before any action can overwrite them.
+  // recordedAt is when we retained the record, not an inferred application date.
+  for (const [jobId, review] of Object.entries(s.reviews)) {
+    if (review.status === 'applied' && !s.submissions.some((x) => x.jobId === jobId))
+      s.submissions.push({ jobId, recordedAt: now(), source: 'legacy' });
+  }
+  const invalidateScores = () => {
+    for (const j of s.jobs) if (j.assessment) j.assessment.stale = true;
+  };
   if (!object(a)) throw Error('Invalid action');
   const job = () => {
     const j = s.jobs.find((j) => j.id === a.jobId);
@@ -304,7 +359,12 @@ export function transition(current, a) {
   if (a.type === 'research') {
     keys(a, ['type', 'run', 'jobs']);
     validateRun(a.run);
-    if (s.runs.some((r) => r.id === a.run.id)) throw Error('Duplicate run ID');
+    const contentHash = hash(canonical({ run: a.run, jobs: a.jobs }));
+    const previousRun = s.runs.find((r) => r.id === a.run.id);
+    if (previousRun) {
+      if (previousRun.contentHash === contentHash) return current;
+      throw Error('Duplicate run ID with different or unrecorded content');
+    }
     if (!Array.isArray(a.jobs) || a.jobs.length > 500) throw Error('Invalid jobs');
     for (const raw of a.jobs) {
       const j = normalizeJob(raw),
@@ -345,15 +405,20 @@ export function transition(current, a) {
           all.set(c.key, { key: c.key, label: c.label, ...preserveFact(all.get(c.key), c) });
         j.checks = [...all.values()];
         j.firstSeenAt = old.firstSeenAt;
-        j.assessment = old.assessment;
+        if (old.assessment)
+          j.assessment = {
+            ...old.assessment,
+            stale: !!old.assessment.stale || jdHash(j) !== jdHash(old),
+          };
         if (Date.parse(j.searchedAt) < Date.parse(old.searchedAt)) j.searchedAt = old.searchedAt;
         s.jobs[s.jobs.indexOf(old)] = j;
       } else s.jobs.push(j);
     }
-    s.runs.push({ ...a.run, finishedAt: a.run.finishedAt || now() });
+    s.runs.push({ ...a.run, contentHash, finishedAt: a.run.finishedAt || now() });
   } else if (a.type === 'profile') {
     keys(a, ['type', 'profile']);
     profileCheck(a.profile);
+    if (hash(s.profile) !== hash(a.profile)) invalidateScores();
     s.profile = structuredClone(a.profile);
   } else if (a.type === 'review' || a.type === 'archive') {
     keys(a, ['type', 'jobId', a.type === 'review' ? 'status' : 'archived']);
@@ -362,6 +427,8 @@ export function transition(current, a) {
     if (a.type === 'review') {
       if (!statuses.includes(a.status)) throw Error('Invalid decision');
       r.status = a.status;
+      if (a.status === 'applied' && !s.submissions.some((x) => x.jobId === a.jobId))
+        s.submissions.push({ jobId: a.jobId, recordedAt: now(), source: 'manual' });
     } else {
       if (typeof a.archived !== 'boolean') throw Error('Invalid archive');
       r.archived = a.archived;
@@ -384,10 +451,12 @@ export function transition(current, a) {
     if (old) s.tasks[s.tasks.indexOf(old)] = t;
     else s.tasks.push(t);
   } else if (a.type === 'assessment') {
-    keys(a, ['type', 'jobId', 'score', 'reason', 'evidence', 'gaps', 'checkedAt']);
+    keys(a, ['type', 'jobId', 'score', 'reason', 'evidence', 'gaps', 'checkedAt', 'binding']);
     const { type, jobId, ...v } = a;
     validateAssessment(v);
-    job().assessment = v;
+    if (!matchesBinding(s, job(), v.binding))
+      throw Error('Stale assessment binding; evaluate current sources again');
+    job().assessment = { ...v, stale: false };
   } else if (a.type === 'capability') {
     keys(a, ['type', 'id', 'claim', 'tags', 'evidence', 'status']);
     if (
@@ -409,6 +478,7 @@ export function transition(current, a) {
       updatedAt: now(),
     };
     const i = s.capabilities.findIndex((x) => x.id === c.id);
+    invalidateScores();
     if (i < 0) s.capabilities.push(c);
     else s.capabilities[i] = c;
   } else if (a.type === 'resume') {
@@ -443,15 +513,7 @@ export function transition(current, a) {
     const r = s.resumes.find((r) => r.jobId === a.jobId && r.version === a.version);
     if (!r || !['approved', 'changes_requested'].includes(a.status))
       throw Error('Invalid resume review');
-    if (
-      r.jdHash !== jdHash(job()) ||
-      r.profileHash !== profileHash(s.profile) ||
-      r.capabilityHash !== capabilityHash(s, r.capabilityIds) ||
-      r.capabilityIds.some(
-        (id) => !s.capabilities.some((c) => c.id === id && c.status === 'confirmed'),
-      )
-    )
-      throw Error('Resume is stale');
+    if (resumeStale(s, r)) throw Error('Resume is stale');
     r.reviewStatus = a.status;
   } else if (a.type === 'schedule') {
     keys(a, ['type', 'schedule']);
@@ -461,6 +523,18 @@ export function transition(current, a) {
   s.revision++;
   s.updatedAt = now();
   return validateState(s);
+}
+export function resumeStale(s, r) {
+  const j = s.jobs.find((j) => j.id === r.jobId);
+  return (
+    !j ||
+    r.jdHash !== jdHash(j) ||
+    r.profileHash !== profileHash(s.profile) ||
+    r.capabilityHash !== capabilityHash(s, r.capabilityIds) ||
+    r.capabilityIds.some(
+      (id) => !s.capabilities.some((c) => c.id === id && c.status === 'confirmed'),
+    )
+  );
 }
 export class LocalStore {
   constructor(dir) {

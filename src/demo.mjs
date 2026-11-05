@@ -1,7 +1,7 @@
-import { hash } from './workbench.mjs';
+import { hash, emptyState, transition, assessmentBinding } from './workbench.mjs';
 export function demoActions() {
   const stamp = new Date().toISOString();
-  return [
+  const actions = [
     {
       type: 'profile',
       profile: {
@@ -110,4 +110,7 @@ export function demoActions() {
       checkedAt: stamp,
     },
   ];
+  const s = actions.slice(0, -1).reduce(transition, emptyState());
+  actions.at(-1).binding = assessmentBinding(s, s.jobs[0]);
+  return actions;
 }

@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
+import { demoActions } from '../src/demo.mjs';
+import { draftAction } from '../src/resume.mjs';
 import { PostgresStore } from '../src/postgres.mjs';
 const available = (() => {
   try {
@@ -71,6 +73,24 @@ test(
       await store.restore(1, { ...s, runs: [] });
       assert.equal((await second.read()).revision, 2);
       assert.equal((await second.read()).runs.length, 0);
+      for (const action of demoActions()) {
+        const latest = await store.read();
+        await store.update(latest.revision, action);
+      }
+      s = await second.read();
+      const jobId = s.jobs[0].id;
+      assert.equal(s.jobs[0].assessment.stale, false);
+      s = await store.update(s.revision, draftAction(s, jobId));
+      s = await second.read();
+      s = await store.update(s.revision, {
+        type: 'resumeReview',
+        jobId,
+        version: 1,
+        status: 'approved',
+      });
+      s = await second.read();
+      assert.equal(draftAction(s, jobId), null);
+      assert.equal(s.resumes[0].reviewStatus, 'approved');
     } finally {
       await store?.close();
       await second?.close();

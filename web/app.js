@@ -1,4 +1,5 @@
-'use strict';
+import { positiveFresh, currentScore, canonical } from './status.mjs';
+const staleResumes = new Set();
 let collecting = false;
 let state,
   page = 'jobs',
@@ -53,7 +54,7 @@ const latestResume = (id) =>
 const sha = async (x) =>
   Array.from(
     new Uint8Array(
-      await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(x))),
+      await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(canonical(x)))),
     ),
   )
     .map((b) => b.toString(16).padStart(2, '0'))
@@ -73,6 +74,26 @@ async function api(path, data) {
   if (!r.ok) {
     if (r.status === 401) login();
     throw Error(b.error || 'Request failed');
+  }
+  if (b.schemaVersion === 1 && Array.isArray(b.resumes) && Array.isArray(b.jobs)) {
+    staleResumes.clear();
+    const profileDigest = await sha(b.profile);
+    await Promise.all(
+      b.resumes.map(async (r) => {
+        const j = b.jobs.find((j) => j.id === r.jobId);
+        if (
+          !j ||
+          r.jdHash !== (await sha([j.company, j.title, j.description])) ||
+          r.profileHash !== profileDigest ||
+          r.capabilityHash !==
+            (await sha(r.capabilityIds.map((id) => b.capabilities.find((c) => c.id === id)))) ||
+          r.capabilityIds.some(
+            (id) => !b.capabilities.some((c) => c.id === id && c.status === 'confirmed'),
+          )
+        )
+          staleResumes.add(r.jobId + ':' + r.version);
+      }),
+    );
   }
   return b;
 }
@@ -214,16 +235,15 @@ function jobs() {
         (j.company + ' ' + j.title + ' ' + j.description)
           .toLowerCase()
           .includes(query.toLowerCase()) &&
-        (!minimum || (j.assessment?.score || 0) >= minimum),
+        (!minimum || currentScore(j) >= minimum),
     )
     .sort((a, b) =>
       sort === 'score'
-        ? (b.assessment?.score || 0) - (a.assessment?.score || 0) ||
-          Date.parse(b.searchedAt) - Date.parse(a.searchedAt)
+        ? currentScore(b) - currentScore(a) || Date.parse(b.searchedAt) - Date.parse(a.searchedAt)
         : sort === 'company'
           ? a.company.localeCompare(b.company)
           : Date.parse(b.searchedAt) - Date.parse(a.searchedAt) ||
-            (b.assessment?.score || 0) - (a.assessment?.score || 0),
+            currentScore(b) - currentScore(a),
     );
   const search = el('input', {
     type: 'search',
@@ -389,7 +409,7 @@ function jobs() {
               'div',
               { class: 'facts' },
               j.checks
-                .filter((c) => c.status === 'confirmed')
+                .filter((c) => positiveFresh(c))
                 .map((c) =>
                   el(
                     'span',
@@ -407,7 +427,7 @@ function jobs() {
           el(
             'td',
             {},
-            j.assessment
+            currentScore(j)
               ? el(
                   'details',
                   { class: 'score-tip' },
@@ -418,7 +438,7 @@ function jobs() {
                   ),
                   el('p', {}, j.assessment.reason),
                 )
-              : el('span', { class: 'muted' }, 'Unrated'),
+              : el('span', { class: 'muted' }, j.assessment?.stale ? 'Reassess' : 'Unrated'),
           ),
           el(
             'td',
@@ -431,10 +451,18 @@ function jobs() {
             'td',
             {},
             el('div', { class: 'row-actions' }, select, link('Source ↗', j.url)),
+            (state.submissions || []).some((x) => x.jobId === j.id) || dec === 'applied'
+              ? el('div', { class: 'meta' }, 'Application recorded')
+              : null,
             el(
               'div',
               { class: 'meta' },
-              r ? 'Resume v' + r.version + ' · ' + r.reviewStatus : 'No resume',
+              r
+                ? 'Resume v' +
+                    r.version +
+                    ' · ' +
+                    (staleResumes.has(r.jobId + ':' + r.version) ? 'stale' : r.reviewStatus)
+                : 'No resume',
             ),
           ),
         );
@@ -543,6 +571,15 @@ async function showJob(id) {
   currentJob = id;
   const j = state.jobs.find((x) => x.id === id);
   if (!j) return;
+  const binding = {
+    jdHash: await sha([j.company, j.title, j.description]),
+    profileHash: await sha(state.profile),
+    capabilityHash: await sha(
+      state.capabilities
+        .filter((c) => c.status === 'confirmed')
+        .map(({ id, claim, tags, evidence, status }) => ({ id, claim, tags, evidence, status })),
+    ),
+  };
   const d = $('#detail-body');
   d.replaceChildren(
     el('span', { class: 'company' }, j.company),
@@ -564,7 +601,10 @@ async function showJob(id) {
         ? el(
             'div',
             {},
-            badge(j.assessment.score + ' / 10'),
+            j.assessment.stale
+              ? el('p', { class: 'muted' }, 'Stale assessment — reassess before using this score.')
+              : null,
+            badge((j.assessment.stale ? 'Previous: ' : '') + j.assessment.score + ' / 10'),
             el('p', {}, j.assessment.reason),
             el(
               'ul',
@@ -592,11 +632,11 @@ async function showJob(id) {
       button('Edit assessment', () =>
         jsonEditor(
           'Evidence-backed assessment',
-          j.assessment || {
-            score: 7,
-            reason: '',
-            evidence: [],
-            gaps: [],
+          {
+            ...(j.assessment
+              ? Object.fromEntries(Object.entries(j.assessment).filter(([k]) => k !== 'stale'))
+              : { score: 7, reason: '', evidence: [], gaps: [] }),
+            binding,
             checkedAt: new Date().toISOString(),
           },
           (v) => action({ type: 'assessment', jobId: id, ...v }),
@@ -607,14 +647,23 @@ async function showJob(id) {
       'div',
       { class: 'detail-section' },
       el('h2', {}, 'Eligibility & availability'),
-      badge(j.availability.status, j.availability.status === 'closed' ? 'danger' : 'warning'),
+      badge(
+        j.availability.status === 'open' && !positiveFresh(j.availability, 7)
+          ? 'stale'
+          : j.availability.status,
+        j.availability.status === 'closed' ? 'danger' : 'warning',
+      ),
       el('p', {}, j.availability.evidence || 'Opening has not been verified.'),
       j.availability.source ? link('Opening evidence ↗', j.availability.source) : null,
       ...j.checks.map((c) =>
         el(
           'div',
           {},
-          el('h3', {}, c.label + ' · ' + c.status),
+          el(
+            'h3',
+            {},
+            c.label + ' · ' + (c.status === 'confirmed' && !positiveFresh(c) ? 'stale' : c.status),
+          ),
           el('p', {}, c.evidence),
           c.source ? link('Evidence ↗', c.source) : null,
         ),
@@ -680,16 +729,12 @@ async function showJob(id) {
   );
   const r = latestResume(id);
   if (r) {
-    const stale =
-      r.jdHash !== (await sha([j.company, j.title, j.description])) ||
-      r.profileHash !== (await sha(state.profile)) ||
-      r.capabilityHash !==
-        (await sha(r.capabilityIds.map((id) => state.capabilities.find((c) => c.id === id))));
+    const stale = staleResumes.has(r.jobId + ':' + r.version);
     resume.append(
       el(
         'p',
         { class: 'meta' },
-        'Version ' + r.version + ' · ' + (stale ? 'JD changed — regenerate' : r.reviewStatus),
+        'Version ' + r.version + ' · ' + (stale ? 'Source changed — regenerate' : r.reviewStatus),
       ),
       el('h3', {}, 'What changed for this role'),
       el(
@@ -762,15 +807,16 @@ function tasks() {
           let count = 0;
           for (const j of shortlisted) {
             try {
+              const before = state.resumes.length;
               state = await api('draft', { revision: state.revision, jobId: j.id });
-              count++;
+              if (state.resumes.length > before) count++;
             } catch (e) {
               notify(e.message);
               break;
             }
           }
           render();
-          notify(count + ' draft(s) generated. Review each before use.');
+          notify(count + ' draft(s) generated. Current pending or approved versions were kept.');
         },
         'primary',
       ),
@@ -794,7 +840,11 @@ function tasks() {
             { class: 'meta' },
             labels[state.reviews[j.id]?.status || 'review'] +
               ' · ' +
-              (latestResume(j.id) ? 'Resume ready for review' : 'No resume'),
+              (latestResume(j.id)
+                ? staleResumes.has(j.id + ':' + latestResume(j.id).version)
+                  ? 'Resume stale'
+                  : 'Resume ' + latestResume(j.id).reviewStatus
+                : 'No resume'),
           ),
           ...state.tasks.filter((t) => t.jobId === j.id).map(todo),
           button('Open preparation', () => showJob(j.id)),

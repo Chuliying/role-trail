@@ -30,3 +30,9 @@ Local storage supports 15 MB serialized state; the cloud adapter supports 3.5 MB
 Before push: all tests/build/browser checks pass, dependency audit reports no known vulnerabilities, a scoped secret scan and manual private-data review pass, and only source/config/docs/synthetic tests are staged. Scanning is heuristic, not proof that every possible secret representation can be detected. CI uses read-only permissions, synthetic database data and pinned checkout/setup-node actions.
 
 Final secret preflight examined the public source/config/docs/tests. Three suppressed candidates were manually reviewed in synthetic CLI/onboarding tests; no real key was identified. The working tree was also checked for private paths, deployment identifiers and personal source data.
+
+## Independent-review corrections — 2026-11-05
+
+The original release's passing tests did not cover stale assessment reuse, Applied-history loss, evidence expiry, repeated drafting or import retries. Subsequent independent review also caught late assessment input bindings and PostgreSQL JSON key-order differences. These issues were reproduced, fixed and independently rechecked.
+
+Current verification: 31/31 Node tests (including real isolated PostgreSQL), 4/4 browser tests, build and formatting pass; npm audit reports zero known vulnerabilities. See [correction evidence](work/review-corrections/implement-report.md) and [migration limits](migration.md). This replaces neither per-installation acceptance nor a full lossless-migration test.
