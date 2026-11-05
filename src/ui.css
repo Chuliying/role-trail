@@ -1447,3 +1447,172 @@ summary:focus-visible {
     padding-top: 8px;
   }
 }
+
+/* Reading surface: preserve semantic typography and list markers after Tailwind reset. */
+.jd {
+  max-width: 66ch;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.jd p {
+  margin: 0 0 14px;
+  white-space: normal;
+}
+.jd h3,
+.jd h4,
+.jd h5,
+.jd h6 {
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 28px 0 12px;
+  text-wrap: pretty;
+}
+.jd h3 {
+  font-size: 19px;
+}
+.jd h4 {
+  font-size: 17px;
+}
+.jd h5,
+.jd h6 {
+  font-size: 16px;
+}
+.jd > :first-child {
+  margin-top: 0;
+}
+.jd ul,
+.jd ol {
+  padding-left: 24px;
+  margin: 10px 0 20px;
+}
+.jd ul {
+  list-style: disc;
+}
+.jd ol {
+  list-style: decimal;
+}
+.jd li {
+  padding-left: 4px;
+  margin-block: 6px;
+}
+.jd li > p {
+  margin-bottom: 6px;
+}
+.jd li > ul,
+.jd li > ol {
+  margin-block: 6px;
+}
+.jd strong {
+  font-weight: 600;
+}
+.jd blockquote {
+  border-left: 2px solid var(--line);
+  margin: 16px 0;
+  padding-left: 16px;
+  color: var(--muted);
+}
+.jd hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin-block: 24px;
+}
+.jd pre {
+  padding: 12px;
+  background: var(--surface-muted);
+  font-size: 13px;
+  overflow-x: auto;
+}
+.jd-table {
+  overflow-x: auto;
+  max-width: 100%;
+  margin-block: 16px;
+}
+.jd-table table {
+  display: table;
+  width: 100%;
+  table-layout: auto;
+}
+.jd-table thead {
+  display: table-header-group;
+}
+.jd-table tbody {
+  display: table-row-group;
+}
+.jd-table tr {
+  display: table-row;
+  padding: 0;
+}
+.jd-table th,
+.jd-table td {
+  display: table-cell;
+  width: auto;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.jd-table td::before {
+  content: none;
+}
+@media (max-width: 720px) {
+  .job-row {
+    padding-block: 16px;
+    row-gap: 6px;
+  }
+  .job-row .job-summary {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+  .job-summary .facts {
+    min-width: 0;
+    flex: 1;
+  }
+  .job-summary .mobile-dates {
+    flex: none;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    font-size: 12px;
+  }
+  .job-summary .mobile-dates span {
+    color: var(--muted);
+  }
+  .job-row td:nth-child(5) {
+    grid-row: 4;
+    padding: 0;
+  }
+  .job-row .row-actions {
+    grid-template-columns: minmax(0, 160px) auto;
+    justify-content: space-between;
+  }
+  .job-row .row-actions select {
+    background: transparent;
+    border-color: transparent;
+    padding-left: 0;
+  }
+  .job-row .row-actions .button {
+    background: transparent;
+    border-color: transparent;
+    padding-right: 0;
+    justify-content: flex-end;
+  }
+  .detail-jumps {
+    position: sticky;
+    top: 61px;
+    z-index: 1;
+    background: var(--surface);
+    padding-top: 4px;
+    margin-top: 16px;
+  }
+  .detail-section {
+    scroll-margin-top: 125px;
+  }
+  .jd {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+}

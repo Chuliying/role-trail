@@ -13,6 +13,9 @@ export const staticFiles = [
   'status.mjs',
   'outcomes.mjs',
   'verification.mjs',
+  'markdown.mjs',
+  'vendor/marked.mjs',
+  'vendor/marked-LICENSE.md',
 ];
 export async function buildDeployment(output) {
   const source = fileURLToPath(new URL('../web/', import.meta.url)),

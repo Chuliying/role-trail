@@ -1,3 +1,4 @@
+import { renderMarkdown as structured } from './markdown.mjs';
 import { locale, t } from './i18n.mjs';
 import { createVerificationGroup } from './verification.mjs';
 import { researchOutcomes, applicationReadiness } from './outcomes.mjs';
@@ -322,14 +323,20 @@ function jobs() {
     'select',
     {
       'aria-label': t('Sort opportunities'),
+      title:
+        sort === 'recent'
+          ? t('Newest search, then fit')
+          : sort === 'score'
+            ? t('Highest fit, then search')
+            : t('Company A–Z'),
       onchange: (e) => {
         sort = e.target.value;
         render();
       },
     },
     ...Object.entries({
-      recent: t('Newest search, then fit'),
-      score: t('Highest fit, then search'),
+      recent: t('Newest search'),
+      score: t('Highest fit'),
       company: t('Company A–Z'),
     }).map(([v, t]) => el('option', { value: v }, t)),
   );
@@ -500,23 +507,27 @@ function jobs() {
               : null,
             el(
               'div',
-              { class: 'facts' },
-              createVerificationGroup(j, {
-                locale,
-                onOpen: async () => {
-                  await showJob(j.id);
-                  const evidence = document.getElementById('verification-evidence');
-                  evidence?.scrollIntoView({ block: 'start' });
-                  evidence?.focus({ preventScroll: true });
-                },
-              }),
-              archived(j) ? badge(t('Archived'), 'danger') : null,
-            ),
-            el(
-              'div',
-              { class: 'mobile-dates' },
-              j.posting.date ? el('div', {}, el('span', {}, t('Opened')), j.posting.date) : null,
-              el('div', {}, el('span', {}, t('Searched')), date(j.searchedAt)),
+              { class: 'job-summary' },
+              el(
+                'div',
+                { class: 'facts' },
+                createVerificationGroup(j, {
+                  locale,
+                  onOpen: async () => {
+                    await showJob(j.id);
+                    const evidence = document.getElementById('verification-evidence');
+                    evidence?.scrollIntoView({ block: 'start' });
+                    evidence?.focus({ preventScroll: true });
+                  },
+                }),
+                archived(j) ? badge(t('Archived'), 'danger') : null,
+              ),
+              el(
+                'div',
+                { class: 'mobile-dates' },
+                j.posting.date ? el('div', {}, el('span', {}, t('Opened')), j.posting.date) : null,
+                el('div', {}, el('span', {}, t('Searched')), date(j.searchedAt)),
+              ),
             ),
           ),
           el(
@@ -665,31 +676,6 @@ async function collect() {
   } finally {
     collecting = false;
   }
-}
-function structured(text) {
-  const box = el('div', { class: 'jd' });
-  let list = null;
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line) {
-      list = null;
-      continue;
-    }
-    if (/^(?:#{1,6}\s|【.+】$)/.test(line) || (line.length < 80 && /:$/.test(line))) {
-      box.append(el('h3', {}, line.replace(/^#{1,6}\s+/, '')));
-      list = null;
-    } else if (/^(?:[-*•]\s*|\d+[.)]\s+)/.test(line)) {
-      if (!list) {
-        list = el('ul');
-        box.append(list);
-      }
-      list.append(el('li', {}, line.replace(/^(?:[-*•]\s*|\d+[.)]\s+)/, '')));
-    } else {
-      box.append(el('p', {}, line));
-      list = null;
-    }
-  }
-  return box;
 }
 async function showJob(id) {
   currentJob = id;

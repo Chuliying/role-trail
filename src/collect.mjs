@@ -1,3 +1,4 @@
+import { htmlToMarkdown as plain } from './jd-content.mjs';
 import { parseCompanies, parseJobs } from './providers/job-frog.mjs';
 import { collectProviders, parseGoogleJobs } from './providers/taiwan.mjs';
 import { randomUUID } from 'node:crypto';
@@ -37,19 +38,6 @@ export async function fetchText(url) {
 export async function fetchJSON(url) {
   return JSON.parse(await fetchText(url));
 }
-const plain = (s) =>
-  String(s || '')
-    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<h[1-6][^>]*>/gi, '\n\n## ')
-    .replace(/<li[^>]*>/gi, '\n- ')
-    .replace(/<\/(?:p|div|h[1-6]|li)>|<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(
-      /&(?:amp|lt|gt|quot|#39|nbsp);/g,
-      (x) =>
-        ({ '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&nbsp;': ' ' })[x],
-    )
-    .trim();
 const slug = (s) => {
   if (typeof s !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(s)) throw Error('Invalid board slug');
   return s;

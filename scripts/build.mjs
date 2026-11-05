@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto';
-import { readFile, access, writeFile } from 'node:fs/promises';
+import { readFile, access, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
+await mkdir('web/vendor', { recursive: true });
+await copyFile('node_modules/marked/lib/marked.esm.js', 'web/vendor/marked.mjs');
+await copyFile('node_modules/marked/LICENSE', 'web/vendor/marked-LICENSE.md');
 execFileSync(
   process.execPath,
   [
@@ -21,6 +24,8 @@ for (const file of [
   'web/status.mjs',
   'web/outcomes.mjs',
   'web/verification.mjs',
+  'web/markdown.mjs',
+  'web/vendor/marked.mjs',
   'web/verification.css',
   'api/index.mjs',
 ])
@@ -31,6 +36,8 @@ for (const file of [
   'web/status.mjs',
   'web/outcomes.mjs',
   'web/verification.mjs',
+  'web/markdown.mjs',
+  'web/vendor/marked.mjs',
   'api/index.mjs',
 ])
   execFileSync(process.execPath, ['--check', file]);
@@ -40,7 +47,14 @@ console.log('Static workbench and serverless entry validated; Vercel builds the 
 
 // A fresh navigation must not mix cached entry assets from different releases.
 const bytes = await Promise.all(
-  ['web/app.js', 'web/i18n.mjs', 'web/style.css', 'web/verification.mjs'].map((p) => readFile(p)),
+  [
+    'web/app.js',
+    'web/i18n.mjs',
+    'web/style.css',
+    'web/verification.mjs',
+    'web/markdown.mjs',
+    'web/vendor/marked.mjs',
+  ].map((p) => readFile(p)),
 );
 const version = createHash('sha256').update(Buffer.concat(bytes)).digest('hex').slice(0, 16);
 const html = await readFile('web/index.html', 'utf8');

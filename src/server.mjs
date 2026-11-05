@@ -50,6 +50,8 @@ const assets = {
   '/i18n.mjs': ['i18n.mjs', 'text/javascript'],
   '/app.js': ['app.js', 'text/javascript'],
   '/status.mjs': ['status.mjs', 'text/javascript'],
+  '/markdown.mjs': ['markdown.mjs', 'text/javascript'],
+  '/vendor/marked.mjs': ['vendor/marked.mjs', 'text/javascript'],
   '/verification.mjs': ['verification.mjs', 'text/javascript'],
   '/outcomes.mjs': ['outcomes.mjs', 'text/javascript'],
   '/style.css': ['style.css', 'text/css'],

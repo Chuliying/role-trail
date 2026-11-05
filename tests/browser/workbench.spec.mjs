@@ -539,6 +539,20 @@ test('touch cards avoid sticky hover, redundant totals and long-text overflow', 
               title: 'Senior Frontend Development Engineer',
               url: 'https://example.test/mobile-spacing',
               source: 'official',
+              availability: {
+                status: 'open',
+                source: 'https://example.test/mobile-spacing',
+                evidence: 'Synthetic opening',
+                checkedAt: new Date().toISOString(),
+              },
+              checks: ['frontend', 'ai'].map((key) => ({
+                key,
+                label: key,
+                status: 'confirmed',
+                source: 'https://example.test/mobile-spacing',
+                evidence: 'Synthetic responsibility',
+                checkedAt: new Date().toISOString(),
+              })),
               description: 'Synthetic frontend role',
               descriptionKind: 'full',
               searchedAt: new Date().toISOString(),
@@ -584,6 +598,11 @@ test('touch cards avoid sticky hover, redundant totals and long-text overflow', 
       const role = await title.boundingBox();
       expect(company.x + company.width).toBeLessThanOrEqual(score.x);
       expect(role.y).toBeGreaterThanOrEqual(company.y + company.height);
+      const facts = await jobRow.locator('.facts').boundingBox();
+      const dates = await jobRow.locator('.mobile-dates').boundingBox();
+      expect(facts.x + facts.width).toBeLessThanOrEqual(dates.x);
+      expect(dates.y).toBeLessThan(facts.y + facts.height);
+      await expect(jobRow.locator('.rt-verification')).toHaveCount(3);
       await expect(jobRow.locator('.mobile-dates')).not.toContainText('Unknown');
       await expect(jobRow).not.toContainText('No resume');
       const decision = await jobRow.locator('select').boundingBox();
@@ -776,4 +795,49 @@ test('workspace hierarchy keeps details optional and shared task labels independ
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
   await page.screenshot({ path: 'test-results/audit-jobs-desktop.png' });
+});
+
+test('JD retains semantic heading hierarchy and numbered nested lists without executing markup', async ({
+  page,
+}) => {
+  const state = await (await page.request.get('/api/state')).json();
+  const result = await page.request.post('/api/action', {
+    headers: { Origin: 'http://127.0.0.1:4319', 'X-Role-Trail': '1' },
+    data: {
+      revision: state.revision,
+      action: {
+        type: 'research',
+        run: { id: 'semantic-jd', coverage: [] },
+        jobs: [
+          {
+            company: 'Semantic Studio',
+            title: 'Structured JD fixture',
+            url: 'https://example.test/semantic',
+            source: 'official',
+            descriptionKind: 'full',
+            description:
+              '## Responsibilities\n\nBuild **accessible** interfaces with [evidence](https://example.test/evidence).\n\n### Delivery\n\n3. Read requirements\n   - Check evidence\n4. Ship safely\n\n## Requirements\n\n- React\n- TypeScript\n\n<script>window.jdExecuted=true</script>\n\n[unsafe](javascript:alert(1))\n\n![tracker](https://example.test/tracker.png)',
+          },
+        ],
+      },
+    },
+  });
+  expect(result.ok()).toBe(true);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Structured JD fixture', exact: true }).click();
+  const jd = page.locator('#job-description .jd');
+  await expect(jd.locator('h3').first()).toHaveText('Responsibilities');
+  await expect(jd.locator('h4')).toHaveText('Delivery');
+  await expect(jd.locator('ol')).toHaveAttribute('start', '3');
+  await expect(jd.locator('ol > li')).toHaveCount(2);
+  await expect(jd.locator('ol > li > ul > li')).toHaveText('Check evidence');
+  await expect(jd.locator('strong')).toHaveText('accessible');
+  await expect(jd.getByRole('link', { name: 'evidence' })).toHaveAttribute(
+    'href',
+    'https://example.test/evidence',
+  );
+  expect(await jd.locator('script,img,iframe,a[href^="javascript:"]').count()).toBe(0);
+  expect(await page.evaluate(() => window.jdExecuted)).toBeUndefined();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#detail').screenshot({ path: 'test-results/semantic-jd-mobile.png' });
 });

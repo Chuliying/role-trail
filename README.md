@@ -122,7 +122,7 @@ The paste-JD review entry and human application decision were inspired by
 This implementation is original; no career-ops code is copied. Credits do not imply endorsement.
 The interview preparation method adapts [How to Get an Offer](https://github.com/AIPMAndy/how-to-get-offer) by AIPMAndy / AI 酋长 Andy under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), adding cited experience, separate eligibility and decisions, and versioned records. No upstream application code is included.
 
-[Himalayas](https://himalayas.app) supplies attributed listings when configured. Preserve its source and application links. Dependency licenses are retained by npm. Project source: [MIT](LICENSE).
+[Himalayas](https://himalayas.app) supplies attributed listings when configured. Preserve its source and application links. JD formatting uses [Marked](https://github.com/markedjs/marked) (MIT; bundled license in `web/vendor/marked-LICENSE.md`) for Markdown tokens and [Turndown](https://github.com/mixmark-io/turndown) (MIT) for provider HTML conversion. The reader builds allowed DOM elements without executing raw HTML or loading embedded images. Dependency licenses are retained by npm. Project source: [MIT](LICENSE).
 
 ## Search outcomes and application packages
 

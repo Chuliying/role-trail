@@ -4,6 +4,8 @@ export const locale =
     ? 'zh-TW'
     : 'en';
 const zh = {
+  'Newest search': '最新搜尋',
+  'Highest fit': '最高契合度',
   'Previous fit': '歷史契合度',
   'Opportunity sections': '職缺內容',
   JD: '職缺原文',
