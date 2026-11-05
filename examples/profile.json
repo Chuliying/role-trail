@@ -1,0 +1,12 @@
+{
+  "name": "Alex Example",
+  "targetRoles": ["Data Product Engineer", "Analytics Engineer"],
+  "location": "Berlin, Germany",
+  "remotePolicy": "Germany or worldwide remote; no relocation",
+  "timezone": "Europe/Berlin",
+  "languages": ["English"],
+  "ownershipPolicy": "No ownership restriction",
+  "platforms": ["official", "himalayas", "linkedin"],
+  "portfolio": "https://example.org",
+  "resumeSource": "manual"
+}

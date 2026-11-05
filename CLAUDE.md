@@ -1,0 +1,1 @@
+Read AGENTS.md, BOOTSTRAP.md and docs/agent-workflow.md. Both Claude Code and Codex use the same private profile/evidence format. Verify actual tools before claiming scheduling, browser or PDF support.
