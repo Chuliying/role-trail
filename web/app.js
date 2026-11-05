@@ -51,10 +51,13 @@ const archived = (j) =>
   j.checks.some((c) => c.status === 'excluded');
 const latestResume = (id) =>
   state.resumes.filter((r) => r.jobId === id).sort((a, b) => b.version - a.version)[0];
-const sha = async (x) =>
+const sha = async (x, raw = false) =>
   Array.from(
     new Uint8Array(
-      await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(canonical(x)))),
+      await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(raw ? x : JSON.stringify(canonical(x))),
+      ),
     ),
   )
     .map((b) => b.toString(16).padStart(2, '0'))
@@ -781,6 +784,59 @@ async function showJob(id) {
       ),
     );
   d.append(resume);
+  const preparation = (state.preparations || [])
+    .filter((p) => p.jobId === id)
+    .sort((a, b) => b.version - a.version)[0];
+  const prepSection = el(
+    'section',
+    { class: 'detail-section' },
+    el('h2', {}, 'Interview preparation'),
+  );
+  if (preparation) {
+    const stale =
+      !r ||
+      staleResumes.has(r.jobId + ':' + r.version) ||
+      preparation.jdHash !== (await sha([j.company, j.title, j.description])) ||
+      preparation.resumeVersion !== r.version ||
+      preparation.resumeContentHash !== (await sha(r.content, true)) ||
+      preparation.capabilityHash !==
+        (await sha(
+          preparation.capabilityIds.map((id) => state.capabilities.find((c) => c.id === id)),
+        ));
+    prepSection.append(
+      el(
+        'p',
+        { class: 'meta' },
+        'Preparation v' + preparation.version + ' · ' + (stale ? 'stale' : 'ready for review'),
+      ),
+      structured(preparation.content),
+      el(
+        'details',
+        {},
+        el('summary', {}, 'Evidence used'),
+        ...preparation.evidence.map((c) =>
+          el(
+            'div',
+            {},
+            el('p', {}, c.claim),
+            el(
+              'ul',
+              {},
+              c.evidence.map((e) => el('li', {}, e)),
+            ),
+          ),
+        ),
+      ),
+    );
+  } else
+    prepSection.append(
+      el(
+        'p',
+        { class: 'muted' },
+        'Your agent can prepare interview examples and employer questions from this JD and your confirmed experience.',
+      ),
+    );
+  d.append(prepSection);
   if (!$('#detail').open) $('#detail').showModal();
 }
 function todo(t) {

@@ -1,11 +1,12 @@
 # Role Trail
 
-Your private job-search workbench, operated with Claude Code or Codex.
-Use your own field, portfolio, location and working languages. Keep **ability fit**, **verified eligibility**, and **your application decision** separate.
+Role Trail is a private job-search workspace operated by your Claude Code or Codex agent. You set your preferences and provide your resume, portfolio or selected repositories. The agent helps deploy your workspace, registers a recurring LLM task, then researches roles and prepares the applications you shortlist.
 
-This repo now includes the runnable dashboard, local storage, PostgreSQL adapter, API, collectors, resume workflow and daily runner. Your agent configures them; it does not need to rebuild the core. Role Trail is self-hosted, single-owner software, not a hosted recruiting service.
+Vercel hosts the app and API; PostgreSQL keeps shared records. Your coding agent does the research, fit assessment, resume writing and interview preparation. The app keeps ability fit, eligibility evidence and your application decision separate.
 
-## Try the complete local demo
+Start with the demo below, or give your agent the setup prompt. Each installation uses its owner's accounts and data.
+
+## Try it locally
 
 Requires Node.js 22+ and Git. All demo people, companies, roles and evidence are synthetic.
 
@@ -17,29 +18,32 @@ node bin/role-trail.mjs demo --workspace "$HOME/.local/share/role-trail-demo"
 node bin/role-trail.mjs serve --workspace "$HOME/.local/share/role-trail-demo"
 ```
 
-Open **http://127.0.0.1:4318**. Open a JD, shortlist it, add and check a preparation task, generate a resume, read its adjustments and approve it. Refresh: your work is retained. Use a separate workspace for real data.
+Open http://127.0.0.1:4318. Read a JD, shortlist it, check off a preparation task, and generate a resume. You can review the wording changes before approving it. These records survive a reload. Keep the demo separate from your real workspace.
 
 ## Set up your own workspace with one prompt
 
 Open this checkout in your coding agent and paste:
 
-> Read BOOTSTRAP.md and set up my own Role Trail workspace using the shipped CLI, dashboard and API. Ask only for missing job preferences, resume/portfolio links, authorized repositories and exact Git authors. Review my contribution evidence with me; don't infer skill from repository dependencies or commit counts. Configure my sources, import and assess a bounded real search, and generate resumes with adjustment notes for the jobs I shortlist. Set up my chosen local or private Vercel/PostgreSQL deployment and supported schedule using my own accounts. Verify the actual workflow, preserve decisions, and give me the URL and setup report. Never apply to jobs automatically, invent credentials, or publish my private data.
+> Read BOOTSTRAP.md and skills/role-trail/SKILL.md. Set up Role Trail for my job search. Help me define my preferences, review my resume/portfolio and authorized Git contributions, and deploy my own private Vercel/PostgreSQL workspace. Create one recurring LLM task in my supported Claude Code or Codex environment using the bundled daily skill. Run it once manually, verify the saved results, and give me the URL and setup report. Ask only for missing information or account steps I need to handle. Don't apply to jobs, invent experience, publish private data or change paid plans.
 
-[BOOTSTRAP.md](BOOTSTRAP.md) is the execution contract. Your existing host model does the qualitative analysis; no separate model API key is needed for this path. Search providers and cloud hosting can require your own accounts. Never paste secrets in chat.
+The [onboarding guide](BOOTSTRAP.md) and [bundled skill](skills/role-trail/SKILL.md) tell the agent what to execute and how to check the result. The host model provides the reasoning; this workflow needs no separate model API key. Hosting and optional search providers use your own accounts. Keep credentials in their secret settings or your runtime environment.
 
-## What ships
+## What it does
 
-| Capability | Implementation | Boundary |
-| --- | --- | --- |
-| Goals and contribution evidence | Interactive profile setup; exact-author Git scanning with SHA/file citations and optional bounded patches; proposed/confirmed/rejected claims | Your agent interprets evidence; you confirm attribution. Authorship does not prove proficiency. |
-| Job discovery | Himalayas, configured Greenhouse and Lever boards, optional SerpApi Google Jobs; research JSON import for other sources | Bounded source runs, not exhaustive web search. Blocked platforms are not marked complete. |
-| Fit and gaps | Persistent 1–10 assessment, evidence and explanation; gaps shown for 7+; agent assessment packet | Human/agent judgment, not an offer probability. The CLI does not invent scores. |
-| Decisions and preparation | To Review / Shortlisted / Applied / Passed; manual archive/restore; persistent todo checkboxes | Research never changes personal decisions. Confirmed closures and exclusions stay archived until newer positive evidence. |
-| Resume workflow | Draft one job or all shortlisted jobs from confirmed claims; editable versions, adjustment notes, review/approval, stale detection, printable HTML and local PDF | Automatic drafts rank claim tags against JD words. Your agent can rewrite them using confirmed facts. Review is required; no invented work history. |
-| Shared storage and updates | Atomic local JSON; PostgreSQL transactions and revision checks; authenticated API; backup/restore; daily timezone-aware runner | Local runner needs an awake process; cloud/host scheduling must be activated in your account. |
-| Responsive workbench | Tailwind build with semantic design tokens; structured JD dialog, source links, filters, score explanation, research coverage, profile and feed configuration | Default order: newest search, then highest fit. Long URLs wrap on mobile. |
+| Part of the workflow | What happens |
+| --- | --- |
+| Preferences and experience | Save target roles, location, languages, company restrictions, search notes and required criteria. Scan only authorized Git authors and repositories; confirm personal contributions before using them in a resume. |
+| Research | The agent searches the selected platforms and original employer pages. Built-in Himalayas, Greenhouse, Lever and optional SerpApi feeds help collect data. Source coverage records what was actually read, including failures. |
+| Fit and eligibility | The agent saves a 1–10 assessment with evidence and gaps. Eligibility needs its own sources and dates. A high score is not permission to work in a country or a prediction of an offer. |
+| Your decisions | Move roles through To Review, Shortlisted, Applied and Passed. Archive manually and keep preparation todos. Research does not make these decisions for you. |
+| Resumes | For shortlisted jobs, the agent tailors confirmed experience to the JD and explains the edits. The app keeps versions and review status, with printable HTML and local PDF output. Current pending/approved drafts aren't regenerated on every run. |
+| Interview preparation | The agent writes role-specific project examples, possible concerns, practice questions and questions for the employer. The app saves versions and evidence snapshots, and flags changed JD/resume/evidence bindings. |
+| Shared workspace | Use local JSON or your own PostgreSQL and authenticated API. Agents read the same current state. Revision checks prevent silent overwrites. |
+| Scheduled work | A real host LLM task loads the skill, researches, assesses, prepares and saves results. `workflow` supplies current inputs; `work-check` checks saved deliverables and personal-state changes. The feed-only runner is available separately. |
 
-Original JD text, source, completeness and posting kind are retained. First publication, update and repost are distinct. Eligibility facts need a source, evidence and actual checked date. Unknown remains unknown.
+The workbench has a responsive table, structured JD dialog, source links, filters, fit explanations and research history. The default order is newest search, then highest fit. Original JD text, completeness, sources and posting/update/repost distinctions are retained.
+
+A scheduled task needs a host that can start LLM sessions with the right tools and credentials. Onboarding verifies that environment; a downloaded prompt cannot activate it by itself.
 
 ## Useful commands
 
@@ -55,7 +59,7 @@ node bin/role-trail.mjs scan --workspace "$HOME/.local/share/role-trail" \
 # Execute the configured source feeds and save their actual coverage
 node bin/role-trail.mjs collect --workspace "$HOME/.local/share/role-trail"
 
-# All shortlisted roles; creates pending-review versions
+# Missing, stale or changes-requested shortlisted drafts
 node bin/role-trail.mjs draft --workspace "$HOME/.local/share/role-trail"
 
 # Local PDF renderer (one-time browser installation)
@@ -68,13 +72,14 @@ node bin/role-trail.mjs help
 
 For agents, `init --profile /private/profile.json` replaces the interactive interview. Use `action --file`, `import --file`, `evaluate --job`, `export --output` and `restore --file --revision` to operate the same store. Cloud data commands accept `--remote` with runtime environment credentials. [Data contract](docs/data-contract.md).
 
-## Deploy and schedule
+## Deployment and the daily workflow
 
 - [Vercel frontend + API + your PostgreSQL](docs/vercel.md): actual entry point, migration, environment configuration, authentication, deployment and verification steps.
 - [Source configuration](docs/sources.md): query settings, limits, free public routes and optional credentials.
-- [Daily scheduling](docs/scheduling.md): working daemon, existing host automation, or optional GitHub Actions calling your private cloud API.
+- [Daily scheduling](docs/scheduling.md): register a host LLM task; optional daemon/GitHub Actions collectors support source collection.
 - [Agent evidence and resume workflow](docs/agent-workflow.md): contribution confirmation, LinkedIn fallback and tailoring instructions.
-- [Verified scope](docs/setup-parity.md): tested behavior versus deployment/account-specific acceptance.
+- [What is verified](docs/setup-parity.md): code tests, agent work and checks needed in your own installation.
+- [Source playbook](docs/source-playbook.md): agent routes for 104, Job-Frog, Wellfound, LinkedIn, Indeed, Google Jobs, Japan Dev, TokyoDev, Wantedly, Himalayas and employer pages. Choose the sources relevant to you.
 
 ## Reliability and protection
 
@@ -98,21 +103,23 @@ npm audit
 
 The PostgreSQL test starts an isolated temporary cluster if local PostgreSQL tools are available. CI supplies a separate test database. Never point `ROLE_TRAIL_TEST_DATABASE_URL` at a real workspace. [Release evidence](docs/release-check.md).
 
-This is an early release with no uptime or job-board access guarantee. Optional accounts, a user's Vercel deployment and a future scheduled trigger require installation-specific verification. Those are environment checks, not unimplemented dashboard features.
+This is an early release with no uptime or job-board access guarantee. Optional accounts, a user's Vercel deployment and a future scheduled trigger require installation-specific verification. Check those in your own installation before relying on unattended runs.
 
 ## 繁中
 
-現在已內建可執行的工作台、職缺匯入與搜尋、三種獨立狀態、準備待辦、履歷版本與審閱、本機／PostgreSQL 儲存，以及每日 runner。其他人只需用自己的條件、repo、履歷與帳號設定，不用重做核心功能。
+你先設定想找的工作、地點、語言與其他條件，再提供履歷、作品集或允許讀取的 repo。Claude Code／Codex 會引導你建立自己的 Vercel、資料庫和 LLM 排程。之後排程讀取最新喜好，搜尋與查證職缺，替你標成 Shortlisted 的工作準備履歷和面試資料，存回工作台讓你審閱。
 
-能力判斷與履歷文字潤飾由使用者既有的 Claude Code／Codex 協作，個人貢獻仍需本人確認。排程程式已提供，但必須真的啟動 runner 或建立 host task；文件與設定檔本身不代表已啟用。資料來源成功與否會保留真實範圍，不把受阻或零筆裝成完成。
+公開版提供這套流程的 skill、指令和介面。實際搜尋與文字判斷由你的 agent 完成；純抓資料的 runner 只是輔助。Onboarding 會分別確認部署、API、排程登記與手動試跑。跨日排程是否真的觸發，要等實際執行後才算驗證。職缺是否符合資格、是否想投與是否已投遞始終分開，系統不代替你投遞。
 
-## Existing tracker migration
+## Moving an existing tracker
 
-A new workspace is supported; replacing a mature installation is a separate task. Do not import another tracker's state with `restore`. Original PDF histories, preparation packs, required-check policy and full research ledgers need explicit adapters and storage before a lossless migration. See [migration gates](docs/migration.md) and [verified scope](docs/setup-parity.md).
+A new installation uses the workflow above. Moving an existing tracker also requires preserving its records and files. Role Trail does not yet include a converter for another tracker's IDs, original PDF history or full research bundles. Don't pass an unrelated backup to `restore`. Follow the [migration checklist](docs/migration.md) before changing your source of truth.
 
 ## Attribution
 
 The paste-JD review entry and human application decision were inspired by
 [career-ops](https://github.com/career-ops-hq/career-ops) by Santiago Fernández de Valderrama.
 This implementation is original; no career-ops code is copied. Credits do not imply endorsement.
+The interview preparation method adapts [How to Get an Offer](https://github.com/AIPMAndy/how-to-get-offer) by AIPMAndy / AI 酋长 Andy under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), adding cited experience, separate eligibility and decisions, and versioned records. No upstream application code is included.
+
 [Himalayas](https://himalayas.app) supplies attributed listings when configured. Preserve its source and application links. Dependency licenses are retained by npm. Project source: [MIT](LICENSE).

@@ -1,6 +1,16 @@
-# Daily updates that actually run
+# Schedule your agent
 
-Choose one scheduler for a workspace. Avoid duplicate host tasks. A saved schedule alone does not create a background process.
+For the full workflow, schedule a Claude Code or Codex LLM session with the bundled skill. That session researches, verifies, writes resumes/preparation and saves results. Choose one recurring owner for the workspace. A saved time alone does not create a background process.
+
+
+
+## Claude Code / Codex host task
+
+Ask the host to use its actual scheduling tool, after authorizing the time and scope:
+
+> Create or update one recurring LLM task using prompts/daily.md and skills/role-trail/SKILL.md from this checkout. Resolve my trusted checkout path, private run directory, remote/local storage choice, timezone and time. Keep credentials in the task's runtime environment. Run the same instructions once manually, check persisted results, and record the real scheduler ID and pause method. Mark timed execution unverified until it happens.
+
+If the host cannot schedule LLM sessions, report that missing capability. A manual LLM run still works; the collector options below only fetch feeds. Don't pretend a prompt or `schedule-receipt.json` installs a host task. Record actual account/tool limitations. Host-model research and deterministic feed collection are different: the built-in runner collects configured feeds; it does not invoke a model or assign new ability scores.
 
 ## Built-in local runner
 
@@ -15,14 +25,6 @@ The foreground runner checks each minute. It uses the chosen IANA timezone, incl
 Ctrl+C stops the process. To pause the saved schedule, run `schedule` again with `--status paused`. You may use an OS service manager you control to keep the daemon running, but Role Trail never silently installs one. `tick` executes only if due; `collect` is a manual run regardless of schedule.
 
 A failed or interrupted reserved run is not automatically repeated that day, preventing duplicate optional provider charges. Research shows partial failures; schedule fields record running, partial, completed or failed plus run ID and timestamps. After correcting a failure, run `collect` manually. A leftover local lock requires the recovery procedure in [data-contract.md](data-contract.md).
-
-## Claude Code / Codex host task
-
-Ask the host to use its actual scheduling tool, after authorizing the time and scope:
-
-> Create or update one recurring Role Trail task for my chosen timezone and time. Read my current shared state and profile. Run the configured collection; use available search tools for selected sources that lack a feed. Verify official opening, location and language constraints. Import a run with actual coverage and only checked fields. Assess new candidates against confirmed capability evidence; never modify my personal decisions. Generate pending resumes and adjustments for shortlisted roles lacking a current draft. Preserve tasks and resume reviews. Do not apply, email or upgrade accounts. Record the real task ID, next run, manual test and later actual timed result.
-
-If the host lacks a scheduler, use the executable daemon or a user-owned cloud runner. Don't pretend a prompt or `schedule-receipt.json` installs a host task. Record actual account/tool limitations. Host-model research and deterministic feed collection are different: the built-in runner collects configured feeds; it does not invoke a model or assign new ability scores.
 
 ## Private cloud runner
 

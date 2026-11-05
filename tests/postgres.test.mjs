@@ -8,6 +8,7 @@ import { createServer } from 'node:net';
 import { once } from 'node:events';
 import { demoActions } from '../src/demo.mjs';
 import { draftAction } from '../src/resume.mjs';
+import { hash, jdHash, preparationStale } from '../src/workbench.mjs';
 import { PostgresStore } from '../src/postgres.mjs';
 const available = (() => {
   try {
@@ -90,6 +91,20 @@ test(
       });
       s = await second.read();
       assert.equal(draftAction(s, jobId), null);
+      assert.equal(s.resumes[0].reviewStatus, 'approved');
+      s = await store.update(s.revision, {
+        type: 'preparation',
+        jobId,
+        jdHash: jdHash(s.jobs[0]),
+        resumeVersion: 1,
+        resumeContentHash: hash(s.resumes[0].content),
+        capabilityIds: ['demo-ui'],
+        content: '## Practice\nExplain the synthetic accessible interface example.',
+      });
+      s = await second.read();
+      assert.equal(s.preparations.length, 1);
+      assert.equal(preparationStale(s, s.preparations[0]), false);
+      assert.equal(s.preparations[0].evidence[0].id, 'demo-ui');
       assert.equal(s.resumes[0].reviewStatus, 'approved');
     } finally {
       await store?.close();

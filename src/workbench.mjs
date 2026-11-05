@@ -47,6 +47,8 @@ function profileCheck(p) {
     'confirmedCapabilities',
     'createdAt',
     'feeds',
+    'searchNotes',
+    'requiredChecks',
   ]);
   validateProfile(p);
   validateFeeds(p.feeds);
@@ -63,6 +65,7 @@ export const emptyState = () => ({
   submissions: [],
   tasks: [],
   resumes: [],
+  preparations: [],
   runs: [],
   schedule: null,
 });
@@ -218,6 +221,7 @@ export function validateState(s) {
     'submissions',
     'tasks',
     'resumes',
+    'preparations',
     'runs',
     'schedule',
   ]);
@@ -287,6 +291,38 @@ export function validateState(s) {
       !['pending', 'approved', 'changes_requested'].includes(r.reviewStatus)
     )
       throw Error('Invalid resume');
+  }
+  if (s.preparations !== undefined) {
+    if (!Array.isArray(s.preparations)) throw Error('Invalid preparations');
+    const versions = new Set();
+    for (const p of s.preparations) {
+      if (
+        !ids.has(p.jobId) ||
+        !Number.isInteger(p.version) ||
+        p.version < 1 ||
+        !s.resumes.some((r) => r.jobId === p.jobId && r.version === p.resumeVersion) ||
+        !Array.isArray(p.capabilityIds) ||
+        !p.capabilityIds.length ||
+        !Array.isArray(p.evidence) ||
+        p.evidence.length !== p.capabilityIds.length ||
+        !text(p.content, 100000).trim()
+      )
+        throw Error('Invalid preparation');
+      if (
+        p.evidence.some(
+          (c, i) =>
+            c.id !== p.capabilityIds[i] || c.status !== 'confirmed' || !Array.isArray(c.evidence),
+        )
+      )
+        throw Error('Invalid preparation evidence');
+      for (const key of ['jdHash', 'resumeContentHash', 'capabilityHash'])
+        if (!/^[a-f0-9]{64}$/.test(p[key] || '')) throw Error('Invalid preparation binding');
+      if (hash(p.evidence) !== p.capabilityHash) throw Error('Invalid preparation evidence hash');
+      date(p.createdAt);
+      const key = p.jobId + ':' + p.version;
+      if (versions.has(key)) throw Error('Duplicate preparation');
+      versions.add(key);
+    }
   }
   for (const r of s.runs) validateRun(r);
   if (s.schedule !== null) validateSchedule(s.schedule);
@@ -515,6 +551,53 @@ export function transition(current, a) {
       throw Error('Invalid resume review');
     if (resumeStale(s, r)) throw Error('Resume is stale');
     r.reviewStatus = a.status;
+  } else if (a.type === 'preparation') {
+    keys(a, [
+      'type',
+      'jobId',
+      'jdHash',
+      'resumeVersion',
+      'resumeContentHash',
+      'capabilityIds',
+      'content',
+    ]);
+    const j = job();
+    const r = s.resumes.filter((r) => r.jobId === j.id).sort((a, b) => b.version - a.version)[0];
+    if (
+      !r ||
+      r.version !== a.resumeVersion ||
+      a.jdHash !== jdHash(j) ||
+      a.resumeContentHash !== hash(r.content) ||
+      resumeStale(s, r)
+    )
+      throw Error('Stale preparation binding');
+    if (
+      !Array.isArray(a.capabilityIds) ||
+      !a.capabilityIds.length ||
+      new Set(a.capabilityIds).size !== a.capabilityIds.length ||
+      a.capabilityIds.some(
+        (id) => !s.capabilities.some((c) => c.id === id && c.status === 'confirmed'),
+      )
+    )
+      throw Error('Confirmed capability evidence required');
+    const content = text(a.content, 100000);
+    if (!content.trim()) throw Error('Preparation content required');
+    s.preparations ||= [];
+    s.preparations.push({
+      jobId: j.id,
+      version:
+        Math.max(0, ...s.preparations.filter((p) => p.jobId === j.id).map((p) => p.version)) + 1,
+      jdHash: a.jdHash,
+      resumeVersion: r.version,
+      resumeContentHash: a.resumeContentHash,
+      capabilityIds: a.capabilityIds,
+      capabilityHash: capabilityHash(s, a.capabilityIds),
+      evidence: structuredClone(
+        a.capabilityIds.map((id) => s.capabilities.find((c) => c.id === id)),
+      ),
+      content,
+      createdAt: now(),
+    });
   } else if (a.type === 'schedule') {
     keys(a, ['type', 'schedule']);
     if (a.schedule !== null) validateSchedule(a.schedule);
@@ -534,6 +617,19 @@ export function resumeStale(s, r) {
     r.capabilityIds.some(
       (id) => !s.capabilities.some((c) => c.id === id && c.status === 'confirmed'),
     )
+  );
+}
+export function preparationStale(s, p) {
+  const j = s.jobs.find((j) => j.id === p.jobId);
+  const r = s.resumes.filter((r) => r.jobId === p.jobId).sort((a, b) => b.version - a.version)[0];
+  return (
+    !j ||
+    !r ||
+    p.jdHash !== jdHash(j) ||
+    p.resumeVersion !== r.version ||
+    p.resumeContentHash !== hash(r.content) ||
+    resumeStale(s, r) ||
+    p.capabilityHash !== capabilityHash(s, p.capabilityIds)
   );
 }
 export class LocalStore {

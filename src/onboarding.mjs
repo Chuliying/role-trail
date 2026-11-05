@@ -95,6 +95,28 @@ export function validateFeeds(feeds = []) {
   return structuredClone(feeds);
 }
 export function validateProfile(p) {
+  if (
+    p.searchNotes !== undefined &&
+    (typeof p.searchNotes !== 'string' || p.searchNotes.length > 10000)
+  )
+    throw Error('Invalid search notes');
+  const requiredChecks = p.requiredChecks || [];
+  if (
+    !Array.isArray(requiredChecks) ||
+    requiredChecks.length > 20 ||
+    new Set(requiredChecks.map((c) => c?.key)).size !== requiredChecks.length ||
+    requiredChecks.some(
+      (c) =>
+        !c ||
+        typeof c !== 'object' ||
+        Object.keys(c).some((k) => !['key', 'label'].includes(k)) ||
+        !/^[a-z][a-z0-9_-]{0,49}$/.test(c.key || '') ||
+        typeof c.label !== 'string' ||
+        !c.label.trim() ||
+        c.label.length > 200,
+    )
+  )
+    throw Error('Invalid required checks');
   for (const k of ['name', 'location', 'remotePolicy', 'timezone', 'ownershipPolicy'])
     if (typeof p[k] !== 'string' || !p[k].trim() || p[k].length > 1000)
       throw Error('Missing or invalid ' + k);
@@ -128,6 +150,8 @@ export function validateProfile(p) {
     portfolio: p.portfolio || null,
     resumeSource: p.resumeSource || 'manual',
     confirmedCapabilities: [],
+    searchNotes: p.searchNotes || '',
+    requiredChecks: structuredClone(requiredChecks),
     feeds: validateFeeds(p.feeds),
     createdAt: new Date().toISOString(),
   };

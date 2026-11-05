@@ -35,4 +35,13 @@ Final secret preflight examined the public source/config/docs/tests. Three suppr
 
 The original release's passing tests did not cover stale assessment reuse, Applied-history loss, evidence expiry, repeated drafting or import retries. Subsequent independent review also caught late assessment input bindings and PostgreSQL JSON key-order differences. These issues were reproduced, fixed and independently rechecked.
 
-Current verification: 31/31 Node tests (including real isolated PostgreSQL), 4/4 browser tests, build and formatting pass; npm audit reports zero known vulnerabilities. See [correction evidence](work/review-corrections/implement-report.md) and [migration limits](migration.md). This replaces neither per-installation acceptance nor a full lossless-migration test.
+Verification at that correction: 31/31 Node tests (including real isolated PostgreSQL), 4/4 browser tests, build and formatting pass; npm audit reports zero known vulnerabilities. See [correction evidence](work/review-corrections/implement-report.md) and [migration limits](migration.md). This replaces neither per-installation acceptance nor a full lossless-migration test.
+
+
+## Agent onboarding and preparation — 2026-11-05
+
+The bundled skill now connects personal preferences, deployment guidance, host LLM scheduling and persisted daily/shortlist work. Current automated checks: 36/36 Node tests (zero skipped, including isolated PostgreSQL), 5/5 browser tests, build, formatting and skill validation pass. Dependency audit reports zero known vulnerabilities.
+
+A separate agent exercised a synthetic London data-analyst installation with a fresh workspace and Git history. It saved research, assessments, tailored resumes and preparation, rendered a one-page A4 PDF, and checked browser persistence. Failed/unexecuted sources remained visible. Retry/conflict/stale-binding/invalid-batch checks preserved state. One missing direct-API header in the documentation was found and corrected. See [implementation and sandbox evidence](work/agent-onboarding/implement-report.md).
+
+These are isolated local tests. No new Vercel account, live search-provider account or real timed LLM trigger was verified, and no existing private installation was changed.

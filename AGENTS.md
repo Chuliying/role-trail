@@ -1,6 +1,6 @@
 # Role Trail agent contract
 
-Read README.md, BOOTSTRAP.md, docs/agent-workflow.md and docs/setup-parity.md before onboarding.
+Read README.md, BOOTSTRAP.md, docs/agent-workflow.md and docs/setup-parity.md and skills/role-trail/SKILL.md before onboarding.
 Use the shipped workbench, CLI and adapters. Configure them for the user's data; do not replace working core features with a new implementation or claim that prompts alone execute a workflow.
 
 - Use the user's explicit target roles, location, languages, legal hiring rules and portfolio. No maintainer defaults.

@@ -188,3 +188,93 @@ test('stale scores, old verification and application history are represented hon
   const saved = await (await page.request.get('/api/state')).json();
   expect(saved.jobs.find((j) => j.id === id).assessment.stale).toBe(false);
 });
+
+test('agent preparation appears in the workspace and shows stale after a new resume version', async ({
+  page,
+}) => {
+  await page.goto('/');
+  let s = await (await page.request.get('/api/state')).json();
+  const headers = { Origin: 'http://127.0.0.1:4319', 'X-Role-Trail': '1' };
+  const source = {
+    company: 'Preparation fixture',
+    title: 'Practice fixture',
+    url: 'https://example.com/jobs/practice-fixture',
+    source: 'manual',
+    description: 'Build React interfaces',
+    descriptionKind: 'full',
+  };
+  let response = await page.request.post('/api/action', {
+    headers,
+    data: {
+      revision: s.revision,
+      action: { type: 'research', run: { id: 'practice-ui', coverage: [] }, jobs: [source] },
+    },
+  });
+  expect(response.status()).toBe(200);
+  s = await response.json();
+  const job = s.jobs.find((j) => j.url === source.url);
+  response = await page.request.post('/api/action', {
+    headers,
+    data: {
+      revision: s.revision,
+      action: { type: 'review', jobId: job.id, status: 'shortlisted' },
+    },
+  });
+  expect(response.status()).toBe(200);
+  s = await response.json();
+  response = await page.request.post('/api/draft', {
+    headers,
+    data: { revision: s.revision, jobId: job.id },
+  });
+  expect(response.status()).toBe(200);
+  s = await response.json();
+  const resume = s.resumes.filter((r) => r.jobId === job.id).at(-1);
+  const { hash, jdHash } = await import('../../src/workbench.mjs');
+  response = await page.request.post('/api/action', {
+    headers,
+    data: {
+      revision: s.revision,
+      action: {
+        type: 'preparation',
+        jobId: job.id,
+        jdHash: jdHash(job),
+        resumeVersion: resume.version,
+        resumeContentHash: hash(resume.content),
+        capabilityIds: ['demo-ui'],
+        content:
+          '## Possible interview concern\nExplain the UI reliability tradeoff.\n## Ask the employer\nHow do you review accessibility?',
+      },
+    },
+  });
+  expect(response.status()).toBe(200);
+  s = await response.json();
+  await page.reload();
+  await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
+  await page.getByRole('button', { name: 'Practice fixture', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Interview preparation', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Preparation v1 · ready for review', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Explain the UI reliability tradeoff.', { exact: true }),
+  ).toBeVisible();
+  response = await page.request.post('/api/action', {
+    headers,
+    data: {
+      revision: s.revision,
+      action: {
+        type: 'resume',
+        jobId: job.id,
+        jdHash: jdHash(job),
+        content: resume.content + '\nRevised wording.',
+        capabilityIds: resume.capabilityIds,
+        adjustments: resume.adjustments,
+      },
+    },
+  });
+  expect(response.status()).toBe(200);
+  await page.reload();
+  await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
+  await page.getByRole('button', { name: 'Practice fixture', exact: true }).click();
+  await expect(page.getByText('Preparation v1 · stale', { exact: true })).toBeVisible();
+});

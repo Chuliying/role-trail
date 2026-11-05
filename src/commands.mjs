@@ -8,6 +8,8 @@ import { draftAction, resumeHTML } from './resume.mjs';
 import { validateSchedule, tick } from './schedule.mjs';
 export const extraHelp = `
 Workbench (private workspace outside Git):
+  workflow --workspace DIR|--remote --mode daily|shortlist --output FILE
+  work-check --workspace DIR|--remote --file PACKET --run RUN_ID --output FILE
   serve --workspace DIR [--port 4318]
   demo --workspace DIR                 Synthetic profile, jobs and capability evidence
   state --workspace DIR                Print state (contains private data)
@@ -28,6 +30,8 @@ Use --remote instead of --workspace for data commands, with ROLE_TRAIL_URL and
 ROLE_TRAIL_ACCESS_KEY in your environment. No secret is accepted as a CLI argument.
 A saved schedule is not an installed runner. See docs/scheduling.md.`;
 const options = {
+  workflow: ['workspace', 'remote', 'mode', 'output'],
+  'work-check': ['workspace', 'remote', 'file', 'run', 'output'],
   validate: ['file'],
   serve: ['workspace', 'port'],
   demo: ['workspace'],
@@ -153,6 +157,16 @@ export async function run(command, args) {
     await store.read();
     const server = createServer({ store });
     server.listen(port, '127.0.0.1', () => console.log('Role Trail: http://127.0.0.1:' + port));
+    return;
+  }
+  if (command === 'workflow' || command === 'work-check') {
+    const { workPacket, checkWork } = await import('./agent-workflow.mjs');
+    const result =
+      command === 'workflow'
+        ? workPacket(s, o.mode || 'daily')
+        : checkWork(s, JSON.parse(await readFile(resolve(o.file || ''), 'utf8')), o.run);
+    console.log(await privateOutput(o.output, JSON.stringify(result, null, 2) + '\n'));
+    if (command === 'work-check' && !result.readyForReview) process.exitCode = 1;
     return;
   }
   if (command === 'state') {

@@ -4,7 +4,7 @@
 
 - framework: vanilla
 - package_manager: npm
-- source_roots: src,bin,web,api,scripts,tests,docs,examples,.github
+- source_roots: src,bin,web,api,scripts,tests,docs,examples,.github,skills,prompts
 - source_extensions: mjs,js,json,md,yml,html,css
 - has_ui: true
 - typed_contracts: false

@@ -44,7 +44,7 @@ const slug = (s) => {
   return s;
 };
 function unknownChecks(p) {
-  return [
+  const checks = [
     {
       key: 'location',
       label: 'Location eligibility',
@@ -74,6 +74,16 @@ function unknownChecks(p) {
           },
         ]),
   ];
+  for (const c of p.requiredChecks || [])
+    if (!checks.some((x) => x.key === c.key))
+      checks.push({
+        ...c,
+        status: 'unknown',
+        source: null,
+        evidence: 'Verify against the user’s stated requirements.',
+        checkedAt: null,
+      });
+  return checks;
 }
 export async function collect(
   profile,
