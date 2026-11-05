@@ -73,7 +73,7 @@ The public source owns the behavior; private configuration and records remain pr
 
 ### T03 | Make the private installation a pinned deployment wrapper
 
-- Status: in_progress
+- Status: done
 - Depends On: [T02]
 
 #### Intent
@@ -95,9 +95,14 @@ The public source owns the behavior; private configuration and records remain pr
 - npm run build
 - npm run test:ui
 
+#### Verification Evidence
+
+- PASS | local:../implement-report.md | npm run build
+- PASS | local:../implement-report.md | npm run test:ui
+
 ### T04 | Migrate, deploy, update the existing scheduled workflow and verify
 
-- Status: pending
+- Status: done
 - Depends On: [T03]
 
 #### Intent
@@ -117,6 +122,10 @@ The public source owns the behavior; private configuration and records remain pr
 #### Verification
 
 - npm audit
+
+#### Verification Evidence
+
+- PASS | local:../implement-report.md | npm audit
 
 ## Change Log
 

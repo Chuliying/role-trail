@@ -24,7 +24,7 @@ Cloud machine clients use `Authorization: Bearer …` with the configured owner 
 
 ## Research bundle
 
-Save outside Git and import with `import --workspace DIR --file FILE`, or POST `/api/action` with `{revision,action:{type:"research",...bundle}}`.
+Save outside Git and import with `import --workspace DIR --file FILE --revision OBSERVED_REVISION` (the observed revision is required for `--database` and `--remote`), or POST `/api/action` with `{revision,action:{type:"research",...bundle}}`.
 
 ```json
 {
