@@ -998,14 +998,25 @@ h1 {
   }
   .table-wrap {
     background: transparent;
+    border: 0;
+  }
+  .job-table > tbody {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
   }
   .job-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto 24px;
-    column-gap: 12px;
-    row-gap: 8px;
-    padding: 20px 0;
-    align-items: start;
+    gap: 8px 10px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    align-items: center;
+  }
+  .job-row:last-child {
+    border: 1px solid var(--line);
   }
   .job-row td:first-child {
     display: contents;
@@ -1015,7 +1026,7 @@ h1 {
     grid-row: 1;
     min-width: 0;
     font-size: 14px;
-    line-height: 24px;
+    line-height: 1.5;
     margin: 0;
     padding: 0;
   }
@@ -1028,7 +1039,7 @@ h1 {
     width: 100%;
     margin: 0;
     align-items: flex-start;
-    padding-block: 4px;
+    padding-block: 0;
   }
   .job-row td:first-child > .meta {
     display: none;
@@ -1049,45 +1060,62 @@ h1 {
   .job-row td:nth-child(4) {
     display: none;
   }
-  .job-row .facts {
+  .job-row .job-summary {
     grid-column: 1 / -1;
     grid-row: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+  }
+  .job-row .facts {
+    min-width: 0;
+    flex: 1;
     margin: 0;
   }
   .mobile-dates {
-    grid-column: 1 / -1;
-    grid-row: 4;
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px 20px;
+    flex-direction: column;
+    flex: none;
+    align-items: flex-end;
+    gap: 4px;
     padding: 0;
-    margin: 0;
+    margin: 0 0 0 auto;
     color: var(--muted);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
-  .mobile-dates > div {
-    display: flex;
-    gap: 6px;
-  }
   .job-row td:nth-child(5) {
     grid-column: 1 / -1;
-    grid-row: 5;
-    padding: 4px 0 0;
+    grid-row: 4;
+    margin: 4px -16px -16px;
+    padding: 8px 12px;
+    width: auto;
     border: 0;
+    border-top: 1px solid var(--line);
   }
   .job-row .row-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 8px;
   }
   .job-row .row-actions select {
-    width: 100%;
-    max-width: none;
+    width: auto;
+    min-width: 0;
+    max-width: 150px;
     min-height: 44px;
+    padding-inline: 4px;
+    background: transparent;
+    border-color: transparent;
+  }
+  .job-row .row-links {
+    flex: none;
   }
   .job-row .row-actions .button {
-    min-width: 96px;
+    min-width: 44px;
     min-height: 44px;
   }
   .job-row .score-tip[open] p {
@@ -1424,28 +1452,6 @@ summary:focus-visible {
     width: calc(100% - 24px);
     max-height: calc(100dvh - 24px);
   }
-  .job-row {
-    row-gap: 4px;
-  }
-  .job-row .company,
-  .job-row td:nth-child(2),
-  .job-row td:nth-child(3) {
-    align-self: center;
-  }
-  .job-row .company {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-  }
-  .job-row .historical-fit {
-    min-height: 44px;
-  }
-  .job-row .mobile-dates {
-    margin-top: 4px;
-  }
-  .job-row td:nth-child(5) {
-    padding-top: 8px;
-  }
 }
 
 /* Reading surface: preserve semantic typography and list markers after Tailwind reset. */
@@ -1554,52 +1560,6 @@ summary:focus-visible {
   content: none;
 }
 @media (max-width: 720px) {
-  .job-row {
-    padding-block: 16px;
-    row-gap: 6px;
-  }
-  .job-row .job-summary {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-width: 0;
-  }
-  .job-summary .facts {
-    min-width: 0;
-    flex: 1;
-  }
-  .job-summary .mobile-dates {
-    flex: none;
-    flex-direction: column;
-    gap: 2px;
-    margin: 0;
-    font-size: 12px;
-  }
-  .job-summary .mobile-dates span {
-    color: var(--muted);
-  }
-  .job-row td:nth-child(5) {
-    grid-row: 4;
-    padding: 0;
-  }
-  .job-row .row-actions {
-    grid-template-columns: minmax(0, 160px) auto;
-    justify-content: space-between;
-  }
-  .job-row .row-actions select {
-    background: transparent;
-    border-color: transparent;
-    padding-left: 0;
-  }
-  .job-row .row-actions .button {
-    background: transparent;
-    border-color: transparent;
-    padding-right: 0;
-    justify-content: flex-end;
-  }
   .detail-jumps {
     position: sticky;
     top: 61px;
@@ -1615,4 +1575,43 @@ summary:focus-visible {
     font-size: 16px;
     line-height: 1.7;
   }
+}
+
+/* One icon vocabulary for metadata and secondary row actions. */
+.time-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.time-mark svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  flex: none;
+}
+.row-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.row-links .icon-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+}
+.unrated {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 18px;
+}
+/* The heading receives reading focus, but is not an interactive control. */
+#detail-title:focus {
+  outline: none;
 }

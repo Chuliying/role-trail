@@ -96,8 +96,8 @@ Git scans do not fetch or execute repository code, hooks, tests, installers or e
 ```sh
 npm test                 # unit, API, workflow; real PostgreSQL when available
 npm run build            # static and serverless entry validation
-npx playwright install chromium
-npm run test:ui          # browser workflows at desktop and mobile widths
+npx playwright install chromium webkit
+npm run test:ui          # desktop flows plus mobile Chromium/WebKit layout checks
 npm audit
 ```
 

@@ -25,3 +25,13 @@ The portable CLI test exposed an eager provider dependency; conversion now loads
 - [W3C: headings](https://www.w3.org/WAI/tutorials/page-structure/headings/) — readable and navigable section hierarchy.
 - [NN/g: defer secondary content on mobile](https://www.nngroup.com/articles/defer-secondary-content-for-mobile/) — prioritize essential scanning information.
 - [Marked documentation](https://marked.js.org/using_advanced) and [Turndown](https://github.com/mixmark-io/turndown) — parser and converter contracts.
+
+## Follow-up: record boundaries and stale open clients
+
+The flat mobile list still made consecutive roles look like one record. Rows now have separate surface backgrounds, a complete border and a 16 px gap. Company/score, role title, evidence/time and the action footer have stable positions. Source links, timestamps, existing resumes and recorded submissions use labelled icons; absence of a resume does not add another line. Personal decisions remain an explicit select. Desktop keeps its table layout.
+
+The header refresh previously fetched state without replacing the current JavaScript. An already-open client could therefore show old layout and text even after a successful deployment. Refresh now performs a full navigation reload; the existing no-store headers, versioned entry assets and BFCache handling remain in place. Existing old tabs must navigate to the new page before they can use this updated handler. No claim is made that server deployment can replace JavaScript already running on a phone.
+
+Before the fix, the new browser checks observed zero inter-record spacing, text-based source/time controls and a client sentinel surviving Refresh. After the fix, all 69 Node tests and 14 browser tests pass, including Chromium and WebKit at 320/390 px. Tests verify equal modal side margins, JD-before-preparation order, close icon, reading focus, no horizontal overflow, icon destinations and complete client reload. WebKit is a Safari-engine check, not a physical iPhone test. Synthetic screenshots show the complete centered dialog and adjacent cards.
+
+Consolidated the competing mobile row CSS blocks. Static heading focus no longer draws WebKit's interactive-looking focus outline; keyboard focus styling remains on interactive controls. No workspace data or personal decisions changed in this follow-up.

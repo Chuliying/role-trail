@@ -1,6 +1,6 @@
 import { renderMarkdown as structured } from './markdown.mjs';
 import { locale, t } from './i18n.mjs';
-import { createVerificationGroup } from './verification.mjs';
+import { createVerificationGroup, verificationIcon } from './verification.mjs';
 import { researchOutcomes, applicationReadiness } from './outcomes.mjs';
 import { positiveFresh, currentScore, canonical } from './status.mjs';
 const staleResumes = new Set();
@@ -56,6 +56,23 @@ function iconButton(label, path, click, cls = '') {
 }
 const link = (label, url) =>
   el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', class: 'button' }, label);
+function sourceLink(url) {
+  const a = link(null, url);
+  a.classList.add('icon-button', 'source-link');
+  a.setAttribute('aria-label', t('Source ↗'));
+  a.title = t('Source ↗');
+  a.append(verificationIcon('M14 3h7v7M21 3l-11 11M10 5H3v16h16v-7'));
+  return a;
+}
+function timeMark(label, value, path) {
+  const text = label + ' ' + value;
+  return el(
+    'span',
+    { class: 'time-mark', 'aria-label': text, title: text },
+    verificationIcon(path),
+    el('span', {}, value),
+  );
+}
 function historicalScore(job) {
   const control = iconButton(
     t('Previous fit') + ' ' + job.assessment.score + '/10 · ' + t('Reassess'),
@@ -442,7 +459,7 @@ function jobs() {
   }
   const table = el(
     'table',
-    {},
+    { class: 'job-table' },
     el(
       'thead',
       {},
@@ -525,8 +542,14 @@ function jobs() {
               el(
                 'div',
                 { class: 'mobile-dates' },
-                j.posting.date ? el('div', {}, el('span', {}, t('Opened')), j.posting.date) : null,
-                el('div', {}, el('span', {}, t('Searched')), date(j.searchedAt)),
+                j.posting.date
+                  ? timeMark(t('Opened'), j.posting.date, 'M4 5h16v16H4zM8 3v4M16 3v4M4 10h16')
+                  : null,
+                timeMark(
+                  t('Searched'),
+                  date(j.searchedAt),
+                  'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 7v5l3 2',
+                ),
               ),
             ),
           ),
@@ -540,13 +563,17 @@ function jobs() {
                   el(
                     'summary',
                     { 'aria-label': 'Fit ' + j.assessment.score + '; show assessment' },
-                    el('span', { class: 'score' }, j.assessment.score, el('span', {}, ' / 10 ⓘ')),
+                    el('span', { class: 'score' }, j.assessment.score, el('span', {}, ' /10')),
                   ),
                   el('p', {}, j.assessment.reason),
                 )
               : j.assessment?.stale
                 ? historicalScore(j)
-                : el('span', { class: 'muted' }, t('Unrated')),
+                : el(
+                    'span',
+                    { class: 'muted unrated', 'aria-label': t('Unrated'), title: t('Unrated') },
+                    '—',
+                  ),
           ),
           el(
             'td',
@@ -574,20 +601,45 @@ function jobs() {
           el(
             'td',
             {},
-            el('div', { class: 'row-actions' }, select, link(t('Source ↗'), j.url)),
-            (state.submissions || []).some((x) => x.jobId === j.id) || dec === 'applied'
-              ? el('div', { class: 'meta' }, t('Application recorded'))
-              : null,
-            r
-              ? el(
-                  'div',
-                  { class: 'meta' },
-                  'Resume v' +
-                    r.version +
-                    ' · ' +
-                    (staleResumes.has(r.jobId + ':' + r.version) ? 'stale' : r.reviewStatus),
-                )
-              : null,
+            el(
+              'div',
+              { class: 'row-actions' },
+              select,
+              el(
+                'div',
+                { class: 'row-links' },
+                (state.submissions || []).some((x) => x.jobId === j.id) || dec === 'applied'
+                  ? iconButton(
+                      t('Application recorded'),
+                      'M22 2 9 15M22 2l-7 20-6-7-7-6z',
+                      async () => {
+                        await showJob(j.id);
+                        document
+                          .getElementById('application-package')
+                          .scrollIntoView({ block: 'start' });
+                      },
+                      'quiet',
+                    )
+                  : null,
+                r
+                  ? iconButton(
+                      'Resume v' +
+                        r.version +
+                        ' · ' +
+                        (staleResumes.has(r.jobId + ':' + r.version) ? 'stale' : r.reviewStatus),
+                      'M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6',
+                      async () => {
+                        await showJob(j.id);
+                        document
+                          .getElementById('resume-section')
+                          .scrollIntoView({ block: 'start' });
+                      },
+                      'quiet',
+                    )
+                  : null,
+                sourceLink(j.url),
+              ),
+            ),
           ),
         );
       }),
@@ -821,7 +873,7 @@ async function showJob(id) {
   d.append(taskSection);
   const resume = el(
     'section',
-    { class: 'detail-section' },
+    { class: 'detail-section', id: 'resume-section' },
     el('h2', {}, 'Tailored resume'),
     el(
       'div',
@@ -1509,7 +1561,8 @@ document.querySelectorAll('[data-i18n]').forEach((n) => {
 document.querySelectorAll('[data-i18n-label]').forEach((n) => {
   n.setAttribute('aria-label', t(n.dataset.i18nLabel));
 });
-$('#refresh').onclick = refresh;
+// Refresh must load the current UI assets, not keep an obsolete in-memory client.
+$('#refresh').onclick = () => location.reload();
 $('#tools-toggle').onclick = () => {
   toolsOpen = !toolsOpen;
   $('#tools-toggle').setAttribute('aria-expanded', String(toolsOpen));

@@ -177,8 +177,18 @@ test('stale scores, old verification and application history are represented hon
   await expect(page.locator('#fit-evidence')).toContainText('Stale assessment');
   await page.getByRole('button', { name: 'Close opportunity' }).click();
   await expect(row.getByLabel('Remote policy verified')).toHaveCount(0);
-  await expect(row).toContainText('Application recorded');
-  await expect(row).toContainText('Resume v1 · stale');
+  await expect(row.getByRole('button', { name: 'Application recorded' })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Resume v1 · stale' })).toBeVisible();
+  await row.getByRole('button', { name: 'Resume v1 · stale' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Tailored resume', exact: true }),
+  ).toBeInViewport();
+  await page.getByRole('button', { name: 'Close opportunity' }).click();
+  await row.getByRole('button', { name: 'Application recorded' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Application package', exact: true }),
+  ).toBeInViewport();
+  await page.getByRole('button', { name: 'Close opportunity' }).click();
   await page.getByRole('button', { name: 'Regression role', exact: true }).click();
   await expect(
     page.getByText('Stale assessment — reassess before using this score.'),
