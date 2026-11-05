@@ -123,9 +123,7 @@ export function convertLegacy(snapshot, { profile = null } = {}) {
       r?.status ||
       (['applied', 'interview', 'offer', 'rejected'].includes(t?.application_status)
         ? 'applied'
-        : j.availability.status === 'closed' ||
-            j.checks.some((c) => c.status === 'excluded') ||
-            t?.application_status === 'withdrawn'
+        : t?.application_status === 'withdrawn'
           ? 'passed'
           : t
             ? 'shortlisted'

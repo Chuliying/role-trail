@@ -36,3 +36,19 @@ test('legacy conversion preserves IDs, shared tasks, decisions, submission and e
   corrupt.tables.job_board_resumes[0].pdf_hash = 'f'.repeat(64);
   assert.throws(() => migration.convertLegacy(corrupt, { profile: null }), /PDF hash/i);
 });
+test('factual exclusion does not become a personal Passed decision', () => {
+  const snapshot = legacyFixture();
+  snapshot.tables.job_board_reviews = [];
+  snapshot.tables.job_board_state[0].tracker.jobs = [];
+  snapshot.tables.job_board_state[0].tracker.prep_tasks = [];
+  snapshot.tables.job_board_state[0].board.jobs[0].availability = {
+    status: 'closed',
+    source: 'https://example.test/a',
+    evidence: 'Closed',
+    checkedAt: '2026-11-01',
+  };
+  const result = migration.convertLegacy(snapshot, {}),
+    id = result.state.migration.idMap.a;
+  assert.equal(result.state.reviews[id].status, 'review');
+  assert.equal(result.state.jobs.find((j) => j.id === id).availability.status, 'closed');
+});
