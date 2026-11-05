@@ -100,3 +100,18 @@ test('Vercel protected mode requires a matching platform project and does not tr
     false,
   );
 });
+test('retired dashboard gives a reload instruction instead of a misleading missing-data error', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'rt-legacy-route-'));
+  const server = api.createServer({ workspace: dir });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  try {
+    const r = await fetch('http://127.0.0.1:' + server.address().port + '/api/dashboard');
+    assert.equal(r.status, 410);
+    assert.match((await r.json()).error, /重新開啟/);
+  } finally {
+    server.close();
+    server.closeAllConnections();
+    await rm(dir, { recursive: true, force: true });
+  }
+});

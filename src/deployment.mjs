@@ -1,10 +1,14 @@
 import { mkdir, copyFile, readFile, lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { resolve, join } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
 import { artifactHash } from './artifacts.mjs';
 export const staticFiles = [
   'index.html',
   'app.js',
+  'i18n.mjs',
+  'fonts/OFL.txt',
+  'fonts/ibm-plex-sans-400.ttf',
+  'fonts/ibm-plex-sans-600.ttf',
   'style.css',
   'status.mjs',
   'outcomes.mjs',
@@ -19,6 +23,7 @@ export async function buildDeployment(output) {
   for (const file of staticFiles) {
     const src = join(source, file);
     if (!(await lstat(src)).isFile()) throw Error('Invalid static asset');
+    await mkdir(dirname(join(destination, file)), { recursive: true });
     await copyFile(src, join(destination, file));
     hashes[file] = artifactHash(await readFile(src));
   }

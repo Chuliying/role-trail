@@ -5,36 +5,75 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="color-scheme" content="light" />
     <title>Role Trail</title>
-    <link rel="stylesheet" href="/style.css" />
-    <script src="/app.js" type="module"></script>
+    <link rel="stylesheet" href="/style.css?v=a96e566992e13cdb" />
+    <script src="/app.js?v=a96e566992e13cdb" type="module"></script>
   </head>
   <body>
     <header>
-      <a class="brand" href="/">Role Trail<span>Your next chapter.</span></a>
+      <a class="brand" href="/">ROLE TRAIL</a>
       <nav aria-label="Workspace">
-        <button data-page="jobs" class="active">Opportunities</button
-        ><button data-page="tasks">Preparation</button><button data-page="research">Research</button
-        ><button data-page="profile">Profile</button>
+        <button data-page="jobs" class="active" data-i18n="Opportunities">Opportunities</button
+        ><button data-page="tasks" data-i18n="Preparation">Preparation</button
+        ><button data-page="research" data-i18n="Research">Research</button>
       </nav>
-      <button id="refresh" class="quiet">Refresh</button>
+      <div class="header-actions">
+        <button
+          id="tools-toggle"
+          class="quiet icon-button"
+          aria-label="Tools"
+          data-i18n-label="Tools"
+          aria-expanded="false"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 6h14M5 12h14M5 18h14" />
+          </svg></button
+        ><button
+          id="profile-toggle"
+          class="quiet icon-button"
+          aria-label="Profile"
+          data-i18n-label="Profile"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 8a3 3 0 1 0 6 0 3 3 0 1 0-6 0M5 21v-3a7 7 0 0 1 14 0v3" />
+          </svg></button
+        ><button
+          id="refresh"
+          class="quiet icon-button"
+          aria-label="Refresh"
+          data-i18n-label="Refresh"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 7a8 8 0 0 0-14-2L3 8m0-5v5h5M4 17a8 8 0 0 0 14 2l3-3m0 5v-5h-5" />
+          </svg>
+        </button>
+      </div>
     </header>
-    <main id="main"><p>Loading workspace…</p></main>
+    <main id="main"><p data-i18n="Loading workspace…">Loading workspace…</p></main>
     <div id="notice" role="status" aria-live="polite"></div>
     <dialog id="detail" aria-labelledby="detail-title">
       <div class="dialog-bar">
         <span>OPPORTUNITY</span
-        ><button id="close-detail" aria-label="Close opportunity">Close</button>
+        ><button
+          id="close-detail"
+          aria-label="Close opportunity"
+          data-i18n-label="Close opportunity"
+          data-i18n="Close"
+        >
+          Close
+        </button>
       </div>
       <div id="detail-body"></div>
     </dialog>
     <dialog id="editor" aria-labelledby="editor-title">
       <form id="editor-form">
         <div class="dialog-bar">
-          <h2 id="editor-title">Edit</h2>
-          <button type="button" id="close-editor">Close</button>
+          <h2 id="editor-title" data-i18n="Edit">Edit</h2>
+          <button type="button" id="close-editor" data-i18n="Close">Close</button>
         </div>
         <div class="editor-body" id="editor-body"></div>
-        <div class="dialog-footer"><button type="submit" class="primary">Save</button></div>
+        <div class="dialog-footer">
+          <button type="submit" class="primary" data-i18n="Save">Save</button>
+        </div>
       </form>
     </dialog>
   </body>

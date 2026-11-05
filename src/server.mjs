@@ -45,6 +45,9 @@ const root = fileURLToPath(new URL('../web/', import.meta.url));
 const assets = {
   '/': ['index.html', 'text/html'],
   '/index.html': ['index.html', 'text/html'],
+  '/fonts/ibm-plex-sans-400.ttf': ['fonts/ibm-plex-sans-400.ttf', 'font/ttf'],
+  '/fonts/ibm-plex-sans-600.ttf': ['fonts/ibm-plex-sans-600.ttf', 'font/ttf'],
+  '/i18n.mjs': ['i18n.mjs', 'text/javascript'],
   '/app.js': ['app.js', 'text/javascript'],
   '/status.mjs': ['status.mjs', 'text/javascript'],
   '/verification.mjs': ['verification.mjs', 'text/javascript'],
@@ -128,6 +131,12 @@ export function handler({ store, cloud = false, key, origin, platformProtected =
       }
       if (!authorized(req, { cloud, key, platformProtected }))
         return send(401, { error: 'Sign in with your workspace access key' });
+      if (path === '/api/dashboard')
+        return send(410, {
+          error:
+            '此頁面是舊版本。請關閉這個頁面，重新開啟工作台；頁內更新按鈕無法升級舊頁面。 Close and reopen the workspace to load the new version.',
+          code: 'CLIENT_UPGRADE_REQUIRED',
+        });
       if (path === '/api/logout' && req.method === 'POST') {
         res.setHeader(
           'Set-Cookie',

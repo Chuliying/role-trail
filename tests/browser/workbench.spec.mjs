@@ -86,6 +86,7 @@ test('mobile research wraps long URLs; detail and profile fit viewport', async (
 });
 test('JD input is rendered as text and default ordering uses search recency', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Tools', exact: true }).click();
   await page.getByRole('button', { name: 'Paste JD', exact: true }).click();
   await page.getByLabel('Company', { exact: true }).fill('Fresh synthetic');
   await page.getByLabel('Role title', { exact: true }).fill('Latest role');
@@ -431,4 +432,62 @@ test('converted installation keeps approved PDF access, shared todos and histori
   expect(state.resumes[0].reviewStatus).toBe('approved');
   expect(state.submissions).toHaveLength(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+test('Traditional Chinese mobile keeps the compact original workspace shell', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    locale: 'zh-TW',
+    viewport: { width: 390, height: 844 },
+  });
+  const page = await context.newPage();
+  try {
+    const initial = await (await page.request.get('/api/state')).json();
+    const seeded = await page.request.post('/api/action', {
+      headers: { Origin: 'http://127.0.0.1:4319', 'X-Role-Trail': '1' },
+      data: {
+        revision: initial.revision,
+        action: {
+          type: 'research',
+          run: { id: 'zh-shell-fixture', coverage: [] },
+          jobs: [
+            {
+              company: 'Example Studio',
+              title: 'Frontend Product Engineer',
+              url: 'https://example.test/zh-shell',
+              source: 'official',
+              description: '## Responsibilities\n- Build accessible product interfaces',
+              descriptionKind: 'full',
+              searchedAt: new Date().toISOString(),
+            },
+          ],
+        },
+      },
+    });
+    expect(seeded.status()).toBe(200);
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '職缺清單', exact: true })).toBeVisible();
+    await expect(page.locator('header .brand')).toHaveText('ROLE TRAIL');
+    await expect(page.locator('nav button')).toHaveCount(3);
+    await expect(page.locator('.tabs button')).toHaveCount(4);
+    await expect(page.getByRole('button', { name: '貼上 JD', exact: true })).not.toBeVisible();
+    const card = page.locator('tbody tr').first();
+    await expect(card).toBeVisible();
+    expect((await card.boundingBox()).y).toBeLessThan(460);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await expect(page.getByLabel('最低契合分數')).toBeVisible();
+    await page.getByRole('button', { name: '篩選', exact: true }).click();
+    await expect(page.getByLabel('最低契合分數')).not.toBeVisible();
+    await page.getByRole('button', { name: '篩選', exact: true }).click();
+    await expect(page.getByLabel('最低契合分數')).toBeVisible();
+    await page.getByRole('button', { name: '工作區工具', exact: true }).click();
+    await expect(page.getByRole('button', { name: '貼上 JD', exact: true })).toBeVisible();
+    await page.screenshot({ path: 'test-results/zh-mobile-tools.png' });
+    await page.getByRole('button', { name: '工作區工具', exact: true }).click();
+    await page.screenshot({ path: 'test-results/zh-mobile-jobs.png' });
+  } finally {
+    await context.close();
+  }
 });

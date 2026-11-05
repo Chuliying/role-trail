@@ -751,3 +751,337 @@ dialog::backdrop {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Compact workbench shell shared by every installation. */
+[hidden] {
+  display: none !important;
+}
+header {
+  min-height: 72px;
+  padding-block: 14px;
+  gap: 16px;
+}
+.brand {
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.065em;
+  color: var(--action);
+  white-space: nowrap;
+}
+.header-actions {
+  display: flex;
+  gap: 0;
+  margin-left: auto;
+}
+.icon-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 10px;
+}
+.icon-button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+nav {
+  margin-left: auto;
+}
+nav button.active {
+  background: transparent;
+  box-shadow: inset 0 -2px var(--action);
+  border-radius: 0;
+}
+main {
+  padding-top: 24px;
+}
+.page-heading {
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+.page-heading > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+h1 {
+  font-size: 24px;
+  margin: 0 0 8px;
+  letter-spacing: -0.025em;
+}
+.page-heading p {
+  margin: 0;
+  font-size: 14px;
+}
+.tabs {
+  gap: 0;
+  padding: 0;
+  margin-bottom: 16px;
+  flex-wrap: nowrap;
+}
+.tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  min-height: 48px;
+  flex: 1;
+  justify-content: space-between;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 450;
+  color: var(--muted);
+}
+.tabs button.active {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 -2px var(--action);
+  font-weight: 600;
+}
+.tab-count {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  padding-left: 8px;
+}
+.search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.search-row input {
+  flex: 1;
+  min-width: 0;
+}
+.toolbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+.toolbar select {
+  width: 100%;
+  min-width: 0;
+  padding-right: 36px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%235B6069' d='m1 1 5 5 5-5'/%3E%3C/svg%3E");
+  background-size: 10px 7px;
+  background-position: right 14px center;
+  background-repeat: no-repeat;
+}
+.workspace-tools {
+  padding: 12px 0 20px;
+}
+.mobile-dates {
+  display: none;
+}
+.load-more {
+  display: flex;
+  margin: 20px auto;
+}
+@media (max-width: 720px) {
+  header {
+    padding: 10px 16px;
+    min-height: 68px;
+    gap: 4px;
+  }
+  .brand {
+    font-size: 20px;
+    letter-spacing: 0.055em;
+  }
+  main {
+    padding: 20px 16px calc(94px + env(safe-area-inset-bottom));
+  }
+  .page-heading {
+    display: flex;
+    margin-bottom: 16px;
+  }
+  .page-heading > div:first-child {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .page-heading h1 {
+    font-size: 22px;
+    margin: 0;
+  }
+  .page-heading p {
+    font-size: 13px;
+    margin-left: auto;
+  }
+  .page-heading > .actions {
+    margin-top: 0;
+  }
+  .archive-view {
+    font-size: 12px;
+    min-height: 36px;
+    padding: 6px;
+  }
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .tabs button {
+    font-size: 15px;
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+  .search-row input {
+    font-size: 16px;
+  }
+  .toolbar select {
+    font-size: 14px;
+  }
+  nav {
+    padding: 0 8px max(8px, env(safe-area-inset-bottom));
+  }
+  nav button {
+    flex: 1;
+    min-height: 50px;
+    font-size: 13px;
+    border-radius: 0;
+  }
+  nav button.active {
+    box-shadow: inset 0 2px var(--action);
+    font-weight: 650;
+  }
+  .table-wrap {
+    background: transparent;
+  }
+  .job-row {
+    position: relative;
+    display: block;
+    padding: 22px 16px 16px;
+  }
+  .job-row td:first-child {
+    padding: 0;
+  }
+  .job-row .company {
+    padding-right: 92px;
+    font-size: 14px;
+    margin-bottom: 12px;
+    min-height: 22px;
+  }
+  .job-title {
+    font-size: 18px;
+    line-height: 1.45;
+    min-height: 44px;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .job-row td:first-child > .meta {
+    display: none;
+  }
+  .job-row td:nth-child(2) {
+    position: absolute;
+    right: 16px;
+    top: 20px;
+    width: auto;
+    max-width: 100px;
+    text-align: right;
+    font-size: 12px;
+  }
+  .job-row td:nth-child(3) {
+    display: none;
+  }
+  .job-row td:nth-child(4) {
+    display: none;
+  }
+  .mobile-dates {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px;
+    border-top: 1px solid var(--line);
+    padding: 16px 0;
+    margin-top: 16px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  .mobile-dates span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .job-row td:nth-child(5) {
+    padding-top: 12px;
+  }
+  .job-row .score-tip[open] p {
+    position: absolute;
+    right: 0;
+    z-index: 2;
+    width: min(280px, calc(100vw - 80px));
+    background: var(--surface);
+    padding: 16px;
+    border: 1px solid var(--line);
+    box-shadow: 0 4px 16px #171b2214;
+    text-align: left;
+  }
+  .score-tip summary {
+    min-height: 32px;
+  }
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans-400.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans-600.ttf') format('truetype');
+  font-weight: 600 700;
+  font-display: swap;
+}
+:root {
+  font-family:
+    'IBM Plex Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}
+.remote-symbol {
+  display: none;
+}
+.historical-fit small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.3;
+}
+@media (max-width: 720px) {
+  .job-row td:nth-child(2) {
+    right: 54px;
+  }
+  .job-row td:nth-child(3) {
+    display: block;
+    position: absolute;
+    right: 16px;
+    top: 23px;
+    width: 24px;
+  }
+  .job-row td:nth-child(3) > .badge,
+  .job-row td:nth-child(3) > .meta {
+    display: none;
+  }
+  .remote-symbol {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .facts:has(.rt-verification-empty):not(:has([data-verify-key])) {
+    display: none;
+  }
+}

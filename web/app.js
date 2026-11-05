@@ -1,8 +1,12 @@
+import { locale, t } from './i18n.mjs';
 import { createVerificationGroup } from './verification.mjs';
 import { researchOutcomes, applicationReadiness } from './outcomes.mjs';
 import { positiveFresh, currentScore, canonical } from './status.mjs';
 const staleResumes = new Set();
 let collecting = false;
+let toolsOpen = false,
+  filtersOpen = true,
+  limit = 20;
 let state,
   page = 'jobs',
   tab = 'review',
@@ -17,7 +21,7 @@ const labels = {
   shortlisted: 'Shortlisted',
   applied: 'Applied',
   passed: 'Passed',
-  archive: 'Archive',
+  archive: t('Archive'),
 };
 function el(tag, attrs = {}, ...children) {
   const n = document.createElement(tag);
@@ -37,15 +41,39 @@ const button = (label, fn, cls = '') =>
   el('button', { type: 'button', class: cls, onclick: fn }, label);
 const link = (label, url) =>
   el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', class: 'button' }, label);
-const badge = (label, type = '') => el('span', { class: 'badge ' + type }, label);
+const badge = (label, type = '') =>
+  el(
+    'span',
+    { class: 'badge ' + type },
+    t(
+      {
+        remote: 'Remote',
+        hybrid: 'Hybrid',
+        onsite: 'Onsite',
+        unknown: 'Unknown',
+        confirmed: 'Confirmed',
+        excluded: 'Excluded',
+        open: 'Open',
+        closed: 'Closed',
+        partial: 'Partial',
+        searched: 'Searched',
+        blocked: 'Blocked',
+        not_run: 'Not run',
+        empty: 'Empty',
+      }[label] || label,
+    ),
+  );
 const date = (s) =>
   s
     ? new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
         timeZone: state.profile?.timezone || 'UTC',
       }).format(new Date(s))
-    : 'Unknown';
+    : t('Unknown');
 const archived = (j) =>
   state.reviews[j.id]?.archived ||
   j.availability.status === 'closed' ||
@@ -127,13 +155,7 @@ function heading(title, subtitle, ...actions) {
   return el(
     'div',
     { class: 'page-heading' },
-    el(
-      'div',
-      {},
-      el('div', { class: 'eyebrow' }, 'YOUR WORKSPACE'),
-      el('h1', {}, title),
-      el('p', { class: 'muted' }, subtitle),
-    ),
+    el('div', {}, el('h1', {}, title), el('p', { class: 'muted' }, subtitle)),
     el('div', { class: 'actions' }, actions),
   );
 }
@@ -155,7 +177,7 @@ function login() {
           }
         },
       },
-      el('h1', {}, 'Open your workspace'),
+      el('h1', {}, t('Open your workspace')),
       el(
         'p',
         { class: 'muted' },
@@ -164,7 +186,7 @@ function login() {
       el(
         'label',
         {},
-        'Access key',
+        t('Access key'),
         el('input', {
           id: 'access-key',
           type: 'password',
@@ -172,7 +194,7 @@ function login() {
           autocomplete: 'current-password',
         }),
       ),
-      el('button', { type: 'submit', class: 'primary' }, 'Sign in'),
+      el('button', { type: 'submit', class: 'primary' }, t('Sign in')),
     ),
   );
 }
@@ -254,8 +276,8 @@ function jobs() {
     );
   const search = el('input', {
     type: 'search',
-    placeholder: 'Search roles, companies or skills',
-    'aria-label': 'Search opportunities',
+    placeholder: t('Search roles, companies or skills'),
+    'aria-label': t('Search opportunities'),
     value: query,
     oninput: (e) => {
       query = e.target.value;
@@ -269,75 +291,112 @@ function jobs() {
   const sorter = el(
     'select',
     {
-      'aria-label': 'Sort opportunities',
+      'aria-label': t('Sort opportunities'),
       onchange: (e) => {
         sort = e.target.value;
         render();
       },
     },
     ...Object.entries({
-      recent: 'Newest search, then fit',
-      score: 'Highest fit, then search',
-      company: 'Company A–Z',
+      recent: t('Newest search, then fit'),
+      score: t('Highest fit, then search'),
+      company: t('Company A–Z'),
     }).map(([v, t]) => el('option', { value: v }, t)),
   );
   sorter.value = sort;
   const filter = el(
     'select',
     {
-      'aria-label': 'Minimum fit',
+      'aria-label': t('Minimum fit'),
       onchange: (e) => {
         minimum = Number(e.target.value);
         render();
       },
     },
     ...[
-      [0, 'Any fit'],
-      [7, 'Fit 7+'],
-      [8, 'Fit 8+'],
-      [9, 'Fit 9+'],
+      [0, t('Any fit')],
+      [7, t('Fit 7+')],
+      [8, t('Fit 8+')],
+      [9, t('Fit 9+')],
     ].map(([v, t]) => el('option', { value: v }, t)),
   );
   filter.value = String(minimum);
   main.replaceChildren(
     heading(
-      'Opportunities',
-      `${rows.length} in this view · ${state.jobs.length} total`,
-      button('Paste JD', pasteJD),
-      button('Import research', importResearch),
-      button('Search now', collect, 'primary'),
+      t('Opportunities'),
+      locale === 'zh-TW'
+        ? `${Math.min(limit, rows.length)} / ${rows.length} 筆`
+        : `${Math.min(limit, rows.length)} / ${rows.length}`,
+      button(
+        t('Archive'),
+        () => {
+          tab = 'archive';
+          render();
+        },
+        'quiet archive-view',
+      ),
     ),
     el(
       'div',
-      { class: 'tabs', role: 'group', 'aria-label': 'Application decisions' },
-      Object.entries(labels).map(([v, t]) =>
-        button(
-          t,
-          () => {
-            tab = v;
-            render();
-          },
-          tab === v ? 'active' : '',
-        ),
+      { class: 'tabs', role: 'group', 'aria-label': t('Application decisions') },
+      Object.entries(labels)
+        .filter(([v]) => v !== 'archive')
+        .map(([v, label]) => {
+          const count = state.jobs.filter(
+            (j) => !archived(j) && (state.reviews[j.id]?.status || 'review') === v,
+          ).length;
+          const b = button(
+            label,
+            () => {
+              tab = v;
+              limit = 20;
+              render();
+            },
+            tab === v ? 'active' : '',
+          );
+          b.setAttribute('aria-label', label);
+          b.setAttribute('aria-pressed', String(tab === v));
+          b.append(el('span', { class: 'tab-count', 'aria-hidden': 'true' }, count));
+          return b;
+        }),
+    ),
+    el(
+      'div',
+      { class: 'search-row' },
+      search,
+      button(
+        t('Filters'),
+        () => {
+          filtersOpen = !filtersOpen;
+          render();
+        },
+        'filter-toggle',
       ),
     ),
-    el('div', { class: 'toolbar' }, search, sorter, filter),
+    el('div', { class: 'toolbar', hidden: !filtersOpen ? '' : null }, filter, sorter),
+    el(
+      'div',
+      { class: 'actions workspace-tools', id: 'workspace-tools', hidden: !toolsOpen ? '' : null },
+      button(t('Paste JD'), pasteJD),
+      button(t('Import research'), importResearch),
+      button(t('Search now'), collect),
+    ),
   );
   if (!rows.length) {
     main.append(
       el(
         'div',
         { class: 'empty' },
-        el('h2', {}, 'Room for the right opportunity'),
+        el('h2', {}, t('Room for the right opportunity')),
         el(
           'p',
           { class: 'muted' },
           state.profile
-            ? 'Paste a JD, import your agent’s research, or configure a source in Profile.'
-            : 'Start with your own profile and confirmed experience.',
+            ? t('Paste a JD, import your agent’s research, or configure a source in Profile.')
+            : t('Start with your own profile and confirmed experience.'),
         ),
         button(
-          state.profile ? 'Paste a JD' : 'Set up profile',
+          state.profile ? t('Paste a JD') : t('Set up profile'),
           () => (state.profile ? pasteJD() : ((page = 'profile'), render())),
           'primary',
         ),
@@ -357,7 +416,7 @@ function jobs() {
         el(
           'th',
           {},
-          button('Role / company ↕', () => {
+          button(t('Role / company ↕'), () => {
             sort = 'company';
             render();
           }),
@@ -365,27 +424,27 @@ function jobs() {
         el(
           'th',
           {},
-          button('Fit ↓', () => {
+          button(t('Fit ↓'), () => {
             sort = 'score';
             render();
           }),
         ),
-        el('th', {}, 'Work mode'),
+        el('th', {}, t('Work mode')),
         el(
           'th',
           {},
-          button('Searched ↓', () => {
+          button(t('Searched ↓'), () => {
             sort = 'recent';
             render();
           }),
         ),
-        el('th', {}, 'Next step'),
+        el('th', {}, t('Next step')),
       ),
     ),
     el(
       'tbody',
       {},
-      rows.map((j) => {
+      rows.slice(0, limit).map((j) => {
         const r = latestResume(j.id),
           dec = state.reviews[j.id]?.status || 'review';
         const select = el(
@@ -401,7 +460,7 @@ function jobs() {
         select.value = dec;
         return el(
           'tr',
-          {},
+          { class: 'job-row' },
           el(
             'td',
             {},
@@ -410,12 +469,13 @@ function jobs() {
             el(
               'div',
               { class: 'meta' },
-              j.posting.kind + ': ' + (j.posting.date || 'date unknown'),
+              j.posting.kind + ': ' + (j.posting.date || t('date unknown')),
             ),
             el(
               'div',
               { class: 'facts' },
               createVerificationGroup(j, {
+                locale,
                 onOpen: async () => {
                   await showJob(j.id);
                   const evidence = document.getElementById('verification-evidence');
@@ -423,7 +483,13 @@ function jobs() {
                   evidence?.focus({ preventScroll: true });
                 },
               }),
-              archived(j) ? badge('Archived', 'danger') : null,
+              archived(j) ? badge(t('Archived'), 'danger') : null,
+            ),
+            el(
+              'div',
+              { class: 'mobile-dates' },
+              el('div', {}, el('span', {}, t('Opened')), j.posting.date || t('Unknown')),
+              el('div', {}, el('span', {}, t('Searched')), date(j.searchedAt)),
             ),
           ),
           el(
@@ -440,21 +506,44 @@ function jobs() {
                   ),
                   el('p', {}, j.assessment.reason),
                 )
-              : el('span', { class: 'muted' }, j.assessment?.stale ? 'Reassess' : 'Unrated'),
+              : j.assessment?.stale
+                ? el(
+                    'div',
+                    { class: 'historical-fit' },
+                    el('span', { class: 'score' }, j.assessment.score, el('span', {}, ' /10')),
+                    el('small', { class: 'muted' }, t('Reassess')),
+                  )
+                : el('span', { class: 'muted' }, t('Unrated')),
           ),
           el(
             'td',
             {},
+            el(
+              'span',
+              {
+                class: 'remote-symbol',
+                role: 'img',
+                'aria-label': t(
+                  {
+                    remote: 'Remote',
+                    hybrid: 'Hybrid',
+                    onsite: 'Onsite',
+                    unknown: 'Remote unknown',
+                  }[j.remoteMode] || 'Remote unknown',
+                ),
+              },
+              { remote: '✓', hybrid: '◐', onsite: '×', unknown: '?' }[j.remoteMode] || '?',
+            ),
             badge(j.remoteMode),
-            el('div', { class: 'meta' }, j.location || 'Location unverified'),
+            el('div', { class: 'meta' }, j.location || t('Location unverified')),
           ),
           el('td', {}, date(j.searchedAt)),
           el(
             'td',
             {},
-            el('div', { class: 'row-actions' }, select, link('Source ↗', j.url)),
+            el('div', { class: 'row-actions' }, select, link(t('Source ↗'), j.url)),
             (state.submissions || []).some((x) => x.jobId === j.id) || dec === 'applied'
-              ? el('div', { class: 'meta' }, 'Application recorded')
+              ? el('div', { class: 'meta' }, t('Application recorded'))
               : null,
             el(
               'div',
@@ -464,7 +553,7 @@ function jobs() {
                     r.version +
                     ' · ' +
                     (staleResumes.has(r.jobId + ':' + r.version) ? 'stale' : r.reviewStatus)
-                : 'No resume',
+                : t('No resume'),
             ),
           ),
         );
@@ -472,14 +561,25 @@ function jobs() {
     ),
   );
   main.append(el('div', { class: 'table-wrap' }, table));
+  if (rows.length > limit)
+    main.append(
+      button(
+        t('Show more'),
+        () => {
+          limit += 20;
+          render();
+        },
+        'load-more',
+      ),
+    );
 }
 function pasteJD() {
-  const title = field('Role title', 'jd-title'),
-    company = field('Company', 'jd-company'),
-    url = field('Original HTTPS URL', 'jd-url', '', 'url'),
-    jd = field('Original job description', 'jd-text', '', 'textarea');
+  const title = field(t('Role title'), 'jd-title'),
+    company = field(t('Company'), 'jd-company'),
+    url = field(t('Original HTTPS URL'), 'jd-url', '', 'url'),
+    jd = field(t('Original job description'), 'jd-text', '', 'textarea');
   edit(
-    'Paste a job description',
+    t('Paste a job description'),
     [
       company,
       title,
@@ -525,7 +625,7 @@ function pasteJD() {
 }
 function importResearch() {
   jsonEditor(
-    'Import research',
+    t('Import research'),
     { run: { id: 'agent-' + crypto.randomUUID(), kind: 'manual', coverage: [] }, jobs: [] },
     (b) => action({ type: 'research', ...b }),
   );
@@ -586,25 +686,29 @@ async function showJob(id) {
   d.replaceChildren(
     el('span', { class: 'company' }, j.company),
     el('h1', { id: 'detail-title' }, j.title),
-    el('p', { class: 'muted' }, j.location || 'Location not confirmed'),
+    el('p', { class: 'muted' }, j.location || t('Location not confirmed')),
     el(
       'div',
       { class: 'actions' },
-      link('Original job ↗', j.url),
-      button(state.reviews[id]?.archived ? 'Restore manual archive' : 'Archive', () =>
+      link(t('Original job ↗'), j.url),
+      button(state.reviews[id]?.archived ? t('Restore manual archive') : t('Archive'), () =>
         action({ type: 'archive', jobId: id, archived: !state.reviews[id]?.archived }),
       ),
     ),
     el(
       'div',
       { class: 'detail-section' },
-      el('h2', {}, 'Fit & evidence'),
+      el('h2', {}, t('Fit & evidence')),
       j.assessment
         ? el(
             'div',
             {},
             j.assessment.stale
-              ? el('p', { class: 'muted' }, 'Stale assessment — reassess before using this score.')
+              ? el(
+                  'p',
+                  { class: 'muted' },
+                  t('Stale assessment — reassess before using this score.'),
+                )
               : null,
             badge((j.assessment.stale ? 'Previous: ' : '') + j.assessment.score + ' / 10'),
             el('p', {}, j.assessment.reason),
@@ -617,7 +721,7 @@ async function showJob(id) {
               ? el(
                   'div',
                   {},
-                  el('h3', {}, 'Learning gaps'),
+                  el('h3', {}, t('Learning gaps')),
                   el(
                     'ul',
                     {},
@@ -677,7 +781,7 @@ async function showJob(id) {
     el(
       'div',
       { class: 'detail-section' },
-      el('h2', {}, 'Job description'),
+      el('h2', {}, t('Job description')),
       el(
         'p',
         { class: 'muted' },
@@ -686,11 +790,11 @@ async function showJob(id) {
       structured(j.description || 'Description unavailable. Open the original source.'),
     ),
   );
-  const taskSection = el('section', { class: 'detail-section' }, el('h2', {}, 'Preparation'));
+  const taskSection = el('section', { class: 'detail-section' }, el('h2', {}, t('Preparation')));
   taskSection.append(...state.tasks.filter((t) => taskFor(t, id)).map(todo));
   const input = el('input', {
     placeholder: 'Add a preparation task',
-    'aria-label': 'New preparation task',
+    'aria-label': t('New preparation task'),
   });
   taskSection.append(
     el(
@@ -703,7 +807,7 @@ async function showJob(id) {
         },
       },
       input,
-      el('button', { type: 'submit' }, 'Add task'),
+      el('button', { type: 'submit' }, t('Add task')),
     ),
   );
   d.append(taskSection);
@@ -715,7 +819,7 @@ async function showJob(id) {
       'div',
       { class: 'actions' },
       button(
-        'Generate draft',
+        t('Generate draft'),
         async () => {
           try {
             state = await api('draft', { revision: state.revision, jobId: id });
@@ -738,7 +842,7 @@ async function showJob(id) {
         { class: 'meta' },
         'Version ' + r.version + ' · ' + (stale ? 'Source changed — regenerate' : r.reviewStatus),
       ),
-      el('h3', {}, 'What changed for this role'),
+      el('h3', {}, t('What changed for this role')),
       el(
         'ul',
         {},
@@ -749,7 +853,7 @@ async function showJob(id) {
         'div',
         { class: 'actions' },
         link(
-          r.pdfHash ? 'Open saved PDF ↗' : 'Print / save PDF ↗',
+          r.pdfHash ? t('Open saved PDF ↗') : 'Print / save PDF ↗',
           '/api/resume?job=' + id + '&version=' + r.version + (r.pdfHash ? '&format=pdf' : ''),
         ),
         button('Edit draft', () =>
@@ -764,10 +868,10 @@ async function showJob(id) {
             (v) => action({ type: 'resume', jobId: id, ...v }),
           ),
         ),
-        button('Approve', () =>
+        button(t('Approve'), () =>
           action({ type: 'resumeReview', jobId: id, version: r.version, status: 'approved' }),
         ),
-        button('Request changes', () =>
+        button(t('Request changes'), () =>
           action({
             type: 'resumeReview',
             jobId: id,
@@ -792,7 +896,7 @@ async function showJob(id) {
   const prepSection = el(
     'section',
     { class: 'detail-section' },
-    el('h2', {}, 'Interview preparation'),
+    el('h2', {}, t('Interview preparation')),
   );
   let preparationStale = true;
   if (preparation) {
@@ -872,7 +976,7 @@ async function showJob(id) {
   const overview = el(
     'section',
     { class: 'detail-section package-overview' },
-    el('h2', {}, 'Application package'),
+    el('h2', {}, t('Application package')),
     el(
       'p',
       {},
@@ -898,7 +1002,7 @@ async function showJob(id) {
   if (r)
     overview.append(
       link(
-        r.pdfHash ? 'Open saved PDF ↗' : 'Print / save PDF ↗',
+        r.pdfHash ? t('Open saved PDF ↗') : 'Print / save PDF ↗',
         '/api/resume?job=' + id + '&version=' + r.version + (r.pdfHash ? '&format=pdf' : ''),
       ),
       el(
@@ -914,7 +1018,7 @@ async function showJob(id) {
       'div',
       { class: 'actions' },
       button('Resume & adjustments', () => resume.scrollIntoView({ block: 'start' })),
-      button('Interview preparation', () => prepSection.scrollIntoView({ block: 'start' })),
+      button(t('Interview preparation'), () => prepSection.scrollIntoView({ block: 'start' })),
       button('Tasks', () => taskSection.scrollIntoView({ block: 'start' })),
       link('Open application source ↗', j.url),
     ),
@@ -957,10 +1061,10 @@ function tasks() {
   const shortlisted = state.jobs.filter((j) => state.reviews[j.id]?.status === 'shortlisted');
   main.replaceChildren(
     heading(
-      'Preparation',
-      'Decide what to do next. Resume review and application status stay separate.',
+      t('Preparation'),
+      t('Decide what to do next. Resume review and application status stay separate.'),
       button(
-        'Draft all shortlisted',
+        t('Draft all shortlisted'),
         async () => {
           let count = 0;
           for (const j of shortlisted) {
@@ -1002,7 +1106,7 @@ function tasks() {
                 ? staleResumes.has(j.id + ':' + latestResume(j.id).version)
                   ? 'Resume stale'
                   : 'Resume ' + latestResume(j.id).reviewStatus
-                : 'No resume'),
+                : t('No resume')),
           ),
           ...state.tasks.filter((t) => taskFor(t, j.id)).map(todo),
           button('Open preparation', () => showJob(j.id)),
@@ -1060,7 +1164,7 @@ function outcomeSummary() {
   const box = el(
     'section',
     { class: 'card outcome-summary' },
-    el('h2', {}, 'Seven-day outcomes'),
+    el('h2', {}, t('Seven-day outcomes')),
     el('p', { class: 'muted' }, `${q.startDate} – ${q.endDate} · ${q.timeZone}`),
   );
   box.append(
@@ -1113,9 +1217,11 @@ function outcomeSummary() {
 function research() {
   main.replaceChildren(
     heading(
-      'Research log',
-      'Counts distinguish screened rows from complete JDs. A partial run is not full platform coverage.',
-      button('Search now', collect, 'primary'),
+      t('Research log'),
+      t(
+        'Counts distinguish screened rows from complete JDs. A partial run is not full platform coverage.',
+      ),
+      button(t('Search now'), collect, 'primary'),
     ),
   );
   main.append(outcomeSummary());
@@ -1127,7 +1233,7 @@ function research() {
         el('h2', {}, date(run.finishedAt)),
         el('p', { class: 'muted' }, run.note || run.id),
         run.archiveHash
-          ? link('Original research bundle ↗', '/api/artifact?hash=' + run.archiveHash)
+          ? link(t('Original research bundle \u2197'), '/api/artifact?hash=' + run.archiveHash)
           : null,
         el(
           'div',
@@ -1145,8 +1251,12 @@ function research() {
                 'p',
                 { class: 'meta' },
                 c.depthKnown === false
-                  ? `Legacy count: ${c.legacyInspected ?? 'unknown'} · screening/JD depth not recorded`
-                  : `${c.screened} screened · ${c.fullJd} full JDs`,
+                  ? locale === 'zh-TW'
+                    ? `歷史紀錄 ${c.legacyInspected ?? '未知'} 筆；初篩與完整JD數未分開記錄`
+                    : `Legacy count: ${c.legacyInspected ?? 'unknown'} · screening/JD depth not recorded`
+                  : locale === 'zh-TW'
+                    ? `初篩 ${c.screened} 筆 · 完整 JD ${c.fullJd} 筆`
+                    : `${c.screened} screened · ${c.fullJd} full JDs`,
               ),
               el('p', {}, c.query),
               el('p', { class: 'muted' }, c.note),
@@ -1157,7 +1267,9 @@ function research() {
     );
   }
   if (!state.runs.length)
-    main.append(el('p', { class: 'empty' }, 'Search attempts and their limits will appear here.'));
+    main.append(
+      el('p', { class: 'empty' }, t('Search attempts and their limits will appear here.')),
+    );
 }
 function profile() {
   const sample = {
@@ -1174,12 +1286,12 @@ function profile() {
   };
   main.replaceChildren(
     heading(
-      'Profile & workspace',
-      'Your preferences and confirmed evidence shape the search.',
+      t('Profile & workspace'),
+      t('Your preferences and confirmed evidence shape the search.'),
       button(
-        'Edit profile',
+        t('Edit profile'),
         () =>
-          jsonEditor('Profile', state.profile || sample, (v) =>
+          jsonEditor(t('Profile'), state.profile || sample, (v) =>
             action({ type: 'profile', profile: v }),
           ),
         'primary',
@@ -1249,13 +1361,13 @@ function profile() {
     el(
       'section',
       { class: 'card detail-section' },
-      el('h2', {}, 'Capability evidence'),
+      el('h2', {}, t('Capability evidence')),
       el(
         'p',
         { class: 'muted' },
         'Your agent can propose claims from selected Git commits or resume text. Confirm only your own contribution.',
       ),
-      button('Add capability', () =>
+      button(t('Add capability'), () =>
         jsonEditor('Capability', { claim: '', tags: [], evidence: [], status: 'proposed' }, (v) =>
           action({ type: 'capability', ...v }),
         ),
@@ -1283,7 +1395,7 @@ function profile() {
     el(
       'section',
       { class: 'card detail-section' },
-      el('h2', {}, 'Backup & restore'),
+      el('h2', {}, t('Backup & restore')),
       el(
         'div',
         { class: 'actions' },
@@ -1321,7 +1433,27 @@ $('#close-detail').onclick = () => {
   currentJob = null;
 };
 $('#close-editor').onclick = () => $('#editor').close();
+document.documentElement.lang = locale;
+document.querySelectorAll('[data-i18n]').forEach((n) => {
+  n.textContent = t(n.dataset.i18n);
+});
+document.querySelectorAll('[data-i18n-label]').forEach((n) => {
+  n.setAttribute('aria-label', t(n.dataset.i18nLabel));
+});
 $('#refresh').onclick = refresh;
+$('#tools-toggle').onclick = () => {
+  toolsOpen = !toolsOpen;
+  $('#tools-toggle').setAttribute('aria-expanded', String(toolsOpen));
+  page = 'jobs';
+  render();
+};
+$('#profile-toggle').onclick = () => {
+  page = 'profile';
+  render();
+};
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) location.reload();
+});
 document.querySelectorAll('nav button').forEach(
   (n) =>
     (n.onclick = () => {
