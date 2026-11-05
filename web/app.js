@@ -5,6 +5,7 @@ import { researchOutcomes, applicationReadiness } from './outcomes.mjs';
 import { positiveFresh, currentScore, canonical } from './status.mjs';
 const staleResumes = new Set();
 let collecting = false;
+let renderedView = null;
 let toolsOpen = false,
   filtersOpen = true,
   limit = 20;
@@ -64,8 +65,8 @@ function sourceLink(url) {
   a.append(verificationIcon('M14 3h7v7M21 3l-11 11M10 5H3v16h16v-7'));
   return a;
 }
-function timeMark(label, value, path) {
-  const text = label + ' ' + value;
+function timeMark(label, value, path, detail = value) {
+  const text = label + ' ' + detail;
   return el(
     'span',
     { class: 'time-mark', 'aria-label': text, title: text },
@@ -74,18 +75,20 @@ function timeMark(label, value, path) {
   );
 }
 function historicalScore(job) {
-  const control = iconButton(
-    t('Previous fit') + ' ' + job.assessment.score + '/10 · ' + t('Reassess'),
-    'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l3 2',
+  const control = button(
+    t('Reassess'),
     async () => {
       await showJob(job.id);
       document.getElementById('fit-evidence').scrollIntoView({ block: 'start' });
     },
     'score-status historical-fit',
   );
-  control.prepend(el('span', { class: 'score' }, job.assessment.score, el('span', {}, ' /10')));
+  const label = t('Previous fit') + ' ' + job.assessment.score + '/10 · ' + t('Reassess');
+  control.setAttribute('aria-label', label);
+  control.title = label;
   return control;
 }
+
 function disclosure(label, ...content) {
   return el('details', { class: 'disclosure' }, el('summary', {}, t(label)), ...content);
 }
@@ -111,13 +114,12 @@ const badge = (label, type = '') =>
       }[label] || label,
     ),
   );
-const date = (s) =>
+const date = (s, compact = false) =>
   s
     ? new Intl.DateTimeFormat(undefined, {
         month: '2-digit',
         day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
+        ...(compact ? {} : { hour: '2-digit', minute: '2-digit' }),
         hour12: false,
         timeZone: state.profile?.timezone || 'UTC',
       }).format(new Date(s))
@@ -292,6 +294,9 @@ function field(label, id, value = '', type = 'text') {
 }
 function render() {
   if (!state) return;
+  const view = page === 'jobs' ? page + ':' + tab : page;
+  const changedView = view !== renderedView;
+  renderedView = view;
   document
     .querySelectorAll('nav button')
     .forEach((n) => n.classList.toggle('active', n.dataset.page === page));
@@ -299,6 +304,14 @@ function render() {
   if (page === 'tasks') tasks();
   if (page === 'research') research();
   if (page === 'profile') profile();
+  main.getAnimations().forEach((a) => a.cancel());
+  if (changedView && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const motion = getComputedStyle(main);
+    main.animate([{ opacity: 0.65 }, { opacity: 1 }], {
+      duration: parseFloat(motion.getPropertyValue('--motion-enter')),
+      easing: motion.getPropertyValue('--motion-ease').trim(),
+    });
+  }
 }
 function jobs() {
   const all = state.jobs.filter((j) =>
@@ -547,8 +560,9 @@ function jobs() {
                   : null,
                 timeMark(
                   t('Searched'),
-                  date(j.searchedAt),
+                  date(j.searchedAt, true),
                   'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 7v5l3 2',
+                  date(j.searchedAt),
                 ),
               ),
             ),
@@ -569,35 +583,23 @@ function jobs() {
                 )
               : j.assessment?.stale
                 ? historicalScore(j)
-                : el(
-                    'span',
-                    { class: 'muted unrated', 'aria-label': t('Unrated'), title: t('Unrated') },
-                    '—',
-                  ),
+                : null,
+          ),
+          el(
+            'td',
+            {},
+            j.remoteMode !== 'unknown' ? badge(j.remoteMode) : null,
+            j.location ? el('div', { class: 'meta' }, j.location) : null,
           ),
           el(
             'td',
             {},
             el(
-              'span',
-              {
-                class: 'remote-symbol',
-                role: 'img',
-                'aria-label': t(
-                  {
-                    remote: 'Remote',
-                    hybrid: 'Hybrid',
-                    onsite: 'Onsite',
-                    unknown: 'Remote unknown',
-                  }[j.remoteMode] || 'Remote unknown',
-                ),
-              },
-              { remote: '✓', hybrid: '◐', onsite: '×', unknown: '?' }[j.remoteMode] || '?',
+              'time',
+              { datetime: j.searchedAt, title: date(j.searchedAt) },
+              date(j.searchedAt, true),
             ),
-            badge(j.remoteMode),
-            el('div', { class: 'meta' }, j.location || t('Location unverified')),
           ),
-          el('td', {}, date(j.searchedAt)),
           el(
             'td',
             {},

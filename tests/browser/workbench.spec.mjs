@@ -174,7 +174,8 @@ test('stale scores, old verification and application history are represented hon
   await page.setViewportSize({ width: 390, height: 844 });
   const previous = row.getByRole('button', { name: /Previous fit.*Reassess/ });
   expect((await previous.boundingBox()).height).toBe(44);
-  await expect(row.getByText('Reassess', { exact: true })).toHaveCount(0);
+  await expect(previous).toHaveText('Reassess');
+  await expect(previous.locator('svg,.score')).toHaveCount(0);
   await row.screenshot({ path: 'test-results/compact-stale-score.png' });
   await previous.click();
   await expect(page.locator('#fit-evidence')).toContainText('Stale assessment');
@@ -593,7 +594,7 @@ test('touch cards avoid sticky hover, redundant totals and long-text overflow', 
     await page.goto('/');
     expect.soft(await page.locator('.page-heading p').count()).toBe(0);
     const archive = page.getByRole('button', { name: 'Archive', exact: true });
-    expect.soft(await archive.locator('svg').count()).toBe(1);
+    await expect.soft(archive.locator('svg')).toHaveCount(1);
     expect.soft((await archive.textContent()).trim()).toBe('');
     const title = page.getByRole('button', { name: job.title, exact: true });
     await title.hover();

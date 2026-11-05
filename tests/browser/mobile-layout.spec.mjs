@@ -15,6 +15,12 @@ for (const engine of ['chromium', 'webkit']) {
       await page.goto('http://127.0.0.1:4319');
       const rows = page.locator('.job-row');
       await expect(rows.first()).toBeVisible();
+      await expect(rows.locator('.remote-symbol,.unrated')).toHaveCount(0);
+      await expect(rows.first().locator('.mobile-dates')).not.toContainText(/\d{2}:\d{2}/);
+      await expect(rows.first().locator('.time-mark').last()).toHaveAttribute(
+        'title',
+        /\d{2}:\d{2}/,
+      );
       for (const width of [320, 390]) {
         await page.setViewportSize({ width, height: 844 });
         const a = await rows.nth(0).boundingBox(),
@@ -110,6 +116,28 @@ for (const engine of ['chromium', 'webkit']) {
       });
       await page.getByRole('button', { name: 'Refresh', exact: true }).click();
       await expect.poll(() => page.evaluate(() => window.previousClient)).toBeUndefined();
+      await expect(rows.first()).toBeVisible();
+      // Page transitions are intentional; typing and state refreshes must not replay them.
+      for (const reduced of [false, true]) {
+        await page.emulateMedia({ reducedMotion: reduced ? 'reduce' : 'no-preference' });
+        const animations = await page.evaluate(() => {
+          document.querySelector('nav [data-page="tasks"]').click();
+          return document.querySelector('#main').getAnimations().length;
+        });
+        expect(animations).toBe(reduced ? 0 : 1);
+        await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
+        await page.locator('#main').evaluate(async (n) => {
+          await Promise.all(n.getAnimations().map((a) => a.finished.catch(() => {})));
+        });
+        await page.locator('input[type="search"]').fill('Engineer');
+        expect(await page.locator('#main').evaluate((n) => n.getAnimations().length)).toBe(0);
+        await page.locator('input[type="search"]').fill('');
+        await rows.first().locator('.job-title').click();
+        expect(await modal.evaluate((n) => getComputedStyle(n).animationName)).toBe(
+          reduced ? 'none' : 'reader-enter',
+        );
+        await page.getByRole('button', { name: 'Close opportunity' }).click();
+      }
     } finally {
       await context.close();
       await browser.close();
