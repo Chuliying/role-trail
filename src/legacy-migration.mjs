@@ -288,6 +288,7 @@ export function convertLegacy(snapshot, { profile = null } = {}) {
   validateState(s);
   return {
     state: s,
+    sourceTables: snapshot.tables,
     artifacts,
     report: {
       sourceRevision: base.revision,

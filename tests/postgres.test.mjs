@@ -122,13 +122,43 @@ test(
         converted = convertLegacy(snapshot, {});
       await store.pool.query('DELETE FROM role_trail_state');
       await store.migrate();
-      await store.pool.query(
-        'CREATE TABLE job_board_state(id integer primary key,revision integer)',
-      );
-      await store.pool.query('INSERT INTO job_board_state VALUES(1,13)');
+      for (const table of migration.legacyTables) {
+        const rows = snapshot.tables[table] || [];
+        const keys = Object.keys(rows[0] || { id: 0 });
+        await store.pool.query(
+          'CREATE TABLE ' +
+            table +
+            ' (' +
+            keys
+              .map(
+                (k) =>
+                  '"' +
+                  k +
+                  '" ' +
+                  (table === 'job_board_state' && ['id', 'revision'].includes(k)
+                    ? 'integer'
+                    : 'jsonb'),
+              )
+              .join(',') +
+            ')',
+        );
+        for (const row of rows)
+          await store.pool.query(
+            'INSERT INTO ' + table + ' VALUES(' + keys.map((_, i) => '$' + (i + 1)).join(',') + ')',
+            keys.map((k) =>
+              table === 'job_board_state' && ['id', 'revision'].includes(k)
+                ? row[k]
+                : JSON.stringify(row[k]),
+            ),
+          );
+      }
+      await store.pool.query('UPDATE job_board_state SET revision=13');
       await assert.rejects(installLegacy(store, converted), /Legacy revision conflict/);
       assert.equal((await store.read()).jobs.length, 0);
       await store.pool.query('UPDATE job_board_state SET revision=12');
+      await store.pool.query("UPDATE job_board_state SET schedule='{}'::jsonb");
+      await assert.rejects(installLegacy(store, converted), /Legacy snapshot conflict/);
+      await store.pool.query("UPDATE job_board_state SET schedule='null'::jsonb");
       await installLegacy(store, converted);
       const migrated = await second.read();
       assert.equal(migrated.jobs.length, 2);

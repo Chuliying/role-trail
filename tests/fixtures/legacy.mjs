@@ -30,6 +30,7 @@ export function legacyFixture() {
     tables: {
       job_board_state: [
         {
+          id: 1,
           revision: 12,
           board: { jobs, runs: [], updatedAt: at },
           tracker: {

@@ -74,3 +74,12 @@ test('invalid profile JSON does not echo private input in errors', async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+test('shared research import requires the observed revision before accessing any credentials', async () => {
+  const { run } = await import('../src/commands.mjs');
+  await assert.rejects(run('import', ['--database', '--file', 'unused.json']), /research snapshot/);
+  await assert.rejects(run('import', ['--remote', '--file', 'unused.json']), /research snapshot/);
+  await assert.rejects(
+    run('import', ['--database', '--file', 'unused.json', '--revision', '-1']),
+    /non-negative/,
+  );
+});

@@ -43,7 +43,7 @@ const options = {
   demo: ['workspace'],
   state: ['workspace', 'remote'],
   action: ['workspace', 'remote', 'file'],
-  import: ['workspace', 'remote', 'file'],
+  import: ['workspace', 'remote', 'file', 'revision'],
   export: ['workspace', 'remote', 'output'],
   restore: ['workspace', 'remote', 'file', 'revision'],
   collect: ['workspace', 'remote'],
@@ -141,6 +141,15 @@ async function privateOutput(file, data) {
 }
 export async function run(command, args) {
   const o = parse(command, args);
+  if (command === 'import') {
+    if ((o.remote || o.database) && o.revision === undefined)
+      throw Error('--revision from the research snapshot is required for shared imports');
+    if (
+      o.revision !== undefined &&
+      (!/^\d+$/.test(o.revision) || !Number.isSafeInteger(Number(o.revision)))
+    )
+      throw Error('--revision must be a non-negative integer');
+  }
   if (command === 'validate') {
     if (!o.file) throw Error('--file required');
     const b = JSON.parse(await readFile(resolve(o.file), 'utf8'));
@@ -247,7 +256,11 @@ export async function run(command, args) {
     if (!o.file) throw Error('--file required');
     const b = JSON.parse(await readFile(resolve(o.file), 'utf8'));
     if (command === 'restore') s = await store.restore(Number(o.revision), b);
-    else s = await store.update(s.revision, command === 'import' ? { type: 'research', ...b } : b);
+    else
+      s = await store.update(
+        command === 'import' && o.revision !== undefined ? Number(o.revision) : s.revision,
+        command === 'import' ? { type: 'research', ...b } : b,
+      );
   } else if (command === 'export') {
     console.log(await privateOutput(o.output, JSON.stringify(s, null, 2) + '\n'));
     return;

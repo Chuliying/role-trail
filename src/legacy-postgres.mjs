@@ -31,6 +31,19 @@ export async function exportLegacy(pool) {
     c.release();
   }
 }
+function stable(value) {
+  if (Array.isArray(value)) return value.map(stable);
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((k) => [k, stable(value[k])]),
+    );
+  return value;
+}
+function rowsDigest(rows) {
+  return JSON.stringify(rows.map((row) => JSON.stringify(stable(row))).sort());
+}
 export async function installLegacy(store, converted) {
   const { state, artifacts } = converted;
   validateState(state);
@@ -53,10 +66,17 @@ export async function installLegacy(store, converted) {
       target.runs.length
     )
       throw Error('Destination is not empty');
+    if (!converted.sourceTables) throw Error('Full source snapshot required');
+    await c.query('LOCK TABLE ' + legacyTables.join(',') + ' IN SHARE ROW EXCLUSIVE MODE');
     const source = (await c.query('SELECT revision FROM job_board_state WHERE id=1 FOR UPDATE'))
       .rows[0];
     if (source?.revision !== state.migration.sourceRevision)
       throw Error('Legacy revision conflict; export and convert again');
+    for (const table of legacyTables) {
+      const rows = JSON.parse(JSON.stringify((await c.query('SELECT * FROM ' + table)).rows));
+      if (rowsDigest(rows) !== rowsDigest(converted.sourceTables[table] || []))
+        throw Error('Legacy snapshot conflict; export all tables again');
+    }
     for (const a of artifacts) await store.putArtifact(a.bytes, c);
     const saved = { ...state, revision: 1 };
     await c.query('UPDATE role_trail_state SET state=$1,revision=1 WHERE id=1', [saved]);

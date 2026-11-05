@@ -18,7 +18,7 @@ Check the original employer's opening status and the user's required criteria. L
 
 Preserve full JD text and provenance. Never replace a full JD with a snippet. Use actual observation/check times; reading a saved JD again is not a new external check. Closed requires explicit closure evidence. Excluded criteria retain their own reason and source; they are not closures or lower ability scores. Missing/older/unknown observations cannot clear saved exclusions. Manual archive and Passed remain the user's decisions.
 
-Validate the bundle and import it. On conflict reread and reconcile only the facts actually checked. Do not use `restore`, change the run ID to disguise a retry, or overwrite personal records. Run IDs identify one immutable payload; same-content retries are safe.
+Validate the bundle and import it with `import --revision <revision from the research export>`. Shared database and remote imports require this observed revision. On conflict reread and reconcile only the facts actually checked. Do not use `restore`, change the run ID to disguise a retry, or overwrite personal records. Run IDs identify one immutable payload; same-content retries are safe.
 
 ## Assess and prepare
 
