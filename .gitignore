@@ -5,3 +5,6 @@ node_modules/
 workspace/
 data/
 *.log
+
+test-results/
+playwright-report/

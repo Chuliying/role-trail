@@ -1,29 +1,32 @@
-# Preview release checks — 2026-11-05
+# Version 0.2 release evidence — 2026-11-05
 
-This repository starts with a new Git history containing only the public package. No private
-application history, database exports, resumes, deployment configuration, credentials, fonts
-or binary assets are part of the release.
+The public repository has an independent history. This update contains original generic code and synthetic fixtures, not the private installation's database, resumes, credentials, deployment IDs or source history.
 
-## Verification performed
+## Executed verification
 
-- Node22 local tests: 6/6 pass. Tests exercise actual synthetic Git histories and a standalone
-  copied package, including author filters, coauthor labels, merge exclusion, bounded export,
-  redaction, path containment, idempotent initialization and CLI workflow.
-- npm audit: zero vulnerabilities; the package has no external npm dependencies.
-- Heuristic secret scan: scanned mjs/js/json/md/yml, checked staged changes and .env exclusion.
-  Two placeholder candidates were manually reviewed as synthetic test data. The initial
-  non-obvious test token was renamed to an explicitly fictional example; its redaction
-  assertion remains in place. No real credentials were found in the examined candidate.
-- Manual review includes file allowlist, local paths, contact data, account/deployment IDs,
-  Git metadata, examples, Markdown and hidden configuration. Example identities are fictional.
-- CI runs tests and audit with read-only repository permission, no repository secrets, and
-  commit-pinned checkout/setup-node actions. Package scripts do not execute scanned repos.
+- 23 Node22 tests pass and cover actual Git histories, standalone CLI copying, profile/feed preservation, state validation, old-JD preservation, decisions/closures, resume staleness, provider success/failure shapes, daily scheduling and HTTP authentication.
+- Real PostgreSQL 17 isolated temporary cluster: two client writes at one revision produce one success; invalid action rolls back; state persists across clients; restore increments revision.
+- 3 Playwright desktop/mobile tests pass: JD rendering and safe text, default ordering, shortlist, archive, checkbox persistence, resume generation/approval, profile navigation and long-URL wrapping. Screenshots inspected at 390 px width.
+- Synthetic resume rendered by Chromium to A4 PDF. Poppler confirmed one page, selectable text and no PDF JavaScript; page image inspected. This is a fixture result, not an assertion that arbitrary long resumes fit one page.
+- Build entry checks and npm audit run before release. See CI for the exact pushed revision.
 
-Automated scanning is heuristic, not a guarantee against every possible secret representation.
-The scanner's evidence redaction is likewise best effort; users must inspect their own exports.
+## Live source probes (not fixtures)
 
-## Not claimed
+- Himalayas: two search pages, 40 returned roles with description content accepted. Country/eligibility and fit were not inferred. Findings were not imported into a real person's workspace.
+- Greenhouse: a valid public employer board returned 145 postings; the configured cap accepted the first 100 with full content. The board endpoint is unfiltered; this is not 100 recommended opportunities.
+- Initial invalid/unavailable employer identifiers were recorded as blocked. Lever probes for the attempted identifiers returned 404; they do not prove a valid live Lever board currently works. Parser behavior remains covered by fixture tests.
+- SerpApi: tested with synthetic provider responses. No private maintainer API key was copied into this release or used as public setup evidence.
 
-No hosted service, full dashboard, production cloud deployment, automatic scheduler installer,
-PDF-rendering acceptance or successful end-to-end Claude Code/Codex build is claimed. See
-setup-parity.md and BOOTSTRAP.md. This is an MIT-licensed preview with a prompt-first build path.
+Live probes are point-in-time retrieval tests, not job recommendations or guarantees of ongoing access. A provider key being present is not a successful search.
+
+## Per-installation checks
+
+No newly provisioned Vercel/Neon deployment, user account activation, real Claude Code/Codex host task or future timed trigger is claimed by this release. Those require the installing user's accounts and environment. The executable API, DB adapter, migration, daily loop and cloud workflow template are included and tested within the boundaries above.
+
+Local storage supports 15 MB serialized state; the cloud adapter supports 3.5 MB to fit function payload limits. A rejected import keeps previous data. This version is single-owner, not multi-tenant.
+
+## Publication gate
+
+Before push: all tests/build/browser checks pass, dependency audit reports no known vulnerabilities, a scoped secret scan and manual private-data review pass, and only source/config/docs/synthetic tests are staged. Scanning is heuristic, not proof that every possible secret representation can be detected. CI uses read-only permissions, synthetic database data and pinned checkout/setup-node actions.
+
+Final secret preflight examined the public source/config/docs/tests. Three suppressed candidates were manually reviewed in synthetic CLI/onboarding tests; no real key was identified. The working tree was also checked for private paths, deployment identifiers and personal source data.

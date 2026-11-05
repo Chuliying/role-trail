@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Chuliying/role-trail/schema/research.schema.json",
+  "title": "Role Trail research bundle",
+  "description": "Runtime additionally checks evidence, future timestamps, count consistency, canonical URLs and revision semantics.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run",
+    "jobs"
+  ],
+  "properties": {
+    "run": {
+      "type": "object",
+      "required": [
+        "id",
+        "coverage"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "kind": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "status",
+              "query",
+              "screened",
+              "fullJd",
+              "note"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "status": {
+                "enum": [
+                  "searched",
+                  "partial",
+                  "blocked",
+                  "not_run",
+                  "empty"
+                ]
+              },
+              "query": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "screened": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "fullJd": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 5000
+              },
+              "checkedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "jobs": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "company",
+          "title",
+          "url",
+          "source"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://",
+            "maxLength": 8000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "sourceURL": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://",
+            "maxLength": 8000
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 150000
+          },
+          "descriptionKind": {
+            "enum": [
+              "full",
+              "excerpt",
+              "summary",
+              "unknown"
+            ]
+          },
+          "descriptionCheckedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "posting": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "date": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "enum": [
+                  "posted",
+                  "updated",
+                  "reposted",
+                  "unknown"
+                ]
+              },
+              "raw": {
+                "type": "string",
+                "maxLength": 10000
+              }
+            }
+          },
+          "remoteMode": {
+            "enum": [
+              "remote",
+              "hybrid",
+              "onsite",
+              "unknown"
+            ]
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "salary": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "availability": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  "open",
+                  "closed",
+                  "unknown"
+                ]
+              },
+              "source": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https?://",
+                    "maxLength": 8000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "evidence": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "checkedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "checks": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "key",
+                "label"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "confirmed",
+                    "excluded",
+                    "unknown"
+                  ]
+                },
+                "source": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https?://",
+                      "maxLength": 8000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "evidence": {
+                  "type": "string",
+                  "maxLength": 10000
+                },
+                "checkedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "key": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,49}$"
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              }
+            }
+          },
+          "searchedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "firstSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

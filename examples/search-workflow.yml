@@ -1,0 +1,38 @@
+name: Private Role Trail update
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: role-trail-daily
+  cancel-in-progress: false
+jobs:
+  tick:
+    if: vars.ROLE_TRAIL_SCHEDULE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Request due search without logging workspace content
+        env:
+          ROLE_TRAIL_URL: ${{ secrets.ROLE_TRAIL_URL }}
+          ROLE_TRAIL_ACCESS_KEY: ${{ secrets.ROLE_TRAIL_ACCESS_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          try {
+            const u = new URL(process.env.ROLE_TRAIL_URL);
+            if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash || u.pathname !== '/') throw Error();
+            const r = await fetch(new URL('/api/tick', u), {
+              method: 'POST', redirect: 'error', signal: AbortSignal.timeout(330000),
+              headers: {'Content-Type':'application/json', Authorization:'Bearer '+process.env.ROLE_TRAIL_ACCESS_KEY}, body:'{}'
+            });
+            if (!r.ok) throw Error();
+            const result = await r.json();
+            console.log(JSON.stringify({ran: result.ran, result: result.result, runId: result.runId}));
+            if (result.result === 'failed') process.exitCode = 1;
+          } catch { console.error('Search request failed; inspect your private deployment and runner access.'); process.exitCode = 1; }
+          JS

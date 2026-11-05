@@ -43,7 +43,7 @@ a test file exists; the scanner does not execute tests. Preserve contradictory e
 ## 3. Portfolio / LinkedIn / resume
 
 Read only explicitly authorized public URLs or local documents. Use host-supported tools;
-no automatic link fetch occurs in this CLI. A LinkedIn login wall is a blocker, not an empty
+the Git scanner and resume commands do not automatically fetch resume links. A LinkedIn login wall is a blocker, not an empty
 resume: request an export or pasted text. Do not bypass access controls. A portfolio claim
 and a Git observation are separate sources; date and attribute both.
 
@@ -52,7 +52,7 @@ ledger in a separate private file. User reviews names, employers, dates, role sc
 For a selected JD, create a separate application directory with:
 
 - jd.txt, source URL and actual checked date;
-- resume.md, and PDF only if the host has a renderer whose output you can inspect;
+- resume.md, and PDF only using the shipped resume-pdf command or a host renderer whose output you can inspect;
 - adjustments.md: JD requirement → chosen experience → change → evidence → remaining gap;
 - review.md: pending user approval, actual submission status and outstanding eligibility checks.
 
@@ -71,8 +71,7 @@ language, company restrictions and opening status against official evidence.
 
 Store a private dated search-report.md and structured observations. Each observation includes
 stable source URL, company/title, JD text/kind, first-seen time, checked facts with source/date,
-fit explanation with capability evidence IDs, and pending questions. Do not blindly translate
-this draft format into an existing production DB: use that installation's schema and validation.
+fit explanation with capability evidence IDs, and pending questions. Use docs/data-contract.md and the current workspace revision for every import.
 
 Maintain independent decisions: To Review, Shortlisted, Applied, Passed. Only the user's
 explicit report or submission evidence permits Applied. Closing a role requires positive
@@ -91,4 +90,4 @@ If host scheduling is unavailable, say so and provide the manual daily request. 
 install an OS daemon or another paid scheduler. Credentials must belong to that user; use their
 secret store/runtime environment, never chat, Git or shell arguments. Missing optional keys
 must not prevent unkeyed sources. Configure bounded quota/cost limits and stop at exhaustion.
-Follow docs/setup-parity.md for tested and unimplemented components of this candidate.
+Use the shipped CLI/API actions in docs/data-contract.md and the runner in docs/scheduling.md. See docs/setup-parity.md for verified scope and per-installation acceptance.
