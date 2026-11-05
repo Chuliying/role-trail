@@ -1,3 +1,4 @@
+import { wwrCategories } from './providers/we-work-remotely.mjs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdir, writeFile, readFile, realpath, lstat } from 'node:fs/promises';
@@ -75,7 +76,17 @@ export async function privateWorkspace(path, repo) {
 }
 export function validateFeeds(feeds = []) {
   if (!Array.isArray(feeds) || feeds.length > 12) throw Error('At most 12 feeds');
-  const allowed = ['type', 'board', 'company', 'name', 'query', 'country', 'timezone', 'location'];
+  const allowed = [
+    'type',
+    'board',
+    'company',
+    'name',
+    'query',
+    'country',
+    'timezone',
+    'location',
+    'category',
+  ];
   for (const f of feeds) {
     if (
       !f ||
@@ -86,11 +97,20 @@ export function validateFeeds(feeds = []) {
     )
       throw Error('Invalid feed configuration; never put credentials in profiles');
     if (
-      !['himalayas', 'greenhouse', 'lever', 'google-jobs', 'indeed', '104', 'job-frog'].includes(
-        f.type,
-      )
+      ![
+        'himalayas',
+        'greenhouse',
+        'lever',
+        'google-jobs',
+        'indeed',
+        '104',
+        'job-frog',
+        'we-work-remotely',
+      ].includes(f.type)
     )
       throw Error('Unsupported feed');
+    if (f.type === 'we-work-remotely' && !wwrCategories.includes(f.category))
+      throw Error('Unsupported WWR category');
     if (f.type === 'greenhouse' && !/^[a-zA-Z0-9_-]{1,80}$/.test(f.board || ''))
       throw Error('Greenhouse board slug required');
     if (f.type === 'lever' && !/^[a-zA-Z0-9_-]{1,80}$/.test(f.company || ''))

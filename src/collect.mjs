@@ -1,3 +1,4 @@
+import { parseWwrRSS, wwrFeedURL } from './providers/we-work-remotely.mjs';
 import { htmlToMarkdown as plain } from './jd-content.mjs';
 import { parseCompanies, parseJobs } from './providers/job-frog.mjs';
 import { collectProviders, parseGoogleJobs } from './providers/taiwan.mjs';
@@ -5,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { normalizeJob, now } from './workbench.mjs';
 const hosts = new Set([
   'www.job-frog.com',
+  'weworkremotely.com',
   'himalayas.app',
   'boards-api.greenhouse.io',
   'api.lever.co',
@@ -17,7 +19,7 @@ export async function fetchText(url) {
   const r = await fetch(u, {
     redirect: 'error',
     signal: AbortSignal.timeout(20000),
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json, application/rss+xml, application/xml, text/xml' },
   });
   if (!r.ok) throw Error('Provider HTTP ' + r.status);
   const reader = r.body.getReader();
@@ -106,9 +108,12 @@ export async function collect(
       fullJd = 0,
       pages = 0;
     const source = String(f.type),
-      query = ['greenhouse', 'lever'].includes(source)
-        ? 'Employer board ' + String(f.board || f.company) + ' (unfiltered)'
-        : String(f.query || profile.targetRoles.join(' OR ')).slice(0, 500);
+      query =
+        source === 'we-work-remotely'
+          ? `WWR RSS category ${f.category} (unfiltered)`
+          : ['greenhouse', 'lever'].includes(source)
+            ? 'Employer board ' + String(f.board || f.company) + ' (unfiltered)'
+            : String(f.query || profile.targetRoles.join(' OR ')).slice(0, 500);
     if (clock() >= deadline) {
       coverage.push({
         source,
@@ -137,7 +142,11 @@ export async function collect(
       }
     };
     try {
-      if (source === 'job-frog') {
+      if (source === 'we-work-remotely') {
+        const xml = await getText(wwrFeedURL(f.category));
+        pages++;
+        for (const row of parseWwrRSS(xml)) add(row);
+      } else if (source === 'job-frog') {
         const groups = parseCompanies(
           await getText('https://www.job-frog.com/?searched=1&q=' + encodeURIComponent(query)),
         );
@@ -317,7 +326,10 @@ export async function collect(
         query,
         screened,
         fullJd,
-        note: `Read ${pages} response page(s), bounded to ${source === 'himalayas' ? 40 : source === 'google-jobs' ? 20 : 100} rows. ${screened - fullJd} rows were summaries, excerpts or invalid. Eligibility remains unverified. ATS boards are unfiltered; query preferences are not an employer API filter. Not an exhaustive search.`,
+        note:
+          source === 'we-work-remotely'
+            ? `Read ${pages} RSS response; inspected up to 100 items in this unfiltered category. RSS descriptions are excerpts pending employer verification, not verified full JDs. WWR pubDate does not establish employer first posting. Preserve WWR attribution. Location, working hours, AI responsibilities and ownership remain unverified. Cross-category duplicates are merged in jobs; category counts are not unique totals.`
+            : `Read ${pages} response page(s), bounded to ${source === 'himalayas' ? 40 : source === 'google-jobs' ? 20 : 100} rows. ${screened - fullJd} rows were summaries, excerpts or invalid. Eligibility remains unverified. ATS boards are unfiltered; query preferences are not an employer API filter. Not an exhaustive search.`,
         checkedAt: stamp,
       });
     } catch {

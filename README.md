@@ -33,7 +33,7 @@ The [onboarding guide](BOOTSTRAP.md) and [bundled skill](skills/role-trail/SKILL
 | Part of the workflow | What happens |
 | --- | --- |
 | Preferences and experience | Save target roles, location, languages, company restrictions, search notes and required criteria. Scan only authorized Git authors and repositories; confirm personal contributions before using them in a resume. |
-| Research | The agent searches the selected platforms and original employer pages. Built-in Himalayas, Greenhouse, Lever and optional SerpApi feeds help collect data. Source coverage records what was actually read, including failures. |
+| Research | The agent searches the selected platforms and original employer pages. Built-in We Work Remotely RSS, Himalayas, Greenhouse, Lever and optional SerpApi feeds help collect data. Source coverage records what was actually read, including failures. |
 | Fit and eligibility | The agent saves a 1–10 assessment with evidence and gaps. Eligibility needs its own sources and dates. A high score is not permission to work in a country or a prediction of an offer. |
 | Your decisions | Move roles through To Review, Shortlisted, Applied and Passed. Archive manually and keep preparation todos. Research does not make these decisions for you. |
 | Resumes | Request a resume for a role, or prepare shortlisted roles. The website queues work; a connected Codex/Claude run writes the draft and explains the edits. It does not start a model session itself. The agent tailors confirmed experience to the JD. The app keeps versions and review status, with printable HTML and local PDF output. Current pending/approved drafts aren't regenerated on every run. |
@@ -81,7 +81,7 @@ For agents, `init --profile /private/profile.json` replaces the interactive inte
 - [Daily scheduling](docs/scheduling.md): register a host LLM task; optional daemon/GitHub Actions collectors support source collection.
 - [Agent evidence and resume workflow](docs/agent-workflow.md): contribution confirmation, LinkedIn fallback and tailoring instructions.
 - [What is verified](docs/setup-parity.md): code tests, agent work and checks needed in your own installation.
-- [Source playbook](docs/source-playbook.md): agent routes for 104, Job-Frog, Wellfound, LinkedIn, Indeed, Google Jobs, Japan Dev, TokyoDev, Wantedly, Himalayas and employer pages. Choose the sources relevant to you.
+- [Source playbook](docs/source-playbook.md): agent routes for 104, Job-Frog, Wellfound, LinkedIn, Indeed, Google Jobs, Japan Dev, TokyoDev, Wantedly, Himalayas, We Work Remotely and employer pages. Choose the sources relevant to you.
 
 ## Reliability and protection
 
@@ -124,7 +124,7 @@ The paste-JD review entry and human application decision were inspired by
 This implementation is original; no career-ops code is copied. Credits do not imply endorsement.
 The interview preparation method adapts [How to Get an Offer](https://github.com/AIPMAndy/how-to-get-offer) by AIPMAndy / AI 酋长 Andy under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), adding cited experience, separate eligibility and decisions, and versioned records. No upstream application code is included.
 
-[Himalayas](https://himalayas.app) supplies attributed listings when configured. Preserve its source and application links. JD formatting uses [Marked](https://github.com/markedjs/marked) (MIT; bundled license in `web/vendor/marked-LICENSE.md`) for Markdown tokens and [Turndown](https://github.com/mixmark-io/turndown) (MIT) for provider HTML conversion. The reader builds allowed DOM elements without executing raw HTML or loading embedded images. Dependency licenses are retained by npm. Project source: [MIT](LICENSE).
+[Himalayas](https://himalayas.app) and [We Work Remotely](https://weworkremotely.com/remote-job-rss-feed) supply attributed listings when configured. WWR uses its public category RSS feeds; keep each listing linked back to WWR. Preserve its source and application links. JD formatting uses [Marked](https://github.com/markedjs/marked) (MIT; bundled license in `web/vendor/marked-LICENSE.md`) for Markdown tokens and [Turndown](https://github.com/mixmark-io/turndown) (MIT) for provider HTML conversion. The reader builds allowed DOM elements without executing raw HTML or loading embedded images. Dependency licenses are retained by npm. Project source: [MIT](LICENSE).
 
 ## Search outcomes and application packages
 

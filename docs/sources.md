@@ -4,8 +4,11 @@ Edit Profile in the dashboard. `platforms` is the list you expect covered. `feed
 
 ```json
 {
-  "platforms": ["himalayas", "greenhouse", "lever", "google-jobs", "your-other-platform"],
+  "platforms": ["we-work-remotely", "himalayas", "greenhouse", "lever", "google-jobs", "your-other-platform"],
   "feeds": [
+    {"type":"we-work-remotely","category":"front-end-programming"},
+    {"type":"we-work-remotely","category":"full-stack-programming"},
+    {"type":"we-work-remotely","category":"product"},
     {"type":"himalayas","query":"data engineer","country":"GB","timezone":"UTC+0"},
     {"type":"greenhouse","board":"EMPLOYER_BOARD_SLUG","company":"Employer name"},
     {"type":"lever","company":"EMPLOYER_SLUG","name":"Employer name"},
@@ -18,6 +21,7 @@ These are profile fragments, not a complete initialization profile. Replace empl
 
 | Route | Credentials | Actual bounds and semantics |
 | --- | --- | --- |
+| [We Work Remotely RSS](https://weworkremotely.com/remote-job-rss-feed) | No key | One request per selected category; first 100 items, no pagination. Supported categories: `front-end-programming`, `full-stack-programming`, `product`. Unfiltered categories can contain unrelated roles. Deduplicate job URLs across feeds. Preserve the WWR listing link as attribution. RSS content stays an excerpt until checked against the employer; `pubDate` is platform publication, not verified first posting. |
 | [Himalayas search API](https://himalayas.app/api) | No key | At most 2 pages × 20 rows. Query, country and timezone are sent to the provider. Preserve original application links and source attribution. Aggregator publication is not proof of employer first publication; expiry archives the row. |
 | [Greenhouse Job Board API](https://developers.greenhouse.io/job-board.html) | No key for public boards | First 100 returned jobs, with content. This is an unfiltered employer board, not a title-filtered search. `updated_at` is an update date. |
 | [Lever Postings API](https://github.com/lever/postings-api) | No key for public boards | First 100 returned postings. Uses description, lists and additional content. Employer board identifiers must be valid. |
@@ -37,3 +41,5 @@ After configuration run `collect --workspace DIR`, or Search now. Inspect Resear
 - **No matches:** rotate terms and inspect an independent official source; do not infer the market has no suitable jobs.
 
 Optional provider-account setup is user-specific. Fixture coverage proves parser behavior, not live account access. No credentials or real private job records are included in this repo.
+
+Changing only `platforms` or `feeds` changes discovery routing. It preserves assessment freshness, document review and existing stale flags; it does not count as a new check. Changing substantive preferences still invalidates existing assessments and resume bindings.

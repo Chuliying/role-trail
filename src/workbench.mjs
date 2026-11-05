@@ -524,7 +524,22 @@ export function transition(current, a) {
   } else if (a.type === 'profile') {
     keys(a, ['type', 'profile']);
     profileCheck(a.profile);
-    if (hash(s.profile) !== hash(a.profile)) invalidateScores();
+    const criteria = (p) => {
+      if (!p) return null;
+      const { feeds, platforms, ...rest } = p;
+      return rest;
+    };
+    if (hash(criteria(s.profile)) !== hash(criteria(a.profile))) invalidateScores();
+    else {
+      // Routing changes do not change the candidate or job. Preserve old stale flags,
+      // timestamps, review states and mismatched bindings; rebind only the prior profile.
+      const previous = profileHash(s.profile),
+        next = profileHash(a.profile);
+      for (const j of s.jobs)
+        if (j.assessment?.binding?.profileHash === previous)
+          j.assessment.binding.profileHash = next;
+      for (const r of s.resumes) if (r.profileHash === previous) r.profileHash = next;
+    }
     s.profile = structuredClone(a.profile);
   } else if (a.type === 'review' || a.type === 'archive') {
     keys(a, ['type', 'jobId', a.type === 'review' ? 'status' : 'archived']);
