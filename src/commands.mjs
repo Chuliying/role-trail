@@ -313,7 +313,12 @@ export async function run(command, args) {
     await mkdir(dir, { recursive: true, mode: 0o700 });
     await privateOutput(join(dir, 'workspace.json'), JSON.stringify(s));
     const ids = new Set(
-      [...s.resumes.map((r) => r.pdfHash), ...s.runs.map((r) => r.archiveHash)].filter(Boolean),
+      [
+        ...s.resumes.flatMap((r) => [r.pdfHash, r.sourceArchive]),
+        ...s.runs.map((r) => r.archiveHash),
+        ...s.capabilities.map((c) => c.legacyArchive),
+        ...(s.migration?.artifacts || []).map((a) => a.hash),
+      ].filter(Boolean),
     );
     for (const id of ids)
       await privateOutput(join(dir, 'artifacts', id), await store.getArtifact(id));

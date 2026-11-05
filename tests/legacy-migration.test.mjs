@@ -52,3 +52,24 @@ test('factual exclusion does not become a personal Passed decision', () => {
   assert.equal(result.state.reviews[id].status, 'review');
   assert.equal(result.state.jobs.find((j) => j.id === id).availability.status, 'closed');
 });
+test('portable backup includes every migration artifact, not only visible PDFs and runs', async () => {
+  const { mkdtemp, mkdir, writeFile, readdir, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { run } = await import('../src/commands.mjs');
+  const root = await mkdtemp(join(tmpdir(), 'role-legacy-backup-'));
+  try {
+    const converted = migration.convertLegacy(legacyFixture(), {}),
+      dir = join(root, 'source');
+    await mkdir(join(dir, 'artifacts'), { recursive: true });
+    await writeFile(join(dir, 'workspace.json'), JSON.stringify(converted.state));
+    for (const a of converted.artifacts) await writeFile(join(dir, 'artifacts', a.hash), a.bytes);
+    await run('backup', ['--workspace', dir, '--output', join(root, 'backup')]);
+    assert.deepEqual(
+      (await readdir(join(root, 'backup/artifacts'))).sort(),
+      converted.artifacts.map((a) => a.hash).sort(),
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
