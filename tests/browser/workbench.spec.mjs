@@ -6,6 +6,7 @@ test('review, shortlist, task, tailored resume and archive survive reload', asyn
   await page.goto('/');
   await page.getByRole('button', { name: 'Product Engineer', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Job description', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
   await page
     .getByRole('textbox', { name: 'New preparation task' })
     .fill('Prepare accessible UI example');
@@ -28,6 +29,7 @@ test('review, shortlist, task, tailored resume and archive survive reload', asyn
   await page.reload();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Product Engineer', exact: true }).click();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
   await expect(page.getByRole('checkbox', { name: 'Prepare accessible UI example' })).toBeChecked();
   await page
     .locator('#detail-footer')
@@ -74,6 +76,7 @@ test('mobile research wraps long URLs; detail and profile fit viewport', async (
   await page.screenshot({ path: 'test-results/mobile-research.png', fullPage: true });
   await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
   await page.getByRole('button', { name: 'Design Engineer', exact: true }).click();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
   expect(
     await page.evaluate(
       () => document.querySelector('dialog[open]').scrollWidth <= window.innerWidth,
@@ -170,11 +173,11 @@ test('stale scores, old verification and application history are represented hon
   await page.reload();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   const row = page.locator('tbody tr').filter({ hasText: 'Regression role' });
-  await expect(row.getByRole('button', { name: /Previous fit.*Reassess/ })).toBeVisible();
+  await expect(row.getByRole('button', { name: /Previous fit/ })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
-  const previous = row.getByRole('button', { name: /Previous fit.*Reassess/ });
+  const previous = row.getByRole('button', { name: /Previous fit/ });
   expect((await previous.boundingBox()).height).toBe(44);
-  await expect(previous).toHaveText('Reassess');
+  await expect(previous).toHaveText('9');
   await expect(previous.locator('svg,.score')).toHaveCount(0);
   await row.screenshot({ path: 'test-results/compact-stale-score.png' });
   await previous.click();
@@ -194,6 +197,7 @@ test('stale scores, old verification and application history are represented hon
   ).toBeInViewport();
   await page.getByRole('button', { name: 'Close opportunity' }).click();
   await page.getByRole('button', { name: 'Regression role', exact: true }).click();
+  await page.getByRole('tab', { name: 'Fit & checks', exact: true }).click();
   await expect(
     page.getByText('Stale assessment — reassess before using this score.'),
   ).toBeVisible();
@@ -274,6 +278,7 @@ test('agent preparation appears in the workspace and shows stale after a new res
   await page.reload();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Practice fixture', exact: true }).click();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Interview preparation', exact: true }),
   ).toBeVisible();
@@ -299,6 +304,7 @@ test('agent preparation appears in the workspace and shows stale after a new res
   await page.reload();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Practice fixture', exact: true }).click();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
   await expect(page.getByText('Preparation v1 · stale', { exact: true })).toBeVisible();
 });
 
@@ -312,15 +318,13 @@ test('outcomes and application package show missing work without claiming applic
   await expect(page.getByText('New high-fit roles ·', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
   await page.getByRole('button', { name: 'Design Engineer', exact: true }).click();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Application package', exact: true }),
   ).toBeVisible();
   await expect(page.locator('.package-overview')).toContainText('No application recorded.');
   await expect(page.locator('.package-overview')).toContainText('Create a tailored resume');
-  await page
-    .locator('.package-overview')
-    .getByRole('button', { name: 'Tasks', exact: true })
-    .click();
+  await page.getByRole('textbox', { name: 'New preparation task' }).scrollIntoViewIfNeeded();
   await expect(page.getByRole('textbox', { name: 'New preparation task' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -437,6 +441,7 @@ test('converted installation keeps approved PDF access, shared todos and histori
   await page.goto('/');
   await page.getByRole('button', { name: 'Shortlisted', exact: false }).first().click();
   await page.getByRole('button', { name: 'a', exact: true }).click();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
   await expect(page.getByText('Version 1 · approved', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Open saved PDF ↗' }).first()).toBeVisible();
   const download = await page.request.get('/api/resume?job=' + r.jobId + '&version=1&format=pdf');
@@ -776,23 +781,15 @@ test('workspace hierarchy keeps details optional and shared task labels independ
   await run.screenshot({ path: 'test-results/audit-research-mobile.png' });
   await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
   await page.getByRole('button', { name: 'Interface Engineer 1', exact: true }).click();
-  const title = await page.locator('#detail-title').boundingBox();
-  const overview = await page.locator('.package-overview').boundingBox();
-  expect(title.y).toBeLessThan(overview.y);
   const modal = await page.locator('#detail').boundingBox();
-  expect(Math.abs(modal.x - (390 - modal.width) / 2)).toBeLessThan(1);
+  expect(modal.x).toBe(0);
   await expect(page.locator('#detail-title')).toBeFocused();
-  const jd = await page.locator('#job-description').boundingBox();
-  expect(jd.y).toBeLessThan(overview.y);
-  await page
-    .getByRole('navigation', { name: 'Opportunity sections' })
-    .getByRole('button', { name: 'Preparation', exact: true })
-    .click();
-  await expect(page.locator('#application-package')).toBeFocused();
-  await page
-    .getByRole('navigation', { name: 'Opportunity sections' })
-    .getByRole('button', { name: 'JD', exact: true })
-    .click();
+  await expect(page.locator('#job-description')).toBeVisible();
+  await expect(page.locator('#application-package')).toBeHidden();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
+  await expect(page.locator('#application-package')).toBeVisible();
+  await expect(page.locator('#job-description')).toBeHidden();
+  await page.getByRole('tab', { name: 'JD', exact: true }).click();
   await page.screenshot({ path: 'test-results/audit-detail-mobile.png' });
   await page.getByRole('button', { name: 'Close opportunity', exact: true }).click();
   await page.getByRole('button', { name: 'Profile', exact: true }).click();

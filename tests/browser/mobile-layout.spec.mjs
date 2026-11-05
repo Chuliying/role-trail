@@ -37,18 +37,17 @@ for (const engine of ['chromium', 'webkit']) {
           .soft(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
           .toBe(true);
       }
-      await page.screenshot({ path: `test-results/cards-${engine}.png` });
+      await page.screenshot({ animations: 'disabled', path: `test-results/cards-${engine}.png` });
       await rows.first().locator('.job-title').click();
       const modal = page.locator('#detail');
       await expect(modal).toBeVisible();
       const box = await modal.boundingBox();
       expect.soft(Math.abs(box.x - (390 - box.x - box.width))).toBeLessThanOrEqual(2);
-      expect.soft(box.x).toBeGreaterThanOrEqual(10);
+      expect.soft(box.x).toBe(0);
       await expect.soft(page.locator('#close-detail svg')).toHaveCount(1);
       await expect.soft(page.locator('#detail-title')).toBeFocused();
-      const jd = await page.locator('#job-description').boundingBox();
-      const pack = await page.locator('#application-package').boundingBox();
-      expect.soft(jd.y).toBeLessThan(pack.y);
+      await expect(page.locator('#job-description')).toBeVisible();
+      await expect(page.locator('#application-package')).toBeHidden();
       const footer = page.locator('#detail-footer');
       await expect(footer.getByRole('link', { name: 'Original job ↗' })).toBeVisible();
       await expect(footer.getByRole('button', { name: 'Archive', exact: true })).toBeVisible();
@@ -71,45 +70,11 @@ for (const engine of ['chromium', 'webkit']) {
       await page.locator('#detail-body').evaluate((n) => {
         n.scrollTop = 0;
       });
-      await page.screenshot({ path: `test-results/reader-${engine}.png` });
-      const prepare = page
-        .getByRole('navigation', { name: 'Opportunity sections' })
-        .getByRole('button', { name: 'Preparation', exact: true });
-      await prepare.click();
-      const bodyTop = (await page.locator('#detail-body').boundingBox()).y;
-      const tabsTop = (
-        await page.getByRole('navigation', { name: 'Opportunity sections' }).boundingBox()
-      ).y;
-      expect(tabsTop - bodyTop).toBeLessThanOrEqual(1);
-      const shortcuts = page.getByRole('group', { name: 'Preparation shortcuts' });
-      await expect(shortcuts.getByRole('button')).toHaveCount(3);
-      await expect(shortcuts.locator('svg')).toHaveCount(3);
-      await expect(page.locator('#application-package a[href^="https:"]')).toHaveCount(0);
-      for (const width of [320, 390]) {
-        await page.setViewportSize({ width, height: 844 });
-        const boxes = await shortcuts.getByRole('button').evaluateAll((nodes) =>
-          nodes.map((n) => ({
-            y: n.getBoundingClientRect().y,
-            right: n.getBoundingClientRect().right,
-          })),
-        );
-        expect(
-          Math.max(...boxes.map((b) => b.y)) - Math.min(...boxes.map((b) => b.y)),
-        ).toBeLessThan(1);
-        expect(Math.max(...boxes.map((b) => b.right))).toBeLessThan(width);
-      }
-      await page.screenshot({ path: `test-results/package-${engine}.png` });
-      for (const [label, destination] of [
-        ['Resume', 'Tailored resume'],
-        ['Interview', 'Interview preparation'],
-        ['Tasks', 'Preparation'],
-      ]) {
-        await prepare.click();
-        await shortcuts.getByRole('button', { name: label, exact: true }).click();
-        await expect(
-          page.locator('#detail-body').getByRole('heading', { name: destination, exact: true }),
-        ).toBeInViewport();
-      }
+      await page.screenshot({ animations: 'disabled', path: `test-results/reader-${engine}.png` });
+      await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
+      await expect(page.locator('#application-package')).toBeVisible();
+      await expect(page.locator('.package-links')).toHaveCount(0);
+      await page.screenshot({ animations: 'disabled', path: `test-results/package-${engine}.png` });
       await page.getByRole('button', { name: 'Close opportunity' }).click();
       await page.evaluate(() => {
         window.previousClient = true;

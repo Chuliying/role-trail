@@ -6,6 +6,7 @@ import { positiveFresh, currentScore, canonical } from './status.mjs';
 const staleResumes = new Set();
 let collecting = false;
 let renderedView = null;
+let detailTab = 'jd';
 let toolsOpen = false,
   filtersOpen = true,
   limit = 20;
@@ -76,17 +77,30 @@ function timeMark(label, value, path, detail = value) {
 }
 function historicalScore(job) {
   const control = button(
-    t('Reassess'),
+    String(job.assessment.score),
     async () => {
       await showJob(job.id);
-      document.getElementById('fit-evidence').scrollIntoView({ block: 'start' });
+      selectDetailTab('fit');
     },
-    'score-status historical-fit',
+    'score-status historical-fit score',
   );
-  const label = t('Previous fit') + ' ' + job.assessment.score + '/10 · ' + t('Reassess');
+  const label = t('Previous fit') + ' ' + job.assessment.score + '/10';
   control.setAttribute('aria-label', label);
   control.title = label;
   return control;
+}
+function selectDetailTab(key, focus = false) {
+  detailTab = key;
+  document.querySelectorAll('#detail-tabs [role="tab"]').forEach((n) => {
+    const selected = n.dataset.tab === key;
+    n.setAttribute('aria-selected', String(selected));
+    n.tabIndex = selected ? 0 : -1;
+    if (selected && focus) n.focus();
+  });
+  document.querySelectorAll('#detail-body > [role="tabpanel"]').forEach((n) => {
+    n.hidden = n.id !== 'panel-' + key;
+  });
+  $('#detail-body').scrollTop = 0;
 }
 
 function disclosure(label, ...content) {
@@ -144,6 +158,11 @@ const sha = async (x, raw = false) =>
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 function notify(message) {
+  if ($('#detail').open) {
+    $('#detail-notice').textContent = message;
+    $('#detail-notice').hidden = false;
+    return;
+  }
   $('#notice').textContent = message;
   $('#notice').classList.add('visible');
   setTimeout(() => $('#notice').classList.remove('visible'), 6000);
@@ -545,6 +564,7 @@ function jobs() {
                   locale,
                   onOpen: async () => {
                     await showJob(j.id);
+                    selectDetailTab('fit');
                     const evidence = document.getElementById('verification-evidence');
                     evidence?.scrollIntoView({ block: 'start' });
                     evidence?.focus({ preventScroll: true });
@@ -577,7 +597,7 @@ function jobs() {
                   el(
                     'summary',
                     { 'aria-label': 'Fit ' + j.assessment.score + '; show assessment' },
-                    el('span', { class: 'score' }, j.assessment.score, el('span', {}, ' /10')),
+                    el('span', { class: 'score' }, j.assessment.score),
                   ),
                   el('p', {}, j.assessment.reason),
                 )
@@ -616,6 +636,7 @@ function jobs() {
                       'M22 2 9 15M22 2l-7 20-6-7-7-6z',
                       async () => {
                         await showJob(j.id);
+                        selectDetailTab('preparation');
                         document
                           .getElementById('application-package')
                           .scrollIntoView({ block: 'start' });
@@ -632,6 +653,7 @@ function jobs() {
                       'M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6',
                       async () => {
                         await showJob(j.id);
+                        selectDetailTab('preparation');
                         document
                           .getElementById('resume-section')
                           .scrollIntoView({ block: 'start' });
@@ -732,6 +754,8 @@ async function collect() {
   }
 }
 async function showJob(id) {
+  const previousScroll = currentJob === id && $('#detail').open ? $('#detail-body').scrollTop : 0;
+  if (currentJob !== id || !$('#detail').open) detailTab = 'jd';
   currentJob = id;
   const j = state.jobs.find((x) => x.id === id);
   if (!j) return;
@@ -745,10 +769,19 @@ async function showJob(id) {
     ),
   };
   const d = $('#detail-body');
+  $('#detail-notice').hidden = true;
+  $('#detail-notice').textContent = '';
+  const source = link(t('Original job ↗'), j.url);
+  source.classList.add('footer-source');
   $('#detail-footer').replaceChildren(
-    link(t('Original job ↗'), j.url),
-    button(state.reviews[id]?.archived ? t('Restore manual archive') : t('Archive'), () =>
-      action({ type: 'archive', jobId: id, archived: !state.reviews[id]?.archived }),
+    source,
+    iconButton(
+      state.reviews[id]?.archived ? t('Restore manual archive') : t('Archive'),
+      state.reviews[id]?.archived
+        ? 'M4 10a8 8 0 1 1 1 8M4 4v6h6'
+        : 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7',
+      () => action({ type: 'archive', jobId: id, archived: !state.reviews[id]?.archived }),
+      'quiet icon-button footer-archive',
     ),
   );
   d.replaceChildren(
@@ -850,7 +883,11 @@ async function showJob(id) {
       structured(j.description || 'Description unavailable. Open the original source.'),
     ),
   );
-  const taskSection = el('section', { class: 'detail-section' }, el('h2', {}, t('Preparation')));
+  const taskSection = el(
+    'section',
+    { class: 'detail-section', id: 'task-section' },
+    el('h2', {}, t('Tasks')),
+  );
   taskSection.append(...state.tasks.filter((t) => taskFor(t, id)).map(todo));
   const input = el('input', {
     placeholder: 'Add a preparation task',
@@ -880,13 +917,22 @@ async function showJob(id) {
       { class: 'actions' },
       button(
         t('Generate draft'),
-        async () => {
+        async (event) => {
+          const control = event.currentTarget;
+          control.disabled = true;
+          control.setAttribute('aria-busy', 'true');
+          $('#detail-notice').hidden = true;
           try {
             state = await api('draft', { revision: state.revision, jobId: id });
             await showJob(id);
+            $('#resume-section').scrollIntoView({ block: 'start' });
+            notify('Draft ready for review.');
             render();
           } catch (e) {
             notify(e.message);
+          } finally {
+            control.disabled = false;
+            control.removeAttribute('aria-busy');
           }
         },
         'primary',
@@ -955,7 +1001,7 @@ async function showJob(id) {
     .sort((a, b) => b.version - a.version)[0];
   const prepSection = el(
     'section',
-    { class: 'detail-section' },
+    { class: 'detail-section', id: 'interview-section' },
     el('h2', {}, t('Interview preparation')),
   );
   let preparationStale = true;
@@ -1075,54 +1121,59 @@ async function showJob(id) {
           : 'Print export is available. Use the agent PDF command to save the original file in this workspace.',
       ),
     );
-  overview.append(
-    el(
-      'div',
-      { class: 'package-links', role: 'group', 'aria-label': t('Preparation shortcuts') },
-      ...[
-        ['Resume', resume, 'M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6'],
-        ['Interview', prepSection, 'M4 4h16v12H9l-5 4zM8 8h8M8 12h5'],
-        ['Tasks', taskSection, 'M9 6h12M9 12h12M9 18h12M3 5l1 1 2-2M3 11l1 1 2-2M3 17l1 1 2-2'],
-      ].map(([label, section, path]) => {
-        const b = button(
-          t(label),
-          () => {
-            section.scrollIntoView({ block: 'start' });
-            section.setAttribute('tabindex', '-1');
-            section.focus({ preventScroll: true });
-          },
-          'quiet',
-        );
-        b.prepend(verificationIcon(path));
-        return b;
-      }),
-    ),
-  );
-  // Reading the JD is the primary action; preparation remains a separate destination.
   const jd = d.querySelector('#job-description');
-  d.querySelector('.detail-section').before(jd);
-  taskSection.before(overview);
-  jd.before(
-    el(
-      'div',
-      { class: 'detail-jumps', role: 'navigation', 'aria-label': t('Opportunity sections') },
-      ...[
-        ['JD', jd],
-        ['Fit & checks', d.querySelector('#fit-evidence')],
-        ['Preparation', overview],
-      ].map(([label, section]) =>
-        button(
-          t(label),
-          () => {
-            section.scrollIntoView({ block: 'start' });
-            section.setAttribute('tabindex', '-1');
-            section.focus({ preventScroll: true });
-          },
-          'quiet',
-        ),
-      ),
-    ),
+  const groups = [
+    ['jd', 'JD', [jd]],
+    [
+      'fit',
+      'Fit & checks',
+      [d.querySelector('#fit-evidence'), d.querySelector('#verification-evidence')],
+    ],
+    ['preparation', 'Preparation', [overview, resume, prepSection, taskSection]],
+  ];
+  const tabs = $('#detail-tabs');
+  tabs.replaceChildren(
+    ...groups.map(([key, label]) => {
+      const control = button(t(label), () => selectDetailTab(key), 'quiet');
+      control.id = 'tab-' + key;
+      control.dataset.tab = key;
+      control.setAttribute('role', 'tab');
+      control.setAttribute('aria-controls', 'panel-' + key);
+      control.onkeydown = (event) => {
+        const index = groups.findIndex((g) => g[0] === key);
+        const next =
+          event.key === 'ArrowRight'
+            ? (index + 1) % groups.length
+            : event.key === 'ArrowLeft'
+              ? (index + groups.length - 1) % groups.length
+              : event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                  ? groups.length - 1
+                  : -1;
+        if (next >= 0) {
+          event.preventDefault();
+          selectDetailTab(groups[next][0], true);
+        }
+      };
+      return control;
+    }),
   );
+  for (const [key, , sections] of groups)
+    d.append(
+      el(
+        'div',
+        {
+          id: 'panel-' + key,
+          role: 'tabpanel',
+          'aria-labelledby': 'tab-' + key,
+          tabindex: '0',
+        },
+        ...sections,
+      ),
+    );
+  selectDetailTab(detailTab);
+  d.scrollTop = previousScroll;
   if (!$('#detail').open) {
     $('#detail').showModal();
     d.scrollTop = 0;
@@ -1227,7 +1278,14 @@ function tasks() {
                 : t('No resume')),
           ),
           ...state.tasks.filter((t) => taskFor(t, j.id)).map(todo),
-          button(t('Open preparation'), () => showJob(j.id), 'preparation-open'),
+          button(
+            t('Open preparation'),
+            async () => {
+              await showJob(j.id);
+              selectDetailTab('preparation');
+            },
+            'preparation-open',
+          ),
         ),
       ),
     ),

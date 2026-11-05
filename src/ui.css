@@ -1318,9 +1318,6 @@ h1 {
     min-width: 0;
     padding-inline: 10px;
   }
-  .package-overview {
-    padding: 16px;
-  }
   .detail-section {
     margin-top: 24px;
     padding-top: 20px;
@@ -1601,9 +1598,9 @@ summary:focus-visible {
 }
 #detail-footer {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding: 12px 20px;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 12px;
+  padding: 10px var(--reader-gutter);
   background: var(--surface);
 }
 #detail-footer > * {
@@ -1620,32 +1617,6 @@ summary:focus-visible {
 #detail .detail-section {
   scroll-margin-top: 64px;
 }
-.package-links {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 20px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-.package-links button {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  min-height: 64px;
-  padding: 8px 4px;
-  border: 0;
-  font-size: 14px;
-}
-.package-links svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-}
-
 /* Motion signals a state change; it never moves reading content or delays an action. */
 button,
 .button,
@@ -1705,5 +1676,105 @@ summary {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* A single reading grid and real panels, shared by mobile and desktop. */
+#detail {
+  --reader-gutter: 24px;
+}
+#detail .dialog-bar {
+  padding-inline: var(--reader-gutter);
+}
+#detail-body {
+  padding: 0 var(--reader-gutter) 24px;
+}
+#detail-tabs {
+  flex: none;
+  position: static;
+  margin: 0 var(--reader-gutter);
+  padding: 0;
+}
+#detail-tabs [role='tab'] {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  padding-block: 12px;
+}
+#detail-tabs [aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--action);
+}
+#detail-body > [role='tabpanel'] {
+  outline: none;
+}
+#detail .detail-section {
+  padding: 24px 0 0;
+  margin: 24px 0 0;
+}
+#detail [role='tabpanel'] > .detail-section:first-child {
+  border: 0;
+  margin-top: 0;
+  padding-top: 12px;
+}
+#detail .package-overview {
+  padding-inline: 0;
+}
+#detail-footer .footer-source {
+  border: 0;
+  background: var(--surface-muted);
+}
+#detail-footer .footer-archive {
+  border: 0;
+  padding: 10px;
+}
+#detail-notice {
+  flex: none;
+  margin: 8px var(--reader-gutter);
+  padding: 10px 12px;
+  background: var(--info-bg);
+  color: var(--info);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+#detail button[aria-busy='true'] {
+  opacity: 0.6;
+  cursor: progress;
+}
+.historical-fit {
+  color: var(--muted);
+  font-size: 19px;
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  #detail {
+    --reader-gutter: 16px;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+  #detail .dialog-bar {
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+  #detail-footer {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .job-row .job-title {
+    text-indent: 0;
+    display: block;
+  }
+  .job-row .row-actions select {
+    padding-left: 4px;
+  }
+  .job-row .rt-verification {
+    justify-content: flex-start;
+    padding-inline: 0;
   }
 }
