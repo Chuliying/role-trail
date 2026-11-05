@@ -2,6 +2,14 @@
 
 Get a current `workflow --mode shortlist` packet from the same store used by the app. Use a new private output path. The packet lists active Shortlisted roles and whether resumes/preparation need work. Closed, excluded, manually archived and Passed roles aren't automatic preparation targets.
 
+## Explicit resume requests
+
+Read `resumeRequests` from the work packet before automatic shortlist work. These are user-requested jobs even when not Shortlisted; preserve their decisions. See [request contract](../../../docs/resume-requests.md). Recheck whether a request was canceled before saving. Use your host LLM to tailor the resume; the deterministic `draft` command alone does not satisfy an AI request.
+
+Read the JD and source evidence. Compare proposed claims with prior explicit user confirmations and approved resumes; do not bulk-confirm imported claims. If a needed fact is unsupported, save `resumeRequestStatus` with `status:blocked` and a specific clarification in `note`. An approved resume is a source to inspect, not blanket confirmation of unrelated claims. Never fabricate details to clear the gate.
+
+Save a new pending `resume` version with concrete adjustments, inspect/save its PDF, then mark the request completed with that version via `resumeRequestStatus`. Completion validates a new current draft, but does not prove its PDF was visually checked; report PDF failures separately. Preserve approval, application decisions and preparation checkbox progress. Do not complete a request merely because it was read, copied into a prompt, or an old draft exists. Re-export on revision conflict and reconcile.
+
 ## Resume
 
 Read the full JD and confirmed experience. Use `draft` for a starting version when needed, then tailor the language with the host model. Preserve truthful titles, dates, ownership and metrics. The deterministic draft is just a starting point; it does not replace your reading of the JD.

@@ -68,6 +68,8 @@ Send one action via `action --workspace DIR --file FILE`, or API `/api/action`:
 - `archive`: `{type,jobId,archived:true|false}`.
 - `task`: `{type,jobId,text,done:false}` creates; `{type,id,jobId,done:true}` updates. Text can also be changed.
 - `resume`: `{type,jobId,content,capabilityIds:[],adjustments:[],jdHash}`. Creates a new pending version. `draft` fills this shape using confirmed claims. Host agents may rewrite content but must keep claims grounded.
+- `requestResume`: `{type,jobId}` queues an agent task, without confirming capabilities or generating text. One active request per job.
+- `resumeRequestStatus`: `{type,id,status,note?,resumeVersion?}` records blocked/canceled, or completes with a new current saved resume version and adjustments. Optional `state.resumeRequests` survives research imports. See [request lifecycle](resume-requests.md).
 - `resumeReview`: `{type,jobId,version,status:"approved"|"changes_requested"}`. Rejects a changed JD, profile or capability evidence.
 - `schedule`: `{type,schedule:{status:"active"|"paused",time:"09:00",timezone:"Europe/London"}}`. This saves timing, not an installed runner.
 

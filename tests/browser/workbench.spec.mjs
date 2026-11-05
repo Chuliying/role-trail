@@ -11,21 +11,40 @@ test('review, shortlist, task, tailored resume and archive survive reload', asyn
     .getByRole('textbox', { name: 'New preparation task' })
     .fill('Prepare accessible UI example');
   await page.getByRole('button', { name: 'Add task', exact: true }).click();
-  await page.getByRole('checkbox', { name: 'Prepare accessible UI example' }).check();
-  await page.getByRole('button', { name: 'Generate draft', exact: true }).click();
+  await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/api/action') && r.request().method() === 'POST'),
+    page.getByRole('checkbox', { name: 'Prepare accessible UI example' }).check(),
+  ]);
+  // Simulated host-agent save; the website now queues work rather than generating text.
+  await expect
+    .poll(async () => {
+      const s = await (await page.request.get('/api/state')).json();
+      return s.tasks.find((t) => t.text === 'Prepare accessible UI example')?.done;
+    })
+    .toBe(true);
+  const snapshot = await (await page.request.get('/api/state')).json();
+  const target = snapshot.jobs.find((j) => j.title === 'Product Engineer');
+  const drafted = await page.request.post('/api/draft', {
+    headers: { 'X-Role-Trail': '1' },
+    data: { revision: snapshot.revision, jobId: target.id },
+  });
+  expect(drafted.ok(), await drafted.text()).toBeTruthy();
+  await page.reload();
+  await page.getByRole('button', { name: 'Product Engineer', exact: true }).click();
+  await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
   await expect(page.getByText('Version 1 · pending')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'What changed for this role' })).toBeVisible();
   await page.getByRole('button', { name: 'Approve', exact: true }).click();
   await expect(page.getByText('Version 1 · approved')).toBeVisible();
-  await page.getByRole('button', { name: 'Generate draft', exact: true }).click();
+  await page.getByRole('button', { name: 'Request resume', exact: true }).click();
   await expect(page.getByText('Version 1 · approved')).toBeVisible();
   await page.getByRole('button', { name: 'Close opportunity' }).click();
   await page.getByLabel('Decision for Product Engineer').selectOption('shortlisted');
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Product Engineer', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Preparation', exact: true }).click();
-  await page.getByRole('button', { name: 'Draft all shortlisted', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('0 draft(s) generated');
+  await page.getByRole('button', { name: 'Request shortlisted resumes', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('0 resume request(s) queued');
   await page.reload();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Product Engineer', exact: true }).click();
@@ -176,7 +195,8 @@ test('stale scores, old verification and application history are represented hon
   await expect(row.getByRole('button', { name: /Previous fit/ })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   const previous = row.getByRole('button', { name: /Previous fit/ });
-  expect((await previous.boundingBox()).height).toBe(44);
+  expect((await previous.boundingBox()).height).toBe(32);
+  expect(await previous.evaluate((n) => getComputedStyle(n).borderRadius)).toBe('50%');
   await expect(previous).toHaveText('9');
   await expect(previous.locator('svg,.score')).toHaveCount(0);
   await row.screenshot({ path: 'test-results/compact-stale-score.png' });

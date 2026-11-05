@@ -4,6 +4,23 @@ export const locale =
     ? 'zh-TW'
     : 'en';
 const zh = {
+  'Needs information':'需要補充資料',
+  'How resume requests work':'履歷任務怎麼處理',
+  'Save a request in this workspace.':'先把製作任務存進這個工作台。',
+  'Codex / Claude reads it on its next manual or scheduled run.':'Codex／Claude 在下次手動或排程執行時讀取任務。',
+  'The agent checks the JD and experience, then saves a draft and adjustment notes.':'Agent 核對職缺與經歷，再保存履歷草稿和調整說明。',
+  'Review the draft here. Nothing is submitted.':'回到這裡審閱草稿；不會自動投遞。',
+  'This button does not start an AI session. An agent must be connected to this workspace.':'這個按鈕不會啟動 AI；需有 Agent 連接這個工作台。',
+
+  'Request resume': '建立履歷製作任務',
+  'Queued for agent': '等待 Agent 領取',
+  'Queued for Codex / Claude.': '已加入 Codex／Claude 待處理任務。',
+  'Waiting for your next agent run.': '下次 Agent 執行時處理。',
+  'Cancel request': '取消任務',
+  'Request shortlisted resumes': '請 AI 製作想投的履歷',
+  'resume request(s) queued for Codex / Claude.': '筆履歷任務已加入 Codex／Claude 佇列。',
+  'Codex / Claude will tailor this JD to your experience and save a draft for review.': 'Codex／Claude 會依職缺與經歷製作草稿，完成後供你審閱。',
+
   'Preparation shortcuts': '準備入口',
   Interview: '面試',
   Tasks: '待辦',

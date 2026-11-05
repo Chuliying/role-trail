@@ -36,12 +36,14 @@ The [onboarding guide](BOOTSTRAP.md) and [bundled skill](skills/role-trail/SKILL
 | Research | The agent searches the selected platforms and original employer pages. Built-in Himalayas, Greenhouse, Lever and optional SerpApi feeds help collect data. Source coverage records what was actually read, including failures. |
 | Fit and eligibility | The agent saves a 1–10 assessment with evidence and gaps. Eligibility needs its own sources and dates. A high score is not permission to work in a country or a prediction of an offer. |
 | Your decisions | Move roles through To Review, Shortlisted, Applied and Passed. Archive manually and keep preparation todos. Research does not make these decisions for you. |
-| Resumes | For shortlisted jobs, the agent tailors confirmed experience to the JD and explains the edits. The app keeps versions and review status, with printable HTML and local PDF output. Current pending/approved drafts aren't regenerated on every run. |
+| Resumes | Request a resume for a role, or prepare shortlisted roles. The website queues work; a connected Codex/Claude run writes the draft and explains the edits. It does not start a model session itself. The agent tailors confirmed experience to the JD. The app keeps versions and review status, with printable HTML and local PDF output. Current pending/approved drafts aren't regenerated on every run. |
 | Interview preparation | The agent writes role-specific project examples, possible concerns, practice questions and questions for the employer. The app saves versions and evidence snapshots, and flags changed JD/resume/evidence bindings. |
 | Shared workspace | Use local JSON or your own PostgreSQL and authenticated API. Agents read the same current state. Revision checks prevent silent overwrites. |
 | Scheduled work | A real host LLM task loads the skill, researches, assesses, prepares and saves results. `workflow` supplies current inputs; `work-check` checks saved deliverables and personal-state changes. The feed-only runner is available separately. |
 
 The workbench has a responsive table, structured JD dialog, source links, filters, fit explanations and research history. The default order is newest search, then highest fit. Original JD text, completeness, sources and posting/update/repost distinctions are retained.
+
+[How resume requests work](docs/resume-requests.md) explains queued, blocked, draft-ready and canceled states, agent pickup, and the separate review step. Without a connected agent or working host schedule, requests remain queued.
 
 A scheduled task needs a host that can start LLM sessions with the right tools and credentials. Onboarding verifies that environment; a downloaded prompt cannot activate it by itself.
 
@@ -59,7 +61,7 @@ node bin/role-trail.mjs scan --workspace "$HOME/.local/share/role-trail" \
 # Execute the configured source feeds and save their actual coverage
 node bin/role-trail.mjs collect --workspace "$HOME/.local/share/role-trail"
 
-# Missing, stale or changes-requested shortlisted drafts
+# Optional deterministic starting template; this does NOT call an LLM
 node bin/role-trail.mjs draft --workspace "$HOME/.local/share/role-trail"
 
 # Local PDF renderer (one-time browser installation)
@@ -107,7 +109,7 @@ This is an early release with no uptime or job-board access guarantee. Optional 
 
 ## 繁中
 
-你先設定想找的工作、地點、語言與其他條件，再提供履歷、作品集或允許讀取的 repo。Claude Code／Codex 會引導你建立自己的 Vercel、資料庫和 LLM 排程。之後排程讀取最新喜好，搜尋與查證職缺，替你標成 Shortlisted 的工作準備履歷和面試資料，存回工作台讓你審閱。
+你先設定想找的工作、地點、語言與其他條件，再提供履歷、作品集或允許讀取的 repo。Claude Code／Codex 會引導你建立自己的 Vercel、資料庫和 LLM 排程。之後排程讀取最新喜好，搜尋與查證職缺，替你標成 Shortlisted 的工作準備履歷和面試資料，存回工作台讓你審閱。網站的「建立履歷製作任務」只保存任務；下次 Codex／Claude 手動或排程執行時才會用 LLM 處理，不是按下按鈕就啟動 AI。
 
 公開版提供這套流程的 skill、指令和介面。實際搜尋與文字判斷由你的 agent 完成；純抓資料的 runner 只是輔助。Onboarding 會分別確認部署、API、排程登記與手動試跑。跨日排程是否真的觸發，要等實際執行後才算驗證。職缺是否符合資格、是否想投與是否已投遞始終分開，系統不代替你投遞。
 

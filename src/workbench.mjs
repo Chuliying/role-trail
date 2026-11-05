@@ -228,6 +228,7 @@ export function validateState(s) {
     'tasks',
     'resumes',
     'preparations',
+    'resumeRequests',
     'runs',
     'schedule',
   ]);
@@ -265,6 +266,42 @@ export function validateState(s) {
         throw Error('Invalid submission');
       if (entry.recordedAt !== null || entry.source !== 'legacy') date(entry.recordedAt);
       seen.add(entry.jobId);
+    }
+  }
+  if (s.resumeRequests !== undefined) {
+    if (!Array.isArray(s.resumeRequests)) throw Error('Invalid resume requests');
+    const seen = new Set();
+    for (const r of s.resumeRequests) {
+      keys(r, [
+        'id',
+        'jobId',
+        'status',
+        'note',
+        'createdAt',
+        'updatedAt',
+        'baseVersion',
+        'resumeVersion',
+      ]);
+      if (
+        !text(r.id, 100) ||
+        seen.has(r.id) ||
+        !ids.has(r.jobId) ||
+        !['queued', 'blocked', 'completed', 'canceled'].includes(r.status) ||
+        !Number.isSafeInteger(r.baseVersion) ||
+        r.baseVersion < 0
+      )
+        throw Error('Invalid resume request');
+      text(r.note, 4000);
+      date(r.createdAt);
+      date(r.updatedAt);
+      seen.add(r.id);
+      if (
+        r.status === 'completed' &&
+        (!Number.isSafeInteger(r.resumeVersion) ||
+          r.resumeVersion <= r.baseVersion ||
+          !s.resumes.some((x) => x.jobId === r.jobId && x.version === r.resumeVersion))
+      )
+        throw Error('Invalid request resume');
     }
   }
   for (const t of s.tasks)
@@ -503,6 +540,58 @@ export function transition(current, a) {
       r.archived = a.archived;
     }
     s.reviews[a.jobId] = { ...r, updatedAt: now() };
+  } else if (a.type === 'requestResume') {
+    keys(a, ['type', 'jobId']);
+    job();
+    s.resumeRequests ||= [];
+    const existing = s.resumeRequests.find(
+      (r) => r.jobId === a.jobId && ['queued', 'blocked'].includes(r.status),
+    );
+    if (existing?.status === 'queued') return validateState(s);
+    if (existing) {
+      existing.status = 'queued';
+      existing.note = '';
+      existing.updatedAt = now();
+    } else
+      s.resumeRequests.push({
+        id: randomUUID(),
+        jobId: a.jobId,
+        status: 'queued',
+        note: '',
+        createdAt: now(),
+        updatedAt: now(),
+        baseVersion: Math.max(
+          0,
+          ...s.resumes.filter((r) => r.jobId === a.jobId).map((r) => r.version),
+        ),
+        resumeVersion: null,
+      });
+  } else if (a.type === 'resumeRequestStatus') {
+    keys(a, ['type', 'id', 'status', 'note', 'resumeVersion']);
+    const request = s.resumeRequests?.find((r) => r.id === a.id);
+    if (
+      !request ||
+      !['queued', 'blocked'].includes(request.status) ||
+      !['blocked', 'completed', 'canceled'].includes(a.status)
+    )
+      throw Error('Invalid resume request update');
+    const note = text(a.note || '', 4000);
+    if (a.status === 'blocked' && !note.trim()) throw Error('Blocked request needs a reason');
+    if (a.status === 'completed') {
+      const r = s.resumes.find((r) => r.jobId === request.jobId && r.version === a.resumeVersion);
+      if (
+        !r ||
+        r.version <= request.baseVersion ||
+        resumeStale(s, r) ||
+        !r.adjustments?.length ||
+        !r.content.trim()
+      )
+        throw Error('Save a new current resume draft with adjustments first');
+      request.resumeVersion = r.version;
+    }
+    request.status = a.status;
+    request.note = note;
+    request.updatedAt = now();
   } else if (a.type === 'task') {
     keys(a, ['type', 'id', 'jobId', 'text', 'done']);
     if (a.jobId !== null) job();

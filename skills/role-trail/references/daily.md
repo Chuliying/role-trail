@@ -28,7 +28,7 @@ Evaluate newly found relevant roles and stale assessments using `evaluate --job 
 
 Low-fit or excluded leads may stay in the record, but don't present them as new recommendations. Report fit, eligibility verification and application priority separately. A high score never changes the user's bucket.
 
-Read [shortlist preparation](shortlist.md) and handle missing/stale/changes-requested deliverables for active Shortlisted roles. Preparing a role does not clear unknown eligibility or mark it Applied.
+Process explicit `resumeRequests` from the packet using [shortlist preparation](shortlist.md), recording concrete blockers rather than leaving silent failures. Then read [shortlist preparation](shortlist.md) and handle missing/stale/changes-requested deliverables for active Shortlisted roles. Preparing a role does not clear unknown eligibility or mark it Applied.
 
 ## Finish with evidence
 

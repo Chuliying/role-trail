@@ -44,7 +44,10 @@ export function workPacket(s, mode = 'daily') {
   if (!['daily', 'shortlist'].includes(mode) || !s.profile)
     throw Error('Profile and valid workflow mode required');
   const selected = shortlist(s);
-  const ids = new Set(selected.map((j) => j.jobId));
+  const resumeRequests = (s.resumeRequests || []).filter((r) =>
+    ['queued', 'blocked'].includes(r.status),
+  );
+  const ids = new Set([...selected.map((j) => j.jobId), ...resumeRequests.map((r) => r.jobId)]);
   const candidates = s.jobs.filter((j) => active(s, j) || ids.has(j.id));
   const jobs = [
     ...candidates.filter((j) => ids.has(j.id)),
@@ -70,6 +73,18 @@ export function workPacket(s, mode = 'daily') {
     knownCompanies: [...new Set(s.jobs.map((j) => j.company))],
     recentRuns: s.runs.slice(-7),
     shortlisted: selected,
+    resumeRequests: resumeRequests.map((r) => ({
+      ...r,
+      job: s.jobs.find((j) => j.id === r.jobId),
+      resumeAction: {
+        type: 'resume',
+        jobId: r.jobId,
+        jdHash: jdHash(s.jobs.find((j) => j.id === r.jobId)),
+        capabilityIds: [],
+        content: '',
+        adjustments: [],
+      },
+    })),
     baseline: {
       profileHash: hash(s.profile),
       jobIds: s.jobs.map((j) => j.id),
@@ -131,6 +146,11 @@ export function checkWork(s, p, runId) {
   for (const j of selected) {
     if (j.needsResume) add('resume_missing', j.jobId);
     if (j.needsPreparation) add('preparation_missing', j.jobId);
+  }
+  for (const request of p.resumeRequests || []) {
+    const current = s.resumeRequests?.find((r) => r.id === request.id);
+    if (!current || ['queued', 'blocked'].includes(current.status))
+      add('resume_request_pending', request.id + (current?.note ? ': ' + current.note : ''));
   }
   const sourceLimitations = run?.coverage.filter((c) => c.status !== 'searched') || [];
   return {

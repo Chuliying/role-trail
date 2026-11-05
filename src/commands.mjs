@@ -20,7 +20,7 @@ Workbench (private workspace outside Git):
   restore --workspace DIR --file FILE --revision NUMBER
   collect --workspace DIR             Run configured sources; preserve coverage
   evaluate --workspace DIR --job ID   Write a bounded assessment packet for your agent
-  draft --workspace DIR [--job ID]     Generate one draft, or all shortlisted drafts
+  draft --workspace DIR [--job ID]     Create deterministic starter text (no LLM)
   pdf-save --workspace DIR|--remote --job ID --file PDF
   backup --workspace DIR|--remote --output PRIVATE_DIRECTORY
   resume-pdf --workspace DIR --job ID --output FILE

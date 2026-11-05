@@ -2,7 +2,9 @@ import { mkdir, copyFile, readFile, lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve, join, dirname } from 'node:path';
 import { artifactHash } from './artifacts.mjs';
+import fontFiles from '../web/fonts/manifest.json' with { type: 'json' };
 export const staticFiles = [
+  ...fontFiles,
   'index.html',
   'app.js',
   'i18n.mjs',

@@ -41,7 +41,32 @@ function el(tag, attrs = {}, ...children) {
   return n;
 }
 const button = (label, fn, cls = '') =>
-  el('button', { type: 'button', class: cls, onclick: fn }, label);
+  el(
+    'button',
+    {
+      type: 'button',
+      class: cls,
+      onclick: async (event) => {
+        const control = event.currentTarget;
+        try {
+          const result = fn(event);
+          if (result?.then) {
+            control.disabled = true;
+            control.setAttribute('aria-busy', 'true');
+            try {
+              await result;
+            } finally {
+              control.disabled = false;
+              control.removeAttribute('aria-busy');
+            }
+          }
+        } catch (error) {
+          notify(error.message);
+        }
+      },
+    },
+    label,
+  );
 function iconButton(label, path, click, cls = '') {
   const b = button(null, click, 'icon-button ' + cls);
   b.setAttribute('aria-label', label);
@@ -908,34 +933,69 @@ async function showJob(id) {
     ),
   );
   d.append(taskSection);
+  const request = (state.resumeRequests || []).filter((r) => r.jobId === id).at(-1);
+  const queued = request?.status === 'queued';
+  const requestButton = button(
+    t(queued ? 'Queued for agent' : 'Request resume'),
+    async (event) => {
+      const control = event.currentTarget;
+      control.disabled = true;
+      control.setAttribute('aria-busy', 'true');
+      try {
+        const ok = await action({ type: 'requestResume', jobId: id });
+        if (ok) notify(t('Queued for Codex / Claude.'));
+      } finally {
+        control.disabled = false;
+        control.removeAttribute('aria-busy');
+      }
+    },
+    'primary',
+  );
+  requestButton.disabled = queued;
   const resume = el(
     'section',
     { class: 'detail-section', id: 'resume-section' },
     el('h2', {}, 'Tailored resume'),
-    el(
-      'div',
-      { class: 'actions' },
+    el('div', { class: 'actions' }, requestButton),
+  );
+  if (queued)
+    resume.append(
+      el('p', { class: 'muted' }, t('Waiting for your next agent run.')),
       button(
-        t('Generate draft'),
-        async (event) => {
-          const control = event.currentTarget;
-          control.disabled = true;
-          control.setAttribute('aria-busy', 'true');
-          $('#detail-notice').hidden = true;
-          try {
-            state = await api('draft', { revision: state.revision, jobId: id });
-            await showJob(id);
-            $('#resume-section').scrollIntoView({ block: 'start' });
-            notify('Draft ready for review.');
-            render();
-          } catch (e) {
-            notify(e.message);
-          } finally {
-            control.disabled = false;
-            control.removeAttribute('aria-busy');
-          }
-        },
-        'primary',
+        t('Cancel request'),
+        () => action({ type: 'resumeRequestStatus', id: request.id, status: 'canceled' }),
+        'quiet',
+      ),
+    );
+  if (request?.status === 'blocked')
+    resume.append(
+      el(
+        'p',
+        { class: 'request-note' },
+        el('strong', {}, t('Needs information')),
+        el('br'),
+        request.note,
+      ),
+    );
+  resume.append(
+    disclosure(
+      'How resume requests work',
+      el(
+        'ol',
+        {},
+        ...[
+          'Save a request in this workspace.',
+          'Codex / Claude reads it on its next manual or scheduled run.',
+          'The agent checks the JD and experience, then saves a draft and adjustment notes.',
+          'Review the draft here. Nothing is submitted.',
+        ].map((line) => el('li', {}, t(line))),
+      ),
+      el(
+        'p',
+        { class: 'muted' },
+        t(
+          'This button does not start an AI session. An agent must be connected to this workspace.',
+        ),
       ),
     ),
   );
@@ -992,7 +1052,7 @@ async function showJob(id) {
       el(
         'p',
         { class: 'muted' },
-        'Drafts use confirmed capabilities only and require your review. No job application is sent.',
+        t('Codex / Claude will tailor this JD to your experience and save a draft for review.'),
       ),
     );
   d.append(resume);
@@ -1233,21 +1293,28 @@ function tasks() {
       t('Preparation'),
       null,
       button(
-        t('Draft all shortlisted'),
+        t('Request shortlisted resumes'),
         async () => {
           let count = 0;
           for (const j of shortlisted) {
             try {
-              const before = state.resumes.length;
-              state = await api('draft', { revision: state.revision, jobId: j.id });
-              if (state.resumes.length > before) count++;
+              const before = (state.resumeRequests || []).filter(
+                (r) => r.status === 'queued',
+              ).length;
+              state = await api('action', {
+                revision: state.revision,
+                action: { type: 'requestResume', jobId: j.id },
+              });
+              if ((state.resumeRequests || []).filter((r) => r.status === 'queued').length > before)
+                count++;
             } catch (e) {
               notify(e.message);
-              break;
+              render();
+              return;
             }
           }
           render();
-          notify(count + ' draft(s) generated. Current pending or approved versions were kept.');
+          notify(count + ' ' + t('resume request(s) queued for Codex / Claude.'));
         },
         'primary',
       ),

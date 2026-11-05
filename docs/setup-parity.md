@@ -10,7 +10,7 @@ There are three parts to check:
 | Agent workflow | Onboarding/daily/shortlist skill, source playbook, current-state packets and completion checks | The agent can read authorized sources, use its search tools, save results and produce a usable PDF |
 | Recurring execution | A daily LLM prompt and host setup instructions; a separate feed daemon/tick is also available | A real LLM task is registered with the correct environment, timezone and scope; then observe a timed run |
 
-The host model interprets evidence and writes assessments, resume text and interview preparation. The built-in resume drafter ranks claim tags against JD words to give it a starting draft. It does not understand an entire career or replace the user's factual review.
+The host model interprets evidence and writes assessments, resume text and interview preparation. The website’s Request resume button saves an agent task; it does not launch an LLM session. A connected manual or scheduled Codex/Claude run picks it up. The legacy CLI `draft` remains a deterministic starting-template helper, not AI generation. See [resume requests](resume-requests.md).
 
 ## Checks that are built in
 

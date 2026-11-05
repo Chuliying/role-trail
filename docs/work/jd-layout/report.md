@@ -63,3 +63,16 @@ Removed redundant preparation shortcuts. Content follows Application package, Re
 Draft failures previously used a page notice beneath the modal top layer. Notices now appear inside the open reader. Draft generation disables the button while pending, shows failure text on error, and reveals the resume with a success message on completion. Preparation is still not submission.
 
 The new Chromium/WebKit test first reproduced the inset mobile dialog. The expanded suite checks full viewport bounds, mutually exclusive panels, selected state and keyboard navigation, removed shortcuts, consistent section edges/order, archive icon, and a deliberately failed draft request with visible error and restored button state. Existing resume approval, PDF, shared task and archive tests now navigate the real tabs. Screenshots use synthetic records and capture settled motion.
+
+
+## Typography, loading and host-agent resume requests
+
+Scores use a 32 px circular background and white numerals. Historical scores use muted gray instead of indigo; their previous-score accessible name remains. The score control keeps an extended touch target. UI text uses Google Fonts Manrope plus Noto Sans TC, self-hosted as licensed WOFF2 unicode subsets with font-display swap. Browsers request only applicable subsets. Font files and OFL licenses are included in the explicit deployment allowlist; no third-party font request or broader CSP is required. Body and JD leading were increased, with paragraph and list spacing adjusted separately.
+
+Loading uses a small spinner only for actual pending requests and initial data load. Reduced-motion mode uses a static indicator. A queued agent task never displays a running-model spinner.
+
+Investigation confirmed that the old web draft button called a deterministic tag-ranking helper, not an LLM. The user chose their existing Codex/Claude workflow rather than a hosted model API. The new authenticated request action persists a separate queue, deduplicates active requests and leaves capabilities, resumes, personal decisions and checkboxes unchanged. Both workflow modes surface explicit requests, including jobs outside Shortlisted. Completion requires a new current saved resume with adjustments; blockers have a specific note. The UI, README, workflow skills, data contract and request guide distinguish storing a task from starting a host model, and draft completion from review/application.
+
+The new tests first failed on the absent request action and missing loading animation. Verification covers queue deduplication, blocked/retry/cancel, no implicit confirmation/draft/submission, completion bindings, research preservation, cross-session UI persistence and a failed save with recovery. The browser test now waits for the actual checkbox write before its independent agent-simulation write; previously those writers raced and correctly produced a revision conflict. Current suite: 71 Node tests and 16 browser tests. No real resume or capability was changed during UI acceptance.
+
+Font sources: https://fonts.google.com/specimen/Manrope and https://fonts.google.com/noto/specimen/Noto+Sans+TC. Source license copies are in web/fonts; the downloadable font data was retrieved through the Google Fonts CSS API.

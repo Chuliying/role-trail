@@ -2,6 +2,7 @@ import http from 'node:http';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import fontFiles from '../web/fonts/manifest.json' with { type: 'json' };
 import { LocalStore } from './workbench.mjs';
 const equal = (a, b) =>
   typeof a === 'string' &&
@@ -43,6 +44,12 @@ export function authorized(req, { cloud, key, platformProtected = false }) {
 }
 const root = fileURLToPath(new URL('../web/', import.meta.url));
 const assets = {
+  ...Object.fromEntries(
+    fontFiles.map((p) => [
+      '/' + p,
+      [p, p.endsWith('.woff2') ? 'font/woff2' : p.endsWith('.css') ? 'text/css' : 'text/plain'],
+    ]),
+  ),
   '/': ['index.html', 'text/html'],
   '/index.html': ['index.html', 'text/html'],
   '/fonts/ibm-plex-sans-400.ttf': ['fonts/ibm-plex-sans-400.ttf', 'font/ttf'],

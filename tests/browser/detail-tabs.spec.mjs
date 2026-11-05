@@ -45,22 +45,45 @@ for (const engine of ['chromium', 'webkit']) {
         .locator(':scope > section')
         .evaluateAll((ns) => ns.map((n) => n.getBoundingClientRect().x));
       expect(new Set(left).size).toBe(1);
-      await page.route('**/api/draft', async (route) => {
+      await page.route('**/api/action', async (route) => {
         await new Promise((r) => setTimeout(r, 200));
         await route.fulfill({
           status: 400,
           contentType: 'application/json',
-          body: JSON.stringify({ error: 'Confirm capability evidence before drafting.' }),
+          body: JSON.stringify({ error: 'Request could not be saved. Please retry.' }),
         });
       });
-      const generate = page.getByRole('button', { name: 'Generate draft', exact: true });
+      const generate = page.getByRole('button', { name: 'Request resume', exact: true });
       await generate.click();
       await expect(generate).toBeDisabled();
+      expect(await generate.evaluate((n) => getComputedStyle(n, '::before').animationName)).toBe(
+        'busy-spin',
+      );
       await expect(dialog.getByRole('status')).toContainText(
-        'Confirm capability evidence before drafting.',
+        'Request could not be saved. Please retry.',
       );
       await expect(generate).toBeEnabled();
-      await page.screenshot({ path: `test-results/full-reader-${engine}.png` });
+      await page.unroute('**/api/action');
+      const before = await (await page.request.get('/api/state')).json();
+      await generate.click();
+      await expect(
+        page.getByRole('button', { name: 'Queued for agent', exact: true }),
+      ).toBeDisabled();
+      const after = await (await page.request.get('/api/state')).json();
+      expect(after.resumes).toEqual(before.resumes);
+      expect(after.resumeRequests.filter((r) => r.status === 'queued')).toHaveLength(1);
+      await page.reload();
+      await page.locator('.job-title').first().click();
+      await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
+      await expect(
+        page.getByRole('button', { name: 'Queued for agent', exact: true }),
+      ).toBeDisabled();
+      await page.getByRole('button', { name: 'Cancel request', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Request resume', exact: true })).toBeEnabled();
+      await page.screenshot({
+        animations: 'disabled',
+        path: `test-results/full-reader-${engine}.png`,
+      });
       await page.getByRole('tab', { name: 'Fit & checks', exact: true }).click();
       await expect(page.locator('#fit-evidence')).toBeVisible();
       await page.getByRole('tab', { name: 'Fit & checks', exact: true }).press('ArrowLeft');
