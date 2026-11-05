@@ -71,6 +71,7 @@ input,
 select,
 textarea {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 button,
 .button {
@@ -90,9 +91,16 @@ button,
   text-decoration: none;
   white-space: nowrap;
 }
-button:hover,
-.button:hover {
-  background: var(--selected);
+@media (hover: hover) and (pointer: fine) {
+  button:hover,
+  .button:hover {
+    background: var(--selected);
+  }
+  .job-title:hover {
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
 }
 button:disabled {
   opacity: 0.5;
@@ -103,8 +111,10 @@ button:disabled {
   background: var(--action);
   border-color: var(--action);
 }
-.primary:hover {
-  background: #3d5070;
+@media (hover: hover) and (pointer: fine) {
+  .primary:hover {
+    background: #3d5070;
+  }
 }
 .quiet {
   background: transparent;
@@ -424,6 +434,7 @@ th:nth-child(5) {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .grid {
   @apply grid grid-cols-2 gap-5;
@@ -519,6 +530,34 @@ dialog::backdrop {
   padding: 14px 0;
   border-bottom: 1px solid var(--line);
   margin: 0;
+}
+.todo > span {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.todo small {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.65;
+}
+.card > .todo + button {
+  margin-top: 20px;
+}
+.card > .button {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+.research-card > .coverage {
+  margin-top: 24px;
+}
+.research-card + .research-card,
+.outcome-summary + .research-card {
+  margin-top: 24px;
+}
+.research-note {
+  overflow-wrap: anywhere;
 }
 .todo input {
   margin-top: 4px;
@@ -919,9 +958,9 @@ h1 {
     margin-top: 0;
   }
   .archive-view {
-    font-size: 12px;
-    min-height: 36px;
-    padding: 6px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
   }
   .tabs {
     display: grid;

@@ -30,8 +30,10 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
-.rt-verifications .rt-verification:hover {
-  background: var(--surface-muted, var(--selected, #e0e5ed));
+@media (hover: hover) and (pointer: fine) {
+  .rt-verifications .rt-verification:hover {
+    background: var(--surface-muted, var(--selected, #e0e5ed));
+  }
 }
 .rt-verifications .rt-verification:focus-visible {
   outline: 3px solid var(--focus, var(--action, currentColor));

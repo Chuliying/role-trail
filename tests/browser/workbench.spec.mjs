@@ -491,3 +491,119 @@ test('Traditional Chinese mobile keeps the compact original workspace shell', as
     await context.close();
   }
 });
+test('touch cards avoid sticky hover, redundant totals and long-text overflow', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    locale: 'en-US',
+  });
+  const page = await context.newPage();
+  try {
+    let state = await (await page.request.get('/api/state')).json();
+    const headers = { 'X-Role-Trail': '1', Origin: 'http://127.0.0.1:4319' };
+    const imported = await page.request.post('/api/action', {
+      headers,
+      data: {
+        revision: state.revision,
+        action: {
+          type: 'research',
+          run: {
+            id: 'mobile-overflow-fixture',
+            kind: 'daily',
+            note: 'Research summary ' + 'SyntheticCompany/'.repeat(45),
+            coverage: [
+              {
+                source: 'official',
+                status: 'partial',
+                query: 'https://example.test/?query=' + 'long'.repeat(100),
+                screened: 1,
+                fullJd: 1,
+                note: 'Synthetic source',
+              },
+            ],
+          },
+          jobs: [
+            {
+              company: 'Example Studio',
+              title: 'Senior Frontend Development Engineer',
+              url: 'https://example.test/mobile-spacing',
+              source: 'official',
+              description: 'Synthetic frontend role',
+              descriptionKind: 'full',
+              searchedAt: new Date().toISOString(),
+            },
+          ],
+        },
+      },
+    });
+    expect(imported.ok()).toBeTruthy();
+    state = await imported.json();
+    const job = state.jobs.find((j) => j.url === 'https://example.test/mobile-spacing');
+    state.tasks.push({
+      id: 'spacing-task',
+      jobId: job.id,
+      text: 'Prepare an evidence-backed example',
+      done: false,
+      acceptance: 'ExplainValidationAndOwnership'.repeat(12),
+      dependsOn: [],
+    });
+    const restored = await page.request.post('/api/restore', {
+      headers,
+      data: { revision: state.revision, state },
+    });
+    expect(restored.ok()).toBeTruthy();
+    await page.goto('/');
+    expect.soft(await page.locator('.page-heading p').count()).toBe(0);
+    const archive = page.getByRole('button', { name: 'Archive', exact: true });
+    expect.soft(await archive.locator('svg').count()).toBe(1);
+    expect.soft((await archive.textContent()).trim()).toBe('');
+    const title = page.getByRole('button', { name: job.title, exact: true });
+    await title.hover();
+    expect
+      .soft(await title.evaluate((n) => getComputedStyle(n).backgroundColor))
+      .toBe('rgba(0, 0, 0, 0)');
+    await page.screenshot({ path: 'test-results/touch-clean-jobs.png' });
+    await page.getByRole('button', { name: 'Preparation', exact: true }).click();
+    const card = page
+      .locator('.card')
+      .filter({ has: page.getByRole('button', { name: job.title, exact: true }) });
+    const todo = card.locator('.todo'),
+      open = card.getByRole('button', { name: 'Open preparation', exact: true });
+    expect
+      .soft(await todo.locator('small').evaluate((n) => getComputedStyle(n).display))
+      .toBe('block');
+    const a = await todo.boundingBox(),
+      b = await open.boundingBox();
+    expect.soft(b.y - a.y - a.height).toBeGreaterThanOrEqual(16);
+    expect
+      .soft(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+      .toBe(true);
+    await card.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: 'test-results/touch-preparation-spacing.png' });
+    await page.getByRole('button', { name: 'Research', exact: true }).click();
+    const research = page.locator('.research-card').filter({ hasText: 'SyntheticCompany/' });
+    // The whole run summary needs wrapping, not only per-source coverage text.
+    expect
+      .soft(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+      .toBe(true);
+    const bundle = page
+      .getByRole('link', { name: 'Original research bundle ↗', exact: true })
+      .first();
+    const parent = bundle.locator('..');
+    const c = await bundle.boundingBox(),
+      d = await parent.locator('.coverage').boundingBox();
+    expect.soft(d.y - c.y - c.height).toBeGreaterThanOrEqual(20);
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    }
+    await research.screenshot({ path: 'test-results/touch-research-wrap.png' });
+  } finally {
+    await context.close();
+  }
+});

@@ -39,6 +39,20 @@ function el(tag, attrs = {}, ...children) {
 }
 const button = (label, fn, cls = '') =>
   el('button', { type: 'button', class: cls, onclick: fn }, label);
+function iconButton(label, path, click, cls = '') {
+  const b = button(null, click, 'icon-button ' + cls);
+  b.setAttribute('aria-label', label);
+  b.title = label;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  shape.setAttribute('d', path);
+  svg.append(shape);
+  b.append(svg);
+  return b;
+}
 const link = (label, url) =>
   el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', class: 'button' }, label);
 const badge = (label, type = '') =>
@@ -155,7 +169,7 @@ function heading(title, subtitle, ...actions) {
   return el(
     'div',
     { class: 'page-heading' },
-    el('div', {}, el('h1', {}, title), el('p', { class: 'muted' }, subtitle)),
+    el('div', {}, el('h1', {}, title), subtitle ? el('p', { class: 'muted' }, subtitle) : null),
     el('div', { class: 'actions' }, actions),
   );
 }
@@ -324,11 +338,10 @@ function jobs() {
   main.replaceChildren(
     heading(
       t('Opportunities'),
-      locale === 'zh-TW'
-        ? `${Math.min(limit, rows.length)} / ${rows.length} 筆`
-        : `${Math.min(limit, rows.length)} / ${rows.length}`,
-      button(
+      null,
+      iconButton(
         t('Archive'),
+        'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7',
         () => {
           tab = 'archive';
           render();
@@ -1229,9 +1242,9 @@ function research() {
     main.append(
       el(
         'section',
-        { class: 'card' },
+        { class: 'card research-card' },
         el('h2', {}, date(run.finishedAt)),
-        el('p', { class: 'muted' }, run.note || run.id),
+        el('p', { class: 'muted research-note' }, run.note || run.id),
         run.archiveHash
           ? link(t('Original research bundle \u2197'), '/api/artifact?hash=' + run.archiveHash)
           : null,
