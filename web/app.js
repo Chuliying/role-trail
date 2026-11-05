@@ -55,6 +55,9 @@ function iconButton(label, path, click, cls = '') {
 }
 const link = (label, url) =>
   el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', class: 'button' }, label);
+function disclosure(label, ...content) {
+  return el('details', { class: 'disclosure' }, el('summary', {}, t(label)), ...content);
+}
 const badge = (label, type = '') =>
   el(
     'span',
@@ -479,11 +482,9 @@ function jobs() {
             {},
             el('span', { class: 'company' }, j.company),
             button(j.title, () => showJob(j.id), 'job-title'),
-            el(
-              'div',
-              { class: 'meta' },
-              j.posting.kind + ': ' + (j.posting.date || t('date unknown')),
-            ),
+            j.posting.date
+              ? el('div', { class: 'meta' }, j.posting.kind + ': ' + j.posting.date)
+              : null,
             el(
               'div',
               { class: 'facts' },
@@ -501,7 +502,7 @@ function jobs() {
             el(
               'div',
               { class: 'mobile-dates' },
-              el('div', {}, el('span', {}, t('Opened')), j.posting.date || t('Unknown')),
+              j.posting.date ? el('div', {}, el('span', {}, t('Opened')), j.posting.date) : null,
               el('div', {}, el('span', {}, t('Searched')), date(j.searchedAt)),
             ),
           ),
@@ -558,16 +559,16 @@ function jobs() {
             (state.submissions || []).some((x) => x.jobId === j.id) || dec === 'applied'
               ? el('div', { class: 'meta' }, t('Application recorded'))
               : null,
-            el(
-              'div',
-              { class: 'meta' },
-              r
-                ? 'Resume v' +
+            r
+              ? el(
+                  'div',
+                  { class: 'meta' },
+                  'Resume v' +
                     r.version +
                     ' · ' +
-                    (staleResumes.has(r.jobId + ':' + r.version) ? 'stale' : r.reviewStatus)
-                : t('No resume'),
-            ),
+                    (staleResumes.has(r.jobId + ':' + r.version) ? 'stale' : r.reviewStatus),
+                )
+              : null,
           ),
         );
       }),
@@ -991,16 +992,18 @@ async function showJob(id) {
     { class: 'detail-section package-overview' },
     el('h2', {}, t('Application package')),
     el(
-      'p',
-      {},
-      `Materials: ${readiness.materialsReady ? 'complete' : 'incomplete'} · Resume review: ${r?.reviewStatus || 'not started'} · Eligibility: ${qualification(j)}`,
+      'dl',
+      { class: 'status-grid' },
+      ...[
+        ['Materials', readiness.materialsReady ? 'complete' : 'incomplete'],
+        ['Resume review', r?.reviewStatus || 'not started'],
+        ['Eligibility', qualification(j)],
+      ].map(([label, value]) => el('div', {}, el('dt', {}, t(label)), el('dd', {}, t(value)))),
     ),
     el(
       'p',
       { class: 'muted' },
-      readiness.submitted
-        ? 'Application reported by you; no application was sent by this tool.'
-        : 'No application recorded. Preparing or approving documents does not submit them.',
+      readiness.submitted ? 'Application reported by you.' : 'No application recorded.',
     ),
   );
   if (readiness.missing.length)
@@ -1022,7 +1025,7 @@ async function showJob(id) {
         'p',
         { class: 'muted' },
         r.pdfHash
-          ? 'Original PDF saved. Review its content before applying; saving does not submit an application.'
+          ? 'Original PDF saved.'
           : 'Print export is available. Use the agent PDF command to save the original file in this workspace.',
       ),
     );
@@ -1036,46 +1039,61 @@ async function showJob(id) {
       link('Open application source ↗', j.url),
     ),
   );
-  d.prepend(overview);
+  d.querySelector('.detail-section').before(overview);
   if (!$('#detail').open) $('#detail').showModal();
 }
-function todo(t) {
+let taskControlId = 0;
+function todo(task) {
+  const id = 'task-control-' + ++taskControlId;
   return el(
-    'label',
-    { class: 'todo' + (t.done ? ' done' : '') },
+    'div',
+    { class: 'todo' + (task.done ? ' done' : '') },
     el('input', {
+      id,
       type: 'checkbox',
-      checked: t.done,
-      onchange: (e) => action({ type: 'task', id: t.id, jobId: t.jobId, done: e.target.checked }),
+      checked: task.done,
+      onchange: (e) =>
+        action({ type: 'task', id: task.id, jobId: task.jobId, done: e.target.checked }),
     }),
     el(
-      'span',
-      {},
-      t.text,
-      t.acceptance
-        ? el(
-            'small',
-            { class: 'muted' },
-            typeof t.acceptance === 'string' ? t.acceptance : JSON.stringify(t.acceptance),
-          )
-        : null,
-      t.dependsOn?.length
-        ? el(
-            'small',
-            { class: 'muted' },
-            'Depends on: ' +
-              t.dependsOn.map((id) => state.tasks.find((x) => x.id === id)?.text || id).join(', '),
+      'div',
+      { class: 'todo-content' },
+      el('label', { for: id }, task.text),
+      task.acceptance || task.dependsOn?.length
+        ? disclosure(
+            'Task details',
+            task.acceptance
+              ? el(
+                  'small',
+                  { class: 'muted' },
+                  typeof task.acceptance === 'string'
+                    ? task.acceptance
+                    : JSON.stringify(task.acceptance),
+                )
+              : null,
+            task.dependsOn?.length
+              ? el(
+                  'small',
+                  { class: 'muted' },
+                  t('Depends on') +
+                    ': ' +
+                    task.dependsOn
+                      .map((id) => state.tasks.find((x) => x.id === id)?.text || id)
+                      .join(', '),
+                )
+              : null,
           )
         : null,
     ),
   );
 }
+
 function tasks() {
   const shortlisted = state.jobs.filter((j) => state.reviews[j.id]?.status === 'shortlisted');
   main.replaceChildren(
     heading(
       t('Preparation'),
-      t('Decide what to do next. Resume review and application status stay separate.'),
+      null,
       button(
         t('Draft all shortlisted'),
         async () => {
@@ -1103,11 +1121,11 @@ function tasks() {
   main.append(
     el(
       'div',
-      { class: 'grid' },
+      { class: 'grid preparation-grid' },
       list.map((j) =>
         el(
           'section',
-          { class: 'card' },
+          { class: 'card preparation-card' },
           el('span', { class: 'company' }, j.company),
           button(j.title, () => showJob(j.id), 'job-title'),
           el(
@@ -1122,7 +1140,7 @@ function tasks() {
                 : t('No resume')),
           ),
           ...state.tasks.filter((t) => taskFor(t, j.id)).map(todo),
-          button('Open preparation', () => showJob(j.id)),
+          button(t('Open preparation'), () => showJob(j.id), 'preparation-open'),
         ),
       ),
     ),
@@ -1181,10 +1199,13 @@ function outcomeSummary() {
     el('p', { class: 'muted' }, `${q.startDate} – ${q.endDate} · ${q.timeZone}`),
   );
   box.append(
-    el(
-      'p',
-      { class: 'muted' },
-      'Newly discovered roles, not newly posted jobs. Counts use current fit and eligibility; imports and repeat observations are excluded.',
+    disclosure(
+      'Counting method',
+      el(
+        'p',
+        { class: 'muted' },
+        'Newly discovered roles, not newly posted jobs. Counts use current fit and eligibility; imports and repeat observations are excluded.',
+      ),
     ),
   );
   if (!q.historyAvailable) {
@@ -1229,13 +1250,7 @@ function outcomeSummary() {
 
 function research() {
   main.replaceChildren(
-    heading(
-      t('Research log'),
-      t(
-        'Counts distinguish screened rows from complete JDs. A partial run is not full platform coverage.',
-      ),
-      button(t('Search now'), collect, 'primary'),
-    ),
+    heading(t('Research log'), null, button(t('Search now'), collect, 'primary')),
   );
   main.append(outcomeSummary());
   for (const run of [...state.runs].reverse()) {
@@ -1244,7 +1259,9 @@ function research() {
         'section',
         { class: 'card research-card' },
         el('h2', {}, date(run.finishedAt)),
-        el('p', { class: 'muted research-note' }, run.note || run.id),
+        run.note
+          ? disclosure('Run notes', el('p', { class: 'muted research-note' }, run.note))
+          : null,
         run.archiveHash
           ? link(t('Original research bundle \u2197'), '/api/artifact?hash=' + run.archiveHash)
           : null,
@@ -1271,8 +1288,13 @@ function research() {
                     ? `初篩 ${c.screened} 筆 · 完整 JD ${c.fullJd} 筆`
                     : `${c.screened} screened · ${c.fullJd} full JDs`,
               ),
-              el('p', {}, c.query),
-              el('p', { class: 'muted' }, c.note),
+              c.query || c.note
+                ? disclosure(
+                    'Search details',
+                    c.query ? el('p', { class: 'query-text' }, c.query) : null,
+                    c.note ? el('p', { class: 'muted' }, c.note) : null,
+                  )
+                : null,
             ),
           ),
         ),
@@ -1300,7 +1322,7 @@ function profile() {
   main.replaceChildren(
     heading(
       t('Profile & workspace'),
-      t('Your preferences and confirmed evidence shape the search.'),
+      null,
       button(
         t('Edit profile'),
         () =>
@@ -1323,12 +1345,21 @@ function profile() {
           ? el(
               'div',
               {},
-              el('p', {}, state.profile.name),
-              el('p', {}, state.profile.targetRoles.join(' · ')),
-              el('p', { class: 'muted' }, state.profile.location + ' · ' + state.profile.timezone),
-              el('p', {}, state.profile.remotePolicy),
-              el('p', {}, 'Languages: ' + state.profile.languages.join(', ')),
-              el('p', {}, 'Ownership: ' + state.profile.ownershipPolicy),
+              el(
+                'dl',
+                { class: 'profile-fields' },
+                ...[
+                  ['Name', state.profile.name],
+                  ['Target roles', state.profile.targetRoles.join(' · ')],
+                  ['Location', state.profile.location],
+                  ['Timezone', state.profile.timezone],
+                  ['Remote', state.profile.remotePolicy],
+                  ['Languages', state.profile.languages.join(', ')],
+                  ['Ownership', state.profile.ownershipPolicy],
+                ].map(([label, value]) =>
+                  el('div', {}, el('dt', {}, t(label)), el('dd', {}, value)),
+                ),
+              ),
               el(
                 'p',
                 { class: 'meta' },
@@ -1373,12 +1404,15 @@ function profile() {
   main.append(
     el(
       'section',
-      { class: 'card detail-section' },
+      { class: 'card detail-section capability-section' },
       el('h2', {}, t('Capability evidence')),
-      el(
-        'p',
-        { class: 'muted' },
-        'Your agent can propose claims from selected Git commits or resume text. Confirm only your own contribution.',
+      disclosure(
+        'Evidence guidance',
+        el(
+          'p',
+          { class: 'muted' },
+          'Your agent can propose claims from selected Git commits or resume text. Confirm only your own contribution.',
+        ),
       ),
       button(t('Add capability'), () =>
         jsonEditor('Capability', { claim: '', tags: [], evidence: [], status: 'proposed' }, (v) =>

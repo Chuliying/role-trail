@@ -565,6 +565,27 @@ test('touch cards avoid sticky hover, redundant totals and long-text overflow', 
     expect
       .soft(await title.evaluate((n) => getComputedStyle(n).backgroundColor))
       .toBe('rgba(0, 0, 0, 0)');
+    const jobRow = page.locator('.job-row').filter({ has: title });
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      await jobRow.locator('.company').evaluate((node) => {
+        node.textContent = 'Example Studio / International Product Team';
+      });
+      const company = await jobRow.locator('.company').boundingBox();
+      const score = await jobRow.locator('td').nth(1).boundingBox();
+      const role = await title.boundingBox();
+      expect(company.x + company.width).toBeLessThanOrEqual(score.x);
+      expect(role.y).toBeGreaterThanOrEqual(company.y + company.height);
+      await expect(jobRow.locator('.mobile-dates')).not.toContainText('Unknown');
+      await expect(jobRow).not.toContainText('No resume');
+      const decision = await jobRow.locator('select').boundingBox();
+      const source = await jobRow.getByRole('link', { name: 'Source ↗' }).boundingBox();
+      expect(Math.abs(decision.y - source.y)).toBeLessThan(1);
+      expect(Math.abs(decision.height - source.height)).toBeLessThan(1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    }
     await page.screenshot({ path: 'test-results/touch-clean-jobs.png' });
     await page.getByRole('button', { name: 'Preparation', exact: true }).click();
     const card = page
@@ -606,4 +627,131 @@ test('touch cards avoid sticky hover, redundant totals and long-text overflow', 
   } finally {
     await context.close();
   }
+});
+
+test('workspace hierarchy keeps details optional and shared task labels independent', async ({
+  page,
+}) => {
+  const headers = { Origin: 'http://127.0.0.1:4319', 'X-Role-Trail': '1' };
+  let state = await (await page.request.get('/api/state')).json();
+  const result = await page.request.post('/api/action', {
+    headers,
+    data: {
+      revision: state.revision,
+      action: {
+        type: 'research',
+        run: {
+          id: 'layout-audit',
+          note: 'Full research context '.repeat(30),
+          coverage: [
+            {
+              source: 'Layout source',
+              status: 'partial',
+              screened: 12,
+              fullJd: 2,
+              query: 'https://example.test/?q=' + 'long/'.repeat(60),
+              note: 'Actual limits remain readable.',
+            },
+          ],
+        },
+        jobs: [1, 2].map((i) => ({
+          company: 'Layout Studio',
+          title: 'Interface Engineer ' + i,
+          url: 'https://example.test/layout-' + i,
+          source: 'official',
+          descriptionKind: 'full',
+          description: '## Responsibilities\n- Build accessible interfaces',
+          searchedAt: new Date().toISOString(),
+        })),
+      },
+    },
+  });
+  expect(result.ok()).toBe(true);
+  state = await result.json();
+  const ids = state.jobs.filter((j) => j.company === 'Layout Studio').map((j) => j.id);
+  const { demoActions } = await import('../../src/demo.mjs');
+  state.profile = demoActions().find((action) => action.type === 'profile').profile;
+  state.tasks.push({
+    id: 'layout-shared',
+    jobId: ids[0],
+    jobIds: ids,
+    text: 'Prepare an interface example',
+    done: false,
+    acceptance: 'Show keyboard navigation and test evidence.',
+    dependsOn: [],
+  });
+  expect(
+    (
+      await page.request.post('/api/restore', {
+        headers,
+        data: { revision: state.revision, state },
+      })
+    ).ok(),
+  ).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Preparation', exact: true }).click();
+  const cards = page.locator('.preparation-card').filter({ hasText: 'Layout Studio' });
+  const first = cards.first();
+  const checkbox = first.getByRole('checkbox', {
+    name: 'Prepare an interface example',
+    exact: true,
+  });
+  await expect(
+    first.getByText('Show keyboard navigation and test evidence.', { exact: true }),
+  ).not.toBeVisible();
+  await first.getByText('Task details', { exact: true }).click();
+  await expect(checkbox).not.toBeChecked();
+  await expect(
+    first.getByText('Show keyboard navigation and test evidence.', { exact: true }),
+  ).toBeVisible();
+  const second = cards.nth(1);
+  await second.locator('label').filter({ hasText: 'Prepare an interface example' }).click();
+  await expect(
+    cards.first().getByRole('checkbox', { name: 'Prepare an interface example', exact: true }),
+  ).toBeChecked();
+  await expect(
+    cards.nth(1).getByRole('checkbox', { name: 'Prepare an interface example', exact: true }),
+  ).toBeChecked();
+  await first.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'test-results/audit-preparation-mobile.png' });
+  await page.getByRole('button', { name: 'Research', exact: true }).click();
+  const run = page.locator('.research-card').filter({ hasText: 'Full research context' });
+  const notes = run.locator('.research-note');
+  await expect(notes).not.toBeVisible();
+  await run.getByText('Run notes', { exact: true }).click();
+  await expect(notes).toBeVisible();
+  await run.getByText('Search details', { exact: true }).click();
+  await expect(run.getByText('Actual limits remain readable.', { exact: true })).toBeVisible();
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await run.getByText('Run notes', { exact: true }).click();
+  await run.getByText('Search details', { exact: true }).click();
+  await run.screenshot({ path: 'test-results/audit-research-mobile.png' });
+  await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
+  await page.getByRole('button', { name: 'Interface Engineer 1', exact: true }).click();
+  const title = await page.locator('#detail-title').boundingBox();
+  const overview = await page.locator('.package-overview').boundingBox();
+  expect(title.y).toBeLessThan(overview.y);
+  await page.screenshot({ path: 'test-results/audit-detail-mobile.png' });
+  await page.getByRole('button', { name: 'Close opportunity', exact: true }).click();
+  await page.getByRole('button', { name: 'Profile', exact: true }).click();
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  }
+  await expect(page.locator('.profile-fields')).toContainText('Alex Morgan');
+  await page.screenshot({ path: 'test-results/audit-profile-desktop.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: 'test-results/audit-profile-mobile.png' });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
+  await page.screenshot({ path: 'test-results/audit-jobs-desktop.png' });
 });
