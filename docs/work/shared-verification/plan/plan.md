@@ -48,7 +48,7 @@ Both apps use the same component, evidence gate and styles; custom checks keep t
 
 ### T02 | Synchronize and verify protected delivery
 
-- Status: in_progress
+- Status: done
 - Depends On: [T01]
 
 #### Intent
@@ -67,6 +67,10 @@ Pinned source/hash checks cover the shared component and CSS; protected live ass
 #### Verification
 
 - npm audit
+
+#### Verification Evidence
+
+- PASS | local:../implement-report.md | npm audit
 
 ## Change Log
 
