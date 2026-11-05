@@ -16,9 +16,9 @@ Do not put real backup data, credentials or migration fixtures in this public re
 - Preserve preparation packs, their source evidence and JD/resume bindings. Todo text alone cannot replace a preparation pack.
 - Preserve complete research payloads and provenance. Run metadata and a content hash cannot reconstruct old research bundles.
 - Enforce the original required criteria and freshness rules. Role Trail's supplied-check array is not a complete policy engine.
-- Measure the complete target representation as compact UTF-8, including artifact encoding costs. Cloud currently caps a single workspace at 3.5 MB. Do not delete history to fit; separate artifact/ledger storage and pagination are required before migrating larger data.
+- Measure the complete target representation as compact UTF-8, excluding separately stored artifact bytes. Cloud currently caps a single workspace at 3.5 MB. Do not delete history to fit; PDFs and raw bundles now use separate artifact storage, but oversized page state still needs pagination or a different storage design.
 
-Role Trail now stores preparation documents and evidence snapshots, but has no converter for another tracker’s preparation schema or original PDF history. A working new-user workflow does not prove an old database can be copied without loss.
+The `job-board-postgres-v1` converter preserves ID mappings, shared tasks, all resume/preparation versions and reviews, original PDF hashes, source evidence, explicit submissions and every raw table row. Historical fit scores remain stale when original assessment input bindings were absent. Legacy date-only checks keep their original precision. It refuses URL collisions, PDF hash mismatches and unmapped references. See [cutover instructions](single-runtime.md). Other tracker schemas remain unsupported until a converter is tested.
 
 ## Test before switching
 

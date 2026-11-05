@@ -75,3 +75,28 @@ test('cloud auth fails closed and cookie sessions expire; bearer key never accep
 test('Vercel pre-parsed bodies and malformed JSON do not break the handler or expose input', async () => {
   assert.deepEqual(await api.body({ body: { revision: 1 } }), { revision: 1 });
 });
+test('Vercel protected mode requires a matching platform project and does not trust request headers', () => {
+  assert.equal(typeof api.protectedVercel, 'function');
+  assert.equal(
+    api.protectedVercel({
+      ROLE_TRAIL_AUTH: 'vercel-protected',
+      VERCEL: '1',
+      VERCEL_PROJECT_ID: 'project',
+      ROLE_TRAIL_PROTECTED_PROJECT_ID: 'project',
+    }),
+    true,
+  );
+  assert.equal(
+    api.protectedVercel({
+      ROLE_TRAIL_AUTH: 'vercel-protected',
+      VERCEL: '1',
+      VERCEL_PROJECT_ID: 'wrong',
+      ROLE_TRAIL_PROTECTED_PROJECT_ID: 'project',
+    }),
+    false,
+  );
+  assert.equal(
+    api.authorized({ headers: { 'x-vercel-id': 'forged' } }, { cloud: true, key: '' }),
+    false,
+  );
+});

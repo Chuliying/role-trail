@@ -1,0 +1,11 @@
+# One canonical runtime
+
+Public source becomes the only application implementation. Private repository becomes a pinned deployment/configuration wrapper. A one-time converter is not a second runtime. Expand storage and provider support, validate synthetic migrations, then cut over while preserving the original tables and an exact backup.
+
+Baseline: private revision 36, 181 jobs, 26 runs, 9 explicit decisions, 5 latest resumes, 5 preparation packs and 8 shared tasks. Full PDF/version and evidence inventory is required before cutover. No user records enter this repository.
+
+T01: RED missing PDF persistence, then HTTP 404 on the PDF save route. GREEN: 47 Node tests and 7 browser tests passed. Original PDF bytes and full research bundles persist separately from page state; authenticated PDF retrieval, immutable versions, stale revisions and unmodified decisions/reviews are covered. Build passed.
+
+T02 dry conversion: 181 jobs, 5 original PDFs, 5 preparation packs, 8 shared tasks and 26 full runs converted; 83 source/artifact blobs retained, zero unmapped references. Date-only evidence remains date-only. Legacy scores retain their reasons but are stale because the old system did not preserve input bindings. The original tables remain authoritative until cutover.
+
+T02: Isolated real PostgreSQL cutover tests passed: source revision conflict leaves destination empty, artifact bytes survive cross-client reads, an occupied destination rejects reinstall, and legacy writes are blocked after cutover. Eight browser tests pass, including migrated approved PDF access and shared-task persistence at 390px. Provider adapters now live in the canonical source; explicit TW feed configuration gates region-specific adapters. The private owner home is itself a Git worktree, so the new private workspace is created outside it with mode 0700.

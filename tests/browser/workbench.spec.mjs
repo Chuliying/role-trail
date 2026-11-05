@@ -385,3 +385,50 @@ test('shared verification icons expose sourced custom checks by keyboard and tou
   await expect(mobile.locator('#verification-evidence')).toBeFocused();
   await touch.close();
 });
+
+test('converted installation keeps approved PDF access, shared todos and historical fit on mobile', async ({
+  page,
+}) => {
+  const { legacyFixture } = await import('../fixtures/legacy.mjs');
+  const { convertLegacy } = await import('../../src/legacy-migration.mjs');
+  const converted = convertLegacy(legacyFixture(), {});
+  const before = await (await page.request.get('/api/state')).json();
+  const saved = await page.request.post('/api/restore', {
+    headers: { 'X-Role-Trail': '1' },
+    data: { revision: before.revision, state: converted.state },
+  });
+  expect(saved.ok()).toBeTruthy();
+  let state = await saved.json();
+  const r = state.resumes[0],
+    pdf = converted.artifacts.find((x) => x.hash === r.pdfHash).bytes;
+  const attached = await page.request.post('/api/pdf', {
+    headers: { 'X-Role-Trail': '1' },
+    data: {
+      revision: state.revision,
+      input: { jobId: r.jobId, version: r.version, filename: r.pdfFilename },
+      pdf: pdf.toString('base64'),
+    },
+  });
+  expect(attached.ok()).toBeTruthy();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Shortlisted', exact: false }).first().click();
+  await page.getByRole('button', { name: 'a', exact: true }).click();
+  await expect(page.getByText('Version 1 · approved', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open saved PDF ↗' }).first()).toBeVisible();
+  const download = await page.request.get('/api/resume?job=' + r.jobId + '&version=1&format=pdf');
+  expect(download.headers()['content-type']).toBe('application/pdf');
+  expect(await download.body()).toEqual(pdf);
+  const [taskSave] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/api/action') && r.request().method() === 'POST'),
+    page.getByRole('checkbox', { name: /Practice/ }).check(),
+  ]);
+  expect(taskSave.ok()).toBeTruthy();
+  state = await (await page.request.get('/api/state')).json();
+  expect(state.tasks).toHaveLength(1);
+  expect(state.tasks[0].jobIds).toHaveLength(2);
+  expect(state.tasks[0].done).toBe(true);
+  expect(state.resumes[0].reviewStatus).toBe('approved');
+  expect(state.submissions).toHaveLength(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

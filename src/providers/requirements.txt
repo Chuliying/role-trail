@@ -1,0 +1,3 @@
+# Optional collector environment, separate from the Node web application.
+# Validate live source contracts before changing this version.
+python-jobspy==1.3.0

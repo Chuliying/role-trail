@@ -27,7 +27,7 @@ Do not prefix secrets with `PUBLIC`, `NEXT_PUBLIC` or `VITE`. Do not export secr
 node bin/role-trail.mjs db-migrate
 ```
 
-Migration is idempotent. It does not populate a real profile. Do not run tests against this database. For migration credentials with broader permissions, rotate to a runtime role limited to SELECT/INSERT/UPDATE on `role_trail_state` after setup.
+Migration is idempotent. It does not populate a real profile. Do not run tests against this database. For migration credentials with broader permissions, rotate to a runtime role limited to SELECT/INSERT/UPDATE on `role_trail_state` and SELECT/INSERT on `role_trail_artifacts` after setup.
 
 7. Deploy using Vercel's Git integration or `vercel deploy --prod` linked to **your** project. Keep any existing Vercel Deployment Protection enabled. App-level authentication is required even if Deployment Protection is also enabled. Open your deployment and enter the access key to start a 24-hour session.
 8. Set up a profile in the UI, or import your local backup via the authenticated restore endpoint. Before any restore export the existing cloud state. Rotate the access key if it was exposed.
@@ -64,3 +64,5 @@ The repo verifies the handler and PostgreSQL behavior locally and in CI. That do
 ## Size and runtime boundaries
 
 Cloud state is capped at 3.5 MB serialized UTF-8, including jobs and resume versions, to keep responses below [Vercel's function payload limit](https://vercel.com/docs/functions/limitations). Oversized writes fail before commit. Local mode supports 15 MB; keep private backups and split/export a workspace when approaching these limits. API bodies accept Vercel's [pre-parsed request body](https://vercel.com/docs/functions/runtimes/node-js) as well as the local Node request stream.
+
+Pinned private wrappers and optional all-deployment Vercel Authentication mode are documented in [single-runtime setup](single-runtime.md). Original PDF and research payload bytes are stored in `role_trail_artifacts`, outside the 3.5 MB page-state cap. Re-run `db-migrate` when upgrading; it creates the artifact table without replacing state. Use `backup` for a complete state-plus-artifact backup.

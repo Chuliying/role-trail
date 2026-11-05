@@ -12,7 +12,18 @@ export function session(key, expires) {
   const body = String(expires);
   return body + '.' + createHmac('sha256', key).update(body).digest('hex');
 }
-export function authorized(req, { cloud, key }) {
+// Opt-in only for dedicated installations whose deployment guard enforces ALL protection.
+// Never infer trust from request headers. Generic installations use the access-key mode.
+export function protectedVercel(env = process.env) {
+  return (
+    env.ROLE_TRAIL_AUTH === 'vercel-protected' &&
+    env.VERCEL === '1' &&
+    !!env.ROLE_TRAIL_PROTECTED_PROJECT_ID &&
+    env.VERCEL_PROJECT_ID === env.ROLE_TRAIL_PROTECTED_PROJECT_ID
+  );
+}
+export function authorized(req, { cloud, key, platformProtected = false }) {
+  if (cloud && platformProtected) return true;
   if (!cloud) return true;
   if (!/^[a-f0-9]{64}$/i.test(key || '')) return false;
   if (equal(req.headers.authorization, 'Bearer ' + key)) return true;
@@ -60,7 +71,7 @@ export async function body(req) {
   }
   return JSON.parse(Buffer.concat(parts).toString() || '{}');
 }
-export function handler({ store, cloud = false, key, origin }) {
+export function handler({ store, cloud = false, key, origin, platformProtected = false }) {
   return async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -88,7 +99,9 @@ export function handler({ store, cloud = false, key, origin }) {
       }
       if (
         cloud &&
-        (!/^[a-f0-9]{64}$/i.test(key || '') || !origin || !origin.startsWith('https://'))
+        ((!platformProtected && !/^[a-f0-9]{64}$/i.test(key || '')) ||
+          !origin ||
+          !origin.startsWith('https://'))
       )
         return send(503, { error: 'Cloud authentication is not configured' });
       const write = req.method !== 'GET';
@@ -113,7 +126,7 @@ export function handler({ store, cloud = false, key, origin }) {
         );
         return send(200, { ok: true });
       }
-      if (!authorized(req, { cloud, key }))
+      if (!authorized(req, { cloud, key, platformProtected }))
         return send(401, { error: 'Sign in with your workspace access key' });
       if (path === '/api/logout' && req.method === 'POST') {
         res.setHeader(
@@ -143,6 +156,21 @@ export function handler({ store, cloud = false, key, origin }) {
         const draft = draftAction(s, b.jobId);
         return send(200, draft ? await store.update(b.revision, draft) : s);
       }
+      if (path === '/api/pdf' && req.method === 'POST') {
+        const b = await body(req);
+        if (
+          typeof b.pdf !== 'string' ||
+          b.pdf.length > 2_700_000 ||
+          !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(b.pdf)
+        )
+          throw Error('Invalid PDF encoding');
+        return send(200, await store.savePDF(b.revision, b.input, Buffer.from(b.pdf, 'base64')));
+      }
+      if (path === '/api/artifact' && req.method === 'GET') {
+        const id = new URL(req.url, 'http://localhost').searchParams.get('hash');
+        res.setHeader('Content-Type', 'application/octet-stream');
+        return res.end(await store.getArtifact(id));
+      }
       if (path === '/api/resume' && req.method === 'GET') {
         const u = new URL(req.url, 'http://localhost'),
           s = await store.read(),
@@ -152,6 +180,12 @@ export function handler({ store, cloud = false, key, origin }) {
               x.version === Number(u.searchParams.get('version')),
           );
         if (!r) return send(404, { error: 'Resume not found' });
+        if (u.searchParams.get('format') === 'pdf') {
+          if (!r.pdfHash) return send(404, { error: 'PDF not saved' });
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', 'inline; filename="' + r.pdfFilename + '"');
+          return res.end(await store.getArtifact(r.pdfHash));
+        }
         const { resumeHTML } = await import('./resume.mjs');
         res.setHeader(
           'Content-Security-Policy',

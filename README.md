@@ -113,7 +113,7 @@ This is an early release with no uptime or job-board access guarantee. Optional 
 
 ## Moving an existing tracker
 
-A new installation uses the workflow above. Moving an existing tracker also requires preserving its records and files. Role Trail does not yet include a converter for another tracker's IDs, original PDF history or full research bundles. Don't pass an unrelated backup to `restore`. Follow the [migration checklist](docs/migration.md) before changing your source of truth.
+A new installation uses the workflow above. Moving an existing tracker also requires preserving its records and files. Role Trail includes a one-time converter for the legacy job-board PostgreSQL schema, preserving original PDFs, full research bundles and record relationships. Other tracker formats still need an explicit converter. Don't pass an unrelated backup to `restore`. Follow the [migration checklist](docs/migration.md) before changing your source of truth.
 
 ## Attribution
 
@@ -128,8 +128,14 @@ The interview preparation method adapts [How to Get an Offer](https://github.com
 
 Research shows a rolling seven-calendar-day window in your configured time zone. Expand each count to see the roles behind it: unique newly discovered high-fit roles, those currently meeting all checks, those you currently shortlisted/applied to, and unknown or stale checks resolved positively or negatively. These are not application conversion rates or newly posted-job counts. Repeated observations and historical imports do not count as new opportunities. Legacy runs without snapshots are explicitly incomplete; revisits do not become new discoveries.
 
-Each role has an application-package overview with resume adjustments, interview preparation, tasks and the original application link. It separates missing materials, resume approval, eligibility and user-reported submission. Stale content requires regeneration. The public workspace provides print/save-PDF export, but does not track the resulting PDF file: it keeps that checklist item unverified rather than inferring success from HTML. Export and inspect the PDF before applying manually.
+Each role has an application-package overview with resume adjustments, interview preparation, tasks and the original application link. It separates missing materials, resume approval, eligibility and user-reported submission. Stale content requires regeneration. Original PDFs can be saved per resume version and opened through an authenticated link. Saving a file does not approve it or submit an application. Inspect the PDF before applying manually.
 
 The calculation rules live in `web/outcomes.mjs`; integrations can use that data-only module without adopting another workspace's profile or private records.
 
 Verification badges use a shared component and stylesheet (`web/verification.mjs` and `web/verification.css`). Common checks—remote work, AI product work, frontend/backend/full-stack/design responsibility, language, working hours, compensation, employment and ownership—have semantic icons. Other checks show a generic icon **with the user's label**, not an unexplained checkmark. Only supported, positive, current facts get badges (7 days for openings; 30 for other checks). Click or tap a badge, or focus it and press Enter, to read the evidence. An icon never means the whole job meets every requirement.
+
+## One application, separate installations
+
+The public repository owns the UI, domain rules, API, PostgreSQL/local storage, collectors and agent CLI. A private installation can depend on a reviewed Git commit and use a small deployment wrapper; it does not copy or patch application source. `buildDeployment` copies only the canonical static asset allowlist. Preferences, credentials, data and the host scheduler belong to each installation. See [single-runtime setup](docs/single-runtime.md).
+
+PDF bytes and full research bundles live in content-addressed artifact storage, outside the page-state JSON. `resume-pdf` renders and saves a version; `pdf-save` attaches an externally rendered PDF without changing its review status. `backup` exports the state and referenced artifacts. Job-Frog expands bounded company groups; Taiwan Indeed uses the optional JobSpy bridge; 104's optional capped Apify trial yields summaries, not verified complete JDs. No provider or paid quota is enabled just by installing the app.

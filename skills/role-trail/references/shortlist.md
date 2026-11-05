@@ -8,7 +8,7 @@ Read the full JD and confirmed experience. Use `draft` for a starting version wh
 
 For each meaningful edit, explain the requirement, selected evidence, wording or ordering change and remaining gap in `adjustments`. Save through the `resume` action with the exact current JD hash and confirmed capability IDs. Don't regenerate a current pending/approved version just to run the workflow again. Requested changes and changed sources justify a new version.
 
-Produce a PDF with the supplied renderer or another available renderer whose output you can inspect. Check its layout and extracted text. Default to a concise ATS-readable resume; use one A4 page when the user's content fits without making it unreadable. Follow the user's requested format when different. Save PDFs in private storage and give the user a real accessible file/link. The workbench offers an authenticated print view; it does not archive original PDF bytes. If rendering or delivery fails, report it as incomplete. Do not mark the resume approved yourself.
+Produce a PDF with the supplied renderer or another available renderer whose output you can inspect. Check its layout and extracted text. Default to a concise ATS-readable resume; use one A4 page when the user's content fits without making it unreadable. Follow the user's requested format when different. Save PDFs in private storage and give the user a real accessible file/link. Use `resume-pdf` to render and save the original bytes, or `pdf-save --job ID --file PDF` for an inspected external PDF. Confirm the saved version and download hash; the print view alone is not saved-file evidence. If rendering or delivery fails, report it as incomplete. Do not mark the resume approved yourself.
 
 ## Interview preparation
 

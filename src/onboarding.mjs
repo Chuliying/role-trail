@@ -85,7 +85,11 @@ export function validateFeeds(feeds = []) {
       Object.values(f).some((v) => typeof v !== 'string' || v.length > 500)
     )
       throw Error('Invalid feed configuration; never put credentials in profiles');
-    if (!['himalayas', 'greenhouse', 'lever', 'google-jobs'].includes(f.type))
+    if (
+      !['himalayas', 'greenhouse', 'lever', 'google-jobs', 'indeed', '104', 'job-frog'].includes(
+        f.type,
+      )
+    )
       throw Error('Unsupported feed');
     if (f.type === 'greenhouse' && !/^[a-zA-Z0-9_-]{1,80}$/.test(f.board || ''))
       throw Error('Greenhouse board slug required');

@@ -103,3 +103,7 @@ Use the `evaluate` packet's `actionShape.binding` unchanged in the assessment ac
 Review the Research outcomes alongside source depth. Inspect individual roles behind each count, especially newly resolved negatives; do not optimize for touched rows. Existing imports without snapshots cannot establish new discovery provenance. Reports use current fit/eligibility/decisions, not historical conversion rates.
 
 For each shortlisted package, inspect the actual resume/PDF, role-specific adjustments, interview preparation, outstanding tasks and unresolved eligibility. Approval, saved-file evidence and submission are independent. The public workbench cannot confirm that a print/save-PDF action produced a reviewed file; verify the local artifact separately and state that limit. Do not call a package ready simply because a resume exists.
+
+## Stored artifacts
+
+Use `pdf-save` for an externally rendered and inspected PDF, or `resume-pdf` to render and save one. Confirm its version/hash through the authenticated original-file link. Research imports archive the exact full bundle separately from state. Use `backup` for state plus all referenced artifacts; `export` alone is a working state copy. Direct PostgreSQL installations can use `--database` with a runtime-only DATABASE_URL. Never put credentials in arguments or prompts.

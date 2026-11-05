@@ -51,6 +51,7 @@ const archived = (j) =>
   j.availability.status === 'closed' ||
   (j.expiresAt && Date.parse(j.expiresAt) < Date.now()) ||
   j.checks.some((c) => c.status === 'excluded');
+const taskFor = (t, id) => t.jobId === id || t.jobIds?.includes(id);
 const latestResume = (id) =>
   state.resumes.filter((r) => r.jobId === id).sort((a, b) => b.version - a.version)[0];
 const sha = async (x, raw = false) =>
@@ -89,12 +90,13 @@ async function api(path, data) {
         if (
           !j ||
           r.jdHash !== (await sha([j.company, j.title, j.description])) ||
-          r.profileHash !== profileDigest ||
-          r.capabilityHash !==
-            (await sha(r.capabilityIds.map((id) => b.capabilities.find((c) => c.id === id)))) ||
-          r.capabilityIds.some(
-            (id) => !b.capabilities.some((c) => c.id === id && c.status === 'confirmed'),
-          )
+          (r.bindingKind !== 'legacy' &&
+            (r.profileHash !== profileDigest ||
+              r.capabilityHash !==
+                (await sha(r.capabilityIds.map((id) => b.capabilities.find((c) => c.id === id)))) ||
+              r.capabilityIds.some(
+                (id) => !b.capabilities.some((c) => c.id === id && c.status === 'confirmed'),
+              )))
         )
           staleResumes.add(r.jobId + ':' + r.version);
       }),
@@ -685,7 +687,7 @@ async function showJob(id) {
     ),
   );
   const taskSection = el('section', { class: 'detail-section' }, el('h2', {}, 'Preparation'));
-  taskSection.append(...state.tasks.filter((t) => t.jobId === id).map(todo));
+  taskSection.append(...state.tasks.filter((t) => taskFor(t, id)).map(todo));
   const input = el('input', {
     placeholder: 'Add a preparation task',
     'aria-label': 'New preparation task',
@@ -746,7 +748,10 @@ async function showJob(id) {
       el(
         'div',
         { class: 'actions' },
-        link('Print / save PDF ↗', '/api/resume?job=' + id + '&version=' + r.version),
+        link(
+          r.pdfHash ? 'Open saved PDF ↗' : 'Print / save PDF ↗',
+          '/api/resume?job=' + id + '&version=' + r.version + (r.pdfHash ? '&format=pdf' : ''),
+        ),
         button('Edit draft', () =>
           jsonEditor(
             'Resume draft',
@@ -797,10 +802,12 @@ async function showJob(id) {
       preparation.jdHash !== (await sha([j.company, j.title, j.description])) ||
       preparation.resumeVersion !== r.version ||
       preparation.resumeContentHash !== (await sha(r.content, true)) ||
-      preparation.capabilityHash !==
-        (await sha(
-          preparation.capabilityIds.map((id) => state.capabilities.find((c) => c.id === id)),
-        ));
+      (preparation.bindingKind === 'legacy'
+        ? preparation.resumePdfHash !== r.pdfHash
+        : preparation.capabilityHash !==
+          (await sha(
+            preparation.capabilityIds.map((id) => state.capabilities.find((c) => c.id === id)),
+          )));
     preparationStale = stale;
     prepSection.append(
       el(
@@ -839,13 +846,13 @@ async function showJob(id) {
   const readiness = applicationReadiness({
     resume: {
       exists: !!r,
-      pdf: false,
+      pdf: !!r?.pdfHash,
       adjustments: !!r?.adjustments?.length,
       reviewStatus: r?.reviewStatus,
       stale: !!r && staleResumes.has(r.jobId + ':' + r.version),
     },
     preparation: { exists: !!preparation, stale: preparationStale },
-    tasks: state.tasks.filter((t) => t.jobId === id),
+    tasks: state.tasks.filter((t) => taskFor(t, id)),
     qualification: qualification(j),
     submitted:
       !!state.submissions?.some((x) => x.jobId === id) || state.reviews[id]?.status === 'applied',
@@ -853,7 +860,7 @@ async function showJob(id) {
   const names = {
     resume: 'Create a tailored resume',
     resume_stale: 'Regenerate the stale resume',
-    pdf: 'Save and inspect the PDF; saved-file evidence is not tracked in this workspace',
+    pdf: 'Save a PDF artifact for this resume version',
     adjustments: 'Explain the resume adjustments',
     resume_changes: 'Revise the resume',
     preparation: 'Prepare interview examples and employer questions',
@@ -890,11 +897,16 @@ async function showJob(id) {
   else overview.append(el('p', {}, 'Ready for your final check and manual application.'));
   if (r)
     overview.append(
-      link('Print / save PDF ↗', '/api/resume?job=' + id + '&version=' + r.version),
+      link(
+        r.pdfHash ? 'Open saved PDF ↗' : 'Print / save PDF ↗',
+        '/api/resume?job=' + id + '&version=' + r.version + (r.pdfHash ? '&format=pdf' : ''),
+      ),
       el(
         'p',
         { class: 'muted' },
-        'PDF export is available; this does not confirm that a PDF was saved or sent.',
+        r.pdfHash
+          ? 'Original PDF saved. Review its content before applying; saving does not submit an application.'
+          : 'Print export is available. Use the agent PDF command to save the original file in this workspace.',
       ),
     );
   overview.append(
@@ -919,7 +931,26 @@ function todo(t) {
       checked: t.done,
       onchange: (e) => action({ type: 'task', id: t.id, jobId: t.jobId, done: e.target.checked }),
     }),
-    el('span', {}, t.text),
+    el(
+      'span',
+      {},
+      t.text,
+      t.acceptance
+        ? el(
+            'small',
+            { class: 'muted' },
+            typeof t.acceptance === 'string' ? t.acceptance : JSON.stringify(t.acceptance),
+          )
+        : null,
+      t.dependsOn?.length
+        ? el(
+            'small',
+            { class: 'muted' },
+            'Depends on: ' +
+              t.dependsOn.map((id) => state.tasks.find((x) => x.id === id)?.text || id).join(', '),
+          )
+        : null,
+    ),
   );
 }
 function tasks() {
@@ -950,7 +981,7 @@ function tasks() {
     ),
   );
   const list = state.jobs.filter(
-    (j) => state.tasks.some((t) => t.jobId === j.id) || shortlisted.includes(j),
+    (j) => state.tasks.some((t) => taskFor(t, j.id)) || shortlisted.includes(j),
   );
   main.append(
     el(
@@ -973,13 +1004,18 @@ function tasks() {
                   : 'Resume ' + latestResume(j.id).reviewStatus
                 : 'No resume'),
           ),
-          ...state.tasks.filter((t) => t.jobId === j.id).map(todo),
+          ...state.tasks.filter((t) => taskFor(t, j.id)).map(todo),
           button('Open preparation', () => showJob(j.id)),
         ),
       ),
     ),
   );
-  if (!list.length)
+  const general = state.tasks.filter((t) => !t.jobId && !t.jobIds?.length);
+  if (general.length)
+    main.append(
+      el('section', { class: 'card' }, el('h2', {}, 'General preparation'), ...general.map(todo)),
+    );
+  if (!list.length && !general.length)
     main.append(
       el('p', { class: 'empty' }, 'Shortlist an opportunity or add a task from its detail view.'),
     );
@@ -1090,6 +1126,9 @@ function research() {
         { class: 'card' },
         el('h2', {}, date(run.finishedAt)),
         el('p', { class: 'muted' }, run.note || run.id),
+        run.archiveHash
+          ? link('Original research bundle ↗', '/api/artifact?hash=' + run.archiveHash)
+          : null,
         el(
           'div',
           { class: 'coverage' },
@@ -1102,7 +1141,13 @@ function research() {
                 c.status,
                 c.status === 'blocked' ? 'danger' : c.status === 'not_run' ? 'warning' : '',
               ),
-              el('p', { class: 'meta' }, `${c.screened} screened · ${c.fullJd} full JDs`),
+              el(
+                'p',
+                { class: 'meta' },
+                c.depthKnown === false
+                  ? `Legacy count: ${c.legacyInspected ?? 'unknown'} · screening/JD depth not recorded`
+                  : `${c.screened} screened · ${c.fullJd} full JDs`,
+              ),
               el('p', {}, c.query),
               el('p', { class: 'muted' }, c.note),
             ),
@@ -1251,7 +1296,7 @@ function profile() {
       el(
         'p',
         { class: 'muted' },
-        'A backup contains private job decisions, evidence and resumes. Keep it outside Git.',
+        'This JSON export contains private state and artifact references. Use the CLI backup command for original PDFs and full source bundles. Keep both outside Git.',
       ),
       file,
       button('Restore selected backup', async () => {

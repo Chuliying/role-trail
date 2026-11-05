@@ -1,3 +1,4 @@
+import { artifactHash, artifactId, attachPDF, researchArtifact } from './artifacts.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename, unlink, lstat } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -20,8 +21,12 @@ export function safeURL(x) {
     throw Error('Invalid URL');
   return u.href;
 }
-const date = (x) => {
-  if (typeof x !== 'string' || !/^\d{4}-\d\d-\d\dT/.test(x) || !Number.isFinite(Date.parse(x)))
+const date = (x, allowDay = false) => {
+  if (
+    typeof x !== 'string' ||
+    (!/^\d{4}-\d\d-\d\dT/.test(x) && !(allowDay && /^\d{4}-\d\d-\d\d$/.test(x))) ||
+    !Number.isFinite(Date.parse(x))
+  )
     throw Error('Invalid timestamp');
   return x;
 };
@@ -81,14 +86,14 @@ function fact(f, availability = false) {
   if (f.status !== 'unknown') {
     safeURL(f.source);
     if (!text(f.evidence).trim()) throw Error('Evidence required');
-    date(f.checkedAt);
+    date(f.checkedAt, true);
     if (Date.parse(f.checkedAt) > Date.now() + 60000) throw Error('Future evidence');
   }
   return {
     status: f.status,
     source: f.source ? safeURL(f.source) : null,
     evidence: text(f.evidence || ''),
-    checkedAt: f.checkedAt ? date(f.checkedAt) : null,
+    checkedAt: f.checkedAt ? date(f.checkedAt, true) : null,
   };
 }
 function preserveFact(old, f) {
@@ -211,6 +216,7 @@ export function jobStatus(j, review = {}) {
 }
 export function validateState(s) {
   keys(s, [
+    'migration',
     'schemaVersion',
     'revision',
     'updatedAt',
@@ -257,13 +263,14 @@ export function validateState(s) {
         !['manual', 'legacy'].includes(entry.source)
       )
         throw Error('Invalid submission');
-      date(entry.recordedAt);
+      if (entry.recordedAt !== null || entry.source !== 'legacy') date(entry.recordedAt);
       seen.add(entry.jobId);
     }
   }
   for (const t of s.tasks)
     if (
-      !ids.has(t.jobId) ||
+      (t.jobId !== null && !ids.has(t.jobId)) ||
+      (t.jobIds && (!Array.isArray(t.jobIds) || t.jobIds.some((id) => !ids.has(id)))) ||
       typeof t.done !== 'boolean' ||
       !text(t.text, 4000).trim() ||
       typeof t.id !== 'string'
@@ -291,6 +298,15 @@ export function validateState(s) {
       !['pending', 'approved', 'changes_requested'].includes(r.reviewStatus)
     )
       throw Error('Invalid resume');
+    if (
+      r.pdfHash !== undefined &&
+      (!/^[a-f0-9]{64}$/.test(r.pdfHash) ||
+        !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,110}\.pdf$/.test(r.pdfFilename || '') ||
+        !Number.isInteger(r.pdfBytes) ||
+        r.pdfBytes < 100 ||
+        r.pdfBytes > 2_000_000)
+    )
+      throw Error('Invalid PDF reference');
   }
   if (s.preparations !== undefined) {
     if (!Array.isArray(s.preparations)) throw Error('Invalid preparations');
@@ -489,12 +505,14 @@ export function transition(current, a) {
     s.reviews[a.jobId] = { ...r, updatedAt: now() };
   } else if (a.type === 'task') {
     keys(a, ['type', 'id', 'jobId', 'text', 'done']);
-    job();
+    if (a.jobId !== null) job();
     if (typeof a.done !== 'boolean') throw Error('Invalid task');
     const old = s.tasks.find((t) => t.id === a.id);
     if (a.id && !old) throw Error('Unknown task');
     if (old && old.jobId !== a.jobId) throw Error('Task job mismatch');
     const t = {
+      ...old,
+      status: a.done ? 'done' : 'pending',
       id: old?.id || randomUUID(),
       jobId: a.jobId,
       text: text(a.text || old?.text, 4000),
@@ -626,6 +644,7 @@ export function transition(current, a) {
 }
 export function resumeStale(s, r) {
   const j = s.jobs.find((j) => j.id === r.jobId);
+  if (r.bindingKind === 'legacy') return !j || r.jdHash !== jdHash(j);
   return (
     !j ||
     r.jdHash !== jdHash(j) ||
@@ -639,6 +658,15 @@ export function resumeStale(s, r) {
 export function preparationStale(s, p) {
   const j = s.jobs.find((j) => j.id === p.jobId);
   const r = s.resumes.filter((r) => r.jobId === p.jobId).sort((a, b) => b.version - a.version)[0];
+  if (p.bindingKind === 'legacy')
+    return (
+      !j ||
+      !r ||
+      p.jdHash !== jdHash(j) ||
+      p.resumeVersion !== r.version ||
+      p.resumePdfHash !== r.pdfHash ||
+      resumeStale(s, r)
+    );
   return (
     !j ||
     !r ||
@@ -671,7 +699,37 @@ export class LocalStore {
     }
   }
   async update(revision, action) {
-    return this.mutate(revision, (s) => transition(s, action));
+    return this.mutate(revision, async (s) => {
+      const next = transition(s, action),
+        bytes = researchArtifact(action);
+      if (bytes && next !== s) {
+        const id = await this.putArtifact(bytes);
+        next.runs.find((r) => r.id === action.run.id).archiveHash = id;
+      }
+      return next;
+    });
+  }
+  async putArtifact(bytes) {
+    const dir = join(await this.directory(), 'artifacts');
+    await mkdir(dir, { recursive: true, mode: 0o700 });
+    const id = artifactHash(bytes);
+    try {
+      await writeFile(join(dir, id), bytes, { flag: 'wx', mode: 0o600 });
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      if (artifactHash(await readFile(join(dir, id))) !== id) throw Error('Artifact corruption');
+    }
+    return id;
+  }
+  async getArtifact(id) {
+    return readFile(join(await this.directory(), 'artifacts', artifactId(id)));
+  }
+  async savePDF(revision, input, pdf) {
+    return this.mutate(revision, async (s) => {
+      const next = attachPDF(s, input, pdf);
+      await this.putArtifact(pdf);
+      return validateState(next);
+    });
   }
   async restore(revision, backup) {
     validateState(backup);
@@ -695,7 +753,7 @@ export class LocalStore {
     try {
       const s = await this.read();
       if (revision !== s.revision) throw Error('Revision conflict');
-      const next = fn(s);
+      const next = await fn(s);
       await writeFile(temp, JSON.stringify(next, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
       await rename(temp, join(dir, 'workspace.json'));
       return next;

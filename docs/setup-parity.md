@@ -29,10 +29,10 @@ Research imports preserve personal records. New run IDs carry a canonical conten
 ## Limits to account for
 
 - One owner/workspace per database. This is not a multi-tenant recruiting service.
-- Local state has a 15 MB serialized UTF-8 cap; cloud state has a 3.5 MB cap. An oversized write is rejected without deleting old data. Plan separate artifact/history storage before approaching the limit.
-- Built-in collectors cover configured Himalayas, Greenhouse, Lever and optional SerpApi feeds. The LLM uses host tools and the source playbook for other selected platforms. Access can fail; the report must retain that scope.
-- Local PDF output requires Chromium. Cloud provides authenticated printable HTML. Original PDF bytes are not archived in the database.
-- Full research payload archives and converters for other tracker schemas are not provided. See [migration](migration.md) before moving existing data.
+- Local state has a 15 MB serialized UTF-8 cap; cloud state has a 3.5 MB cap. An oversized write is rejected without deleting old data. PDFs and full source bundles are stored separately; page-state limits still apply.
+- Built-in collectors cover configured Himalayas, Greenhouse, Lever, Job-Frog, optional SerpApi, and explicitly configured Taiwan Indeed/104 adapters. The LLM uses host tools and the source playbook for other selected platforms. Access can fail; the report must retain that scope.
+- Local PDF output requires Chromium. Cloud provides authenticated printable HTML. Original PDF bytes are saved as immutable artifacts through `resume-pdf` or `pdf-save`.
+- New full research payloads are archived. A one-time converter supports the legacy job-board PostgreSQL schema; unrelated tracker formats still need a converter. See [migration](migration.md) before moving existing data.
 - Account access and LLM scheduling depend on the user's environment. When the host cannot schedule an LLM session, say so. Don't substitute a feed-only cron job and claim full agent operation.
 
 See [release evidence](release-check.md) for executed tests. Synthetic runs establish behavior under those inputs; live provider access, real deployment and future timed execution require their own checks.

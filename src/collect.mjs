@@ -1,7 +1,15 @@
+import { parseCompanies, parseJobs } from './providers/job-frog.mjs';
+import { collectProviders, parseGoogleJobs } from './providers/taiwan.mjs';
 import { randomUUID } from 'node:crypto';
 import { normalizeJob, now } from './workbench.mjs';
-const hosts = new Set(['himalayas.app', 'boards-api.greenhouse.io', 'api.lever.co', 'serpapi.com']);
-export async function fetchJSON(url) {
+const hosts = new Set([
+  'www.job-frog.com',
+  'himalayas.app',
+  'boards-api.greenhouse.io',
+  'api.lever.co',
+  'serpapi.com',
+]);
+export async function fetchText(url) {
   const u = new URL(url);
   if (u.protocol !== 'https:' || !hosts.has(u.hostname) || u.username || u.password)
     throw Error('Unsupported provider');
@@ -24,7 +32,10 @@ export async function fetchJSON(url) {
     }
     parts.push(Buffer.from(value));
   }
-  return JSON.parse(Buffer.concat(parts).toString());
+  return Buffer.concat(parts).toString();
+}
+export async function fetchJSON(url) {
+  return JSON.parse(await fetchText(url));
 }
 const plain = (s) =>
   String(s || '')
@@ -87,7 +98,13 @@ function unknownChecks(p) {
 }
 export async function collect(
   profile,
-  { fetchJSON: get = fetchJSON, env = process.env, clock = Date.now } = {},
+  {
+    fetchJSON: get = fetchJSON,
+    fetchText: getText = fetchText,
+    env = process.env,
+    clock = Date.now,
+    taiwan = collectProviders,
+  } = {},
 ) {
   if (!profile) throw Error('Set up your profile first');
   const stamp = now(),
@@ -132,7 +149,64 @@ export async function collect(
       }
     };
     try {
-      if (source === 'greenhouse') {
+      if (source === 'job-frog') {
+        const groups = parseCompanies(
+          await getText('https://www.job-frog.com/?searched=1&q=' + encodeURIComponent(query)),
+        );
+        pages++;
+        for (const group of groups.slice(0, 4))
+          for (let page = 1; page <= 2; page++) {
+            if (clock() >= deadline) break;
+            const url =
+              'https://www.job-frog.com/api/search?' +
+              new URLSearchParams({
+                q: query,
+                companyExact: group.company,
+                page: String(page),
+                pageSize: '20',
+              });
+            const result = parseJobs(JSON.stringify(await get(url)), {
+              company: group.company,
+              query,
+            });
+            pages++;
+            for (const j of result.jobs)
+              add({
+                company: j.company,
+                title: j.title,
+                url: j.url,
+                sourceURL: url,
+                description: j.summary,
+                descriptionKind: 'summary',
+                location: j.location,
+                posting: { date: null, kind: 'unknown', raw: j.platformDate || '' },
+              });
+            if (!result.hasMore) break;
+          }
+      } else if (['indeed', '104'].includes(source)) {
+        if (f.country !== 'TW' || !f.location)
+          throw Error('Taiwan provider requires explicit TW country and location');
+        const result = await taiwan({ query, location: f.location, sources: [source], env });
+        pages++;
+        if (
+          !result.attempts.length ||
+          result.attempts.some((a) =>
+            ['failed', 'needs_configuration', 'disabled'].includes(a.status),
+          )
+        )
+          throw Error('Provider not available');
+        for (const j of result.candidates)
+          add({
+            company: j.company,
+            title: j.title,
+            url: j.url,
+            sourceURL: j.sourceURL || j.url,
+            description: j.descriptionText,
+            descriptionKind: j.fetchStatus === 'summary_only' ? 'summary' : 'excerpt',
+            location: j.location || f.location,
+            posting: { date: null, kind: 'unknown', raw: j.platformDate || '' },
+          });
+      } else if (source === 'greenhouse') {
         const url =
             'https://boards-api.greenhouse.io/v1/boards/' + slug(f.board) + '/jobs?content=true',
           data = await get(url);
@@ -237,22 +311,17 @@ export async function collect(
         if (f.country) u.searchParams.set('gl', f.country);
         const data = await get(u.href);
         pages++;
-        if (data.error || data.search_metadata?.status !== 'Success')
-          throw Error('Provider did not succeed');
-        for (const j of (data.jobs_results || []).slice(0, 20)) {
-          const link = j.apply_options?.[0]?.link;
-          if (link)
-            add({
-              company: j.company_name,
-              title: j.title,
-              url: link,
-              sourceURL: link,
-              description: j.description || '',
-              descriptionKind: 'excerpt',
-              location: j.location,
-              posting: { date: null, kind: 'unknown', raw: j.detected_extensions?.posted_at || '' },
-            });
-        }
+        for (const j of parseGoogleJobs(data).slice(0, 20))
+          add({
+            company: j.company,
+            title: j.title,
+            url: j.url,
+            sourceURL: j.sourceURL || j.url,
+            description: j.descriptionText,
+            descriptionKind: j.fetchStatus === 'summary_only' ? 'summary' : 'excerpt',
+            location: j.location || '',
+            posting: { date: null, kind: 'unknown', raw: j.platformDate || '' },
+          });
       } else throw Error('Unsupported provider');
       coverage.push({
         source,

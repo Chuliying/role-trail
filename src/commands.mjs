@@ -21,11 +21,17 @@ Workbench (private workspace outside Git):
   collect --workspace DIR             Run configured sources; preserve coverage
   evaluate --workspace DIR --job ID   Write a bounded assessment packet for your agent
   draft --workspace DIR [--job ID]     Generate one draft, or all shortlisted drafts
+  pdf-save --workspace DIR|--remote --job ID --file PDF
+  backup --workspace DIR|--remote --output PRIVATE_DIRECTORY
   resume-pdf --workspace DIR --job ID --output FILE
   schedule --workspace DIR --time HH:mm --timezone IANA [--status active|paused]
   tick --workspace DIR                Run the daily search once if due
   daemon --workspace DIR              Check each minute; stop with Ctrl+C
   db-migrate                          Create tables in your DATABASE_URL
+  legacy-export --output PRIVATE_FILE  Backup all legacy tables and PDF versions
+  legacy-preview --file SNAPSHOT --profile PROFILE --output PRIVATE_DIR
+  legacy-migrate --file SNAPSHOT --profile PROFILE  Atomic cutover; old tables become read-only
+Use --database with a runtime DATABASE_URL for direct single-owner PostgreSQL access.
 Use --remote instead of --workspace for data commands, with ROLE_TRAIL_URL and
 ROLE_TRAIL_ACCESS_KEY in your environment. No secret is accepted as a CLI argument.
 A saved schedule is not an installed runner. See docs/scheduling.md.`;
@@ -44,20 +50,27 @@ const options = {
   evaluate: ['workspace', 'remote', 'job'],
   draft: ['workspace', 'remote', 'job'],
   'resume-pdf': ['workspace', 'remote', 'job', 'output'],
+  'pdf-save': ['workspace', 'remote', 'job', 'file'],
+  backup: ['workspace', 'remote', 'output'],
   schedule: ['workspace', 'remote', 'time', 'timezone', 'status'],
   tick: ['workspace', 'remote'],
   daemon: ['workspace', 'remote'],
   'db-migrate': [],
+  'legacy-export': ['output'],
+  'legacy-preview': ['file', 'profile', 'output'],
+  'legacy-migrate': ['file', 'profile'],
 };
 export function parse(command, args) {
-  const allowed = options[command];
+  const allowed = options[command]
+    ? [...options[command], ...(options[command].includes('remote') ? ['database'] : [])]
+    : null;
   if (!allowed) throw Error('Unknown command; use help');
   const o = {};
   for (let i = 0; i < args.length; i++) {
     const k = args[i].slice(2);
     if (!args[i].startsWith('--') || !allowed.includes(k) || o[k] !== undefined)
       throw Error('Unknown or duplicate option');
-    if (k === 'remote') {
+    if (k === 'remote' || k === 'database') {
       o[k] = true;
       continue;
     }
@@ -97,6 +110,17 @@ class RemoteStore {
     if (!r.ok) throw Error(v.error || 'Remote operation failed');
     return v;
   }
+  async getArtifact(id) {
+    const r = await fetch(new URL('/api/artifact?hash=' + encodeURIComponent(id), this.url), {
+      headers: { Authorization: 'Bearer ' + process.env.ROLE_TRAIL_ACCESS_KEY },
+      redirect: 'error',
+    });
+    if (!r.ok) throw Error('Artifact fetch failed');
+    return Buffer.from(await r.arrayBuffer());
+  }
+  savePDF(revision, input, pdf) {
+    return this.call('pdf', { revision, input, pdf: pdf.toString('base64') });
+  }
   read() {
     return this.call('state');
   }
@@ -124,6 +148,41 @@ export async function run(command, args) {
     console.log('Research bundle valid');
     return;
   }
+  if (command.startsWith('legacy-')) {
+    const { PostgresStore } = await import('./postgres.mjs');
+    const { exportLegacy, installLegacy } = await import('./legacy-postgres.mjs');
+    const { convertLegacy } = await import('./legacy-migration.mjs');
+    if (command === 'legacy-export') {
+      const db = new PostgresStore(process.env.DATABASE_URL);
+      try {
+        const snapshot = await exportLegacy(db.pool);
+        console.log(await privateOutput(o.output, JSON.stringify(snapshot)));
+      } finally {
+        await db.close();
+      }
+      return;
+    }
+    const snapshot = JSON.parse(await readFile(o.file, 'utf8')),
+      profile = o.profile ? JSON.parse(await readFile(o.profile, 'utf8')) : null;
+    const converted = convertLegacy(snapshot, { profile });
+    if (command === 'legacy-preview') {
+      const dir = await privateWorkspace(o.output);
+      await privateOutput(join(dir, 'workspace.json'), JSON.stringify(converted.state));
+      for (const a of converted.artifacts)
+        await privateOutput(join(dir, 'artifacts', a.hash), a.bytes);
+      await privateOutput(join(dir, 'report.json'), JSON.stringify(converted.report));
+      console.log(JSON.stringify(converted.report));
+      return;
+    }
+    const db = new PostgresStore(process.env.DATABASE_URL);
+    try {
+      await db.migrate();
+      console.log(JSON.stringify(await installLegacy(db, converted)));
+    } finally {
+      await db.close();
+    }
+    return;
+  }
   if (command === 'db-migrate') {
     const { PostgresStore } = await import('./postgres.mjs');
     const s = new PostgresStore(process.env.DATABASE_URL);
@@ -135,9 +194,13 @@ export async function run(command, args) {
     }
     return;
   }
-  if (o.remote && o.workspace) throw Error('Choose local or remote');
-  if (!o.remote && !o.workspace) throw Error('--workspace or --remote required');
-  const store = o.remote ? new RemoteStore() : new LocalStore(o.workspace);
+  if ([o.remote, o.database, o.workspace].filter(Boolean).length !== 1)
+    throw Error('Choose exactly one of --workspace, --remote or --database');
+  const store = o.database
+    ? new (await import('./postgres.mjs')).PostgresStore(process.env.DATABASE_URL)
+    : o.remote
+      ? new RemoteStore()
+      : new LocalStore(o.workspace);
   let s = await store.read();
   // Existing onboarding profiles become the initial board profile without changing evidence files.
   if (!s.profile && o.workspace && command !== 'restore' && command !== 'demo') {
@@ -232,6 +295,26 @@ export async function run(command, args) {
       const draft = draftAction(s, j.id);
       if (draft) s = await store.update(s.revision, draft);
     }
+  } else if (command === 'backup') {
+    const dir = await privateWorkspace(o.output);
+    await mkdir(dir, { recursive: true, mode: 0o700 });
+    await privateOutput(join(dir, 'workspace.json'), JSON.stringify(s));
+    const ids = new Set(
+      [...s.resumes.map((r) => r.pdfHash), ...s.runs.map((r) => r.archiveHash)].filter(Boolean),
+    );
+    for (const id of ids)
+      await privateOutput(join(dir, 'artifacts', id), await store.getArtifact(id));
+    console.log(JSON.stringify({ revision: s.revision, artifacts: ids.size }));
+    return;
+  } else if (command === 'pdf-save') {
+    const r = s.resumes.filter((r) => r.jobId === o.job).sort((a, b) => b.version - a.version)[0];
+    if (!r) throw Error('Resume required');
+    const filename = resolve(o.file).split('/').pop();
+    s = await store.savePDF(
+      s.revision,
+      { jobId: o.job, version: r.version, filename },
+      await readFile(o.file),
+    );
   } else if (command === 'resume-pdf') {
     const r = s.resumes.filter((r) => r.jobId === o.job).sort((a, b) => b.version - a.version)[0];
     if (!r) throw Error('Generate a resume first');
@@ -243,6 +326,11 @@ export async function run(command, args) {
       await page.setContent(resumeHTML(r));
       const bytes = await page.pdf({ format: 'A4', printBackground: true });
       console.log(await privateOutput(o.output, bytes));
+      await store.savePDF(
+        s.revision,
+        { jobId: r.jobId, version: r.version, filename: resolve(o.output).split('/').pop() },
+        bytes,
+      );
     } finally {
       await browser.close();
     }

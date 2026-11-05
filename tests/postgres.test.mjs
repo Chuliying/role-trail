@@ -106,6 +106,42 @@ test(
       assert.equal(preparationStale(s, s.preparations[0]), false);
       assert.equal(s.preparations[0].evidence[0].id, 'demo-ui');
       assert.equal(s.resumes[0].reviewStatus, 'approved');
+
+      // Exercise cutover in this disposable PostgreSQL instance only.
+      const { convertLegacy } = await import('../src/legacy-migration.mjs');
+      const { legacyFixture } = await import('./fixtures/legacy.mjs');
+      let migration = {};
+      try {
+        migration = await import('../src/legacy-postgres.mjs');
+      } catch (e) {
+        if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e;
+      }
+      assert.equal(typeof migration.installLegacy, 'function', 'transactional cutover is required');
+      const { installLegacy } = migration;
+      const snapshot = legacyFixture(),
+        converted = convertLegacy(snapshot, {});
+      await store.pool.query('DELETE FROM role_trail_state');
+      await store.migrate();
+      await store.pool.query(
+        'CREATE TABLE job_board_state(id integer primary key,revision integer)',
+      );
+      await store.pool.query('INSERT INTO job_board_state VALUES(1,13)');
+      await assert.rejects(installLegacy(store, converted), /Legacy revision conflict/);
+      assert.equal((await store.read()).jobs.length, 0);
+      await store.pool.query('UPDATE job_board_state SET revision=12');
+      await installLegacy(store, converted);
+      const migrated = await second.read();
+      assert.equal(migrated.jobs.length, 2);
+      assert.equal(migrated.resumes[0].reviewStatus, 'approved');
+      assert.deepEqual(
+        await second.getArtifact(migrated.resumes[0].pdfHash),
+        converted.artifacts.find((a) => a.hash === migrated.resumes[0].pdfHash).bytes,
+      );
+      await assert.rejects(
+        store.pool.query('UPDATE job_board_state SET revision=99'),
+        /moved to Role Trail/,
+      );
+      await assert.rejects(installLegacy(store, converted), /Destination is not empty/);
     } finally {
       await store?.close();
       await second?.close();

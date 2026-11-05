@@ -1,5 +1,5 @@
 import { PostgresStore } from '../src/postgres.mjs';
-import { handler } from '../src/server.mjs';
+import { handler, protectedVercel } from '../src/server.mjs';
 let store;
 export default async function api(req, res) {
   if (!process.env.DATABASE_URL) {
@@ -11,6 +11,7 @@ export default async function api(req, res) {
   store ||= new PostgresStore(process.env.DATABASE_URL);
   return handler({
     store,
+    platformProtected: protectedVercel(),
     cloud: true,
     key: process.env.ROLE_TRAIL_ACCESS_KEY,
     origin: process.env.ROLE_TRAIL_ORIGIN,
