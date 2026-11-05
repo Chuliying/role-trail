@@ -55,6 +55,19 @@ function iconButton(label, path, click, cls = '') {
 }
 const link = (label, url) =>
   el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', class: 'button' }, label);
+function historicalScore(job) {
+  const control = iconButton(
+    t('Previous fit') + ' ' + job.assessment.score + '/10 · ' + t('Reassess'),
+    'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l3 2',
+    async () => {
+      await showJob(job.id);
+      document.getElementById('fit-evidence').scrollIntoView({ block: 'start' });
+    },
+    'score-status historical-fit',
+  );
+  control.prepend(el('span', { class: 'score' }, job.assessment.score, el('span', {}, ' /10')));
+  return control;
+}
 function disclosure(label, ...content) {
   return el('details', { class: 'disclosure' }, el('summary', {}, t(label)), ...content);
 }
@@ -521,12 +534,7 @@ function jobs() {
                   el('p', {}, j.assessment.reason),
                 )
               : j.assessment?.stale
-                ? el(
-                    'div',
-                    { class: 'historical-fit' },
-                    el('span', { class: 'score' }, j.assessment.score, el('span', {}, ' /10')),
-                    el('small', { class: 'muted' }, t('Reassess')),
-                  )
+                ? historicalScore(j)
                 : el('span', { class: 'muted' }, t('Unrated')),
           ),
           el(
@@ -699,7 +707,7 @@ async function showJob(id) {
   const d = $('#detail-body');
   d.replaceChildren(
     el('span', { class: 'company' }, j.company),
-    el('h1', { id: 'detail-title' }, j.title),
+    el('h1', { id: 'detail-title', tabindex: '-1' }, j.title),
     el('p', { class: 'muted' }, j.location || t('Location not confirmed')),
     el(
       'div',
@@ -711,7 +719,7 @@ async function showJob(id) {
     ),
     el(
       'div',
-      { class: 'detail-section' },
+      { class: 'detail-section', id: 'fit-evidence' },
       el('h2', {}, t('Fit & evidence')),
       j.assessment
         ? el(
@@ -794,7 +802,7 @@ async function showJob(id) {
     ),
     el(
       'div',
-      { class: 'detail-section' },
+      { class: 'detail-section', id: 'job-description' },
       el('h2', {}, t('Job description')),
       el(
         'p',
@@ -989,7 +997,7 @@ async function showJob(id) {
   };
   const overview = el(
     'section',
-    { class: 'detail-section package-overview' },
+    { class: 'detail-section package-overview', id: 'application-package' },
     el('h2', {}, t('Application package')),
     el(
       'dl',
@@ -1039,8 +1047,36 @@ async function showJob(id) {
       link('Open application source ↗', j.url),
     ),
   );
-  d.querySelector('.detail-section').before(overview);
-  if (!$('#detail').open) $('#detail').showModal();
+  // Reading the JD is the primary action; preparation remains a separate destination.
+  const jd = d.querySelector('#job-description');
+  d.querySelector('.detail-section').before(jd);
+  taskSection.before(overview);
+  jd.before(
+    el(
+      'div',
+      { class: 'detail-jumps', role: 'navigation', 'aria-label': t('Opportunity sections') },
+      ...[
+        ['JD', jd],
+        ['Fit & checks', d.querySelector('#fit-evidence')],
+        ['Preparation', overview],
+      ].map(([label, section]) =>
+        button(
+          t(label),
+          () => {
+            section.scrollIntoView({ block: 'start' });
+            section.setAttribute('tabindex', '-1');
+            section.focus({ preventScroll: true });
+          },
+          'quiet',
+        ),
+      ),
+    ),
+  );
+  if (!$('#detail').open) {
+    $('#detail').showModal();
+    $('#detail').scrollTop = 0;
+    $('#detail-title').focus({ preventScroll: true });
+  }
 }
 let taskControlId = 0;
 function todo(task) {

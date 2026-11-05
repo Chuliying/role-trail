@@ -22,3 +22,11 @@ Scope: shared Role Trail UI, both desktop and mobile. Review used frontend-desig
 ## Limits
 
 This is a layout and interaction pass, not a claim of full accessibility certification. Tests use Chromium, not physical iOS Safari. JSON editors, provider setup and URL-state navigation remain existing product behavior. Schedule execution and private-data accuracy are not established by a visual review. No research was performed or imported.
+
+## Score and dialog follow-up
+
+- Historical fit uses a compact score with a clock icon and dotted underline. Its accessible label/title identifies it as previous fit requiring reassessment; clicking opens the stale assessment. The extra text row is removed without presenting the old score as current.
+- Company, fit and remote indicators align vertically on mobile. The score control remains 44px tall.
+- Dialogs use automatic margins to stay centered. The detail close control is a labelled 44px icon button. Initial focus goes to the role heading, retaining keyboard focus indicators on interactive controls.
+- The JD precedes fit/evidence and application preparation. Three navigation controls jump to JD, fit/checks or preparation and move keyboard focus to the destination.
+- Fresh build, 68 Node tests, 11 browser tests, formatting and audit passed. Added checks for stale-score interaction, dialog centering, initial focus and JD-before-package order. Inspected synthetic score and mobile-dialog screenshots.

@@ -463,6 +463,7 @@ details summary {
   cursor: pointer;
 }
 dialog {
+  margin: auto;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -1101,7 +1102,9 @@ h1 {
     text-align: left;
   }
   .score-tip summary {
-    min-height: 32px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 }
 @font-face {
@@ -1126,11 +1129,6 @@ h1 {
 }
 .remote-symbol {
   display: none;
-}
-.historical-fit small {
-  display: block;
-  font-size: 11px;
-  line-height: 1.3;
 }
 @media (max-width: 720px) {
   .job-row td:nth-child(3) {
@@ -1378,5 +1376,74 @@ summary:focus-visible {
   .profile-fields > div {
     grid-template-columns: 80px minmax(0, 1fr);
     gap: 12px;
+  }
+}
+
+.score-status {
+  display: inline-flex;
+  width: auto;
+  min-height: 44px;
+  gap: 6px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.score-status svg {
+  width: 15px;
+  height: 15px;
+}
+.historical-fit .score {
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--muted);
+}
+.detail-jumps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.detail-jumps button {
+  white-space: normal;
+  min-width: 0;
+  font-size: 13px;
+  padding-inline: 8px;
+}
+#job-description {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 20px;
+}
+#detail .dialog-bar {
+  padding-block: 8px;
+}
+@media (max-width: 720px) {
+  dialog {
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .job-row {
+    row-gap: 4px;
+  }
+  .job-row .company,
+  .job-row td:nth-child(2),
+  .job-row td:nth-child(3) {
+    align-self: center;
+  }
+  .job-row .company {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .job-row .historical-fit {
+    min-height: 44px;
+  }
+  .job-row .mobile-dates {
+    margin-top: 4px;
+  }
+  .job-row td:nth-child(5) {
+    padding-top: 8px;
   }
 }

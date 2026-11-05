@@ -167,7 +167,15 @@ test('stale scores, old verification and application history are represented hon
   await page.reload();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   const row = page.locator('tbody tr').filter({ hasText: 'Regression role' });
-  await expect(row.getByText('Reassess', { exact: true })).toBeVisible();
+  await expect(row.getByRole('button', { name: /Previous fit.*Reassess/ })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const previous = row.getByRole('button', { name: /Previous fit.*Reassess/ });
+  expect((await previous.boundingBox()).height).toBe(44);
+  await expect(row.getByText('Reassess', { exact: true })).toHaveCount(0);
+  await row.screenshot({ path: 'test-results/compact-stale-score.png' });
+  await previous.click();
+  await expect(page.locator('#fit-evidence')).toContainText('Stale assessment');
+  await page.getByRole('button', { name: 'Close opportunity' }).click();
   await expect(row.getByLabel('Remote policy verified')).toHaveCount(0);
   await expect(row).toContainText('Application recorded');
   await expect(row).toContainText('Resume v1 · stale');
@@ -738,6 +746,20 @@ test('workspace hierarchy keeps details optional and shared task labels independ
   const title = await page.locator('#detail-title').boundingBox();
   const overview = await page.locator('.package-overview').boundingBox();
   expect(title.y).toBeLessThan(overview.y);
+  const modal = await page.locator('#detail').boundingBox();
+  expect(Math.abs(modal.x - (390 - modal.width) / 2)).toBeLessThan(1);
+  await expect(page.locator('#detail-title')).toBeFocused();
+  const jd = await page.locator('#job-description').boundingBox();
+  expect(jd.y).toBeLessThan(overview.y);
+  await page
+    .getByRole('navigation', { name: 'Opportunity sections' })
+    .getByRole('button', { name: 'Preparation', exact: true })
+    .click();
+  await expect(page.locator('#application-package')).toBeFocused();
+  await page
+    .getByRole('navigation', { name: 'Opportunity sections' })
+    .getByRole('button', { name: 'JD', exact: true })
+    .click();
   await page.screenshot({ path: 'test-results/audit-detail-mobile.png' });
   await page.getByRole('button', { name: 'Close opportunity', exact: true }).click();
   await page.getByRole('button', { name: 'Profile', exact: true }).click();

@@ -4,6 +4,10 @@ export const locale =
     ? 'zh-TW'
     : 'en';
 const zh = {
+  'Previous fit': '歷史契合度',
+  'Opportunity sections': '職缺內容',
+  JD: '職缺原文',
+  'Fit & checks': '契合與查證',
   'Skip to content': '跳至內容',
   'Evidence guidance': '證據原則',
   Name: '姓名',
