@@ -4,6 +4,9 @@ export const locale =
     ? 'zh-TW'
     : 'en';
 const zh = {
+  'Preparation shortcuts': '準備入口',
+  Interview: '面試',
+  Tasks: '待辦',
   'Newest search': '最新搜尋',
   'Highest fit': '最高契合度',
   'Previous fit': '歷史契合度',

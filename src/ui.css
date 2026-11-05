@@ -1615,3 +1615,69 @@ summary:focus-visible {
 #detail-title:focus {
   outline: none;
 }
+
+/* The reader scrolls between fixed dialog chrome; actions never cover content. */
+#detail[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#detail > .dialog-bar,
+#detail-footer {
+  flex: none;
+}
+#detail-body {
+  min-height: 0;
+  padding-top: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#detail-body > .company {
+  margin-top: 20px;
+}
+#detail-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--surface);
+}
+#detail-footer > * {
+  min-width: 0;
+  min-height: 44px;
+  white-space: normal;
+}
+#detail .detail-jumps {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+#detail .detail-section {
+  scroll-margin-top: 64px;
+}
+.package-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.package-links button {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 4px;
+  border: 0;
+  font-size: 14px;
+}
+.package-links svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}

@@ -35,3 +35,9 @@ The header refresh previously fetched state without replacing the current JavaSc
 Before the fix, the new browser checks observed zero inter-record spacing, text-based source/time controls and a client sentinel surviving Refresh. After the fix, all 69 Node tests and 14 browser tests pass, including Chromium and WebKit at 320/390 px. Tests verify equal modal side margins, JD-before-preparation order, close icon, reading focus, no horizontal overflow, icon destinations and complete client reload. WebKit is a Safari-engine check, not a physical iPhone test. Synthetic screenshots show the complete centered dialog and adjacent cards.
 
 Consolidated the competing mobile row CSS blocks. Static heading focus no longer draws WebKit's interactive-looking focus outline; keyboard focus styling remains on interactive controls. No workspace data or personal decisions changed in this follow-up.
+
+## Dialog footer and preparation shortcuts
+
+Original job and Archive/Restore now live in a fixed dialog footer outside the scrolling body. The header and footer remain visible without overlaying the last content item. Preparation uses one row of three icon-and-label shortcuts (Resume, Interview, Tasks); the duplicate external application link was removed. Each shortcut moves reading focus to its destination.
+
+Chromium and WebKit tests cover the footer before/after body scrolling at 320, 390 and 1280 px, archive persistence, shortcut alignment and all three destinations. A visual check found preceding text leaking into the padding above sticky section tabs; the failing WebKit measurement showed a 20 px gap. The body padding was moved to its first content item so the tabs attach directly below the header. Verification remains 69 Node and 14 browser tests, with synthetic screenshots.

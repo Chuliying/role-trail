@@ -743,18 +743,16 @@ async function showJob(id) {
     ),
   };
   const d = $('#detail-body');
+  $('#detail-footer').replaceChildren(
+    link(t('Original job ↗'), j.url),
+    button(state.reviews[id]?.archived ? t('Restore manual archive') : t('Archive'), () =>
+      action({ type: 'archive', jobId: id, archived: !state.reviews[id]?.archived }),
+    ),
+  );
   d.replaceChildren(
     el('span', { class: 'company' }, j.company),
     el('h1', { id: 'detail-title', tabindex: '-1' }, j.title),
     el('p', { class: 'muted' }, j.location || t('Location not confirmed')),
-    el(
-      'div',
-      { class: 'actions' },
-      link(t('Original job ↗'), j.url),
-      button(state.reviews[id]?.archived ? t('Restore manual archive') : t('Archive'), () =>
-        action({ type: 'archive', jobId: id, archived: !state.reviews[id]?.archived }),
-      ),
-    ),
     el(
       'div',
       { class: 'detail-section', id: 'fit-evidence' },
@@ -1078,11 +1076,24 @@ async function showJob(id) {
   overview.append(
     el(
       'div',
-      { class: 'actions' },
-      button('Resume & adjustments', () => resume.scrollIntoView({ block: 'start' })),
-      button(t('Interview preparation'), () => prepSection.scrollIntoView({ block: 'start' })),
-      button('Tasks', () => taskSection.scrollIntoView({ block: 'start' })),
-      link('Open application source ↗', j.url),
+      { class: 'package-links', role: 'group', 'aria-label': t('Preparation shortcuts') },
+      ...[
+        ['Resume', resume, 'M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6'],
+        ['Interview', prepSection, 'M4 4h16v12H9l-5 4zM8 8h8M8 12h5'],
+        ['Tasks', taskSection, 'M9 6h12M9 12h12M9 18h12M3 5l1 1 2-2M3 11l1 1 2-2M3 17l1 1 2-2'],
+      ].map(([label, section, path]) => {
+        const b = button(
+          t(label),
+          () => {
+            section.scrollIntoView({ block: 'start' });
+            section.setAttribute('tabindex', '-1');
+            section.focus({ preventScroll: true });
+          },
+          'quiet',
+        );
+        b.prepend(verificationIcon(path));
+        return b;
+      }),
     ),
   );
   // Reading the JD is the primary action; preparation remains a separate destination.
@@ -1112,7 +1123,7 @@ async function showJob(id) {
   );
   if (!$('#detail').open) {
     $('#detail').showModal();
-    $('#detail').scrollTop = 0;
+    d.scrollTop = 0;
     $('#detail-title').focus({ preventScroll: true });
   }
 }

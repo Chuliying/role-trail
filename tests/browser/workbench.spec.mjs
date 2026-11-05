@@ -29,7 +29,10 @@ test('review, shortlist, task, tailored resume and archive survive reload', asyn
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Product Engineer', exact: true }).click();
   await expect(page.getByRole('checkbox', { name: 'Prepare accessible UI example' })).toBeChecked();
-  await page.locator('#detail-body').getByRole('button', { name: 'Archive', exact: true }).click();
+  await page
+    .locator('#detail-footer')
+    .getByRole('button', { name: 'Archive', exact: true })
+    .click();
   await page.getByRole('button', { name: 'Close opportunity' }).click();
   await page.getByRole('button', { name: 'Archive', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Product Engineer', exact: true })).toBeVisible();

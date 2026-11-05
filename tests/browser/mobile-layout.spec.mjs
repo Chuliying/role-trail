@@ -43,7 +43,67 @@ for (const engine of ['chromium', 'webkit']) {
       const jd = await page.locator('#job-description').boundingBox();
       const pack = await page.locator('#application-package').boundingBox();
       expect.soft(jd.y).toBeLessThan(pack.y);
+      const footer = page.locator('#detail-footer');
+      await expect(footer.getByRole('link', { name: 'Original job ↗' })).toBeVisible();
+      await expect(footer.getByRole('button', { name: 'Archive', exact: true })).toBeVisible();
+      await expect(
+        page.locator('#detail-body').getByRole('link', { name: 'Original job ↗' }),
+      ).toHaveCount(0);
+      for (const width of [320, 390, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        const before = await footer.boundingBox();
+        await page.locator('#detail-body').evaluate((n) => {
+          n.scrollTop = n.scrollHeight;
+        });
+        const after = await footer.boundingBox(),
+          dialog = await modal.boundingBox();
+        expect(Math.abs(before.y - after.y)).toBeLessThan(1);
+        expect(after.y + after.height).toBeLessThanOrEqual(dialog.y + dialog.height);
+        await expect(footer.getByRole('button', { name: 'Archive', exact: true })).toBeInViewport();
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator('#detail-body').evaluate((n) => {
+        n.scrollTop = 0;
+      });
       await page.screenshot({ path: `test-results/reader-${engine}.png` });
+      const prepare = page
+        .getByRole('navigation', { name: 'Opportunity sections' })
+        .getByRole('button', { name: 'Preparation', exact: true });
+      await prepare.click();
+      const bodyTop = (await page.locator('#detail-body').boundingBox()).y;
+      const tabsTop = (
+        await page.getByRole('navigation', { name: 'Opportunity sections' }).boundingBox()
+      ).y;
+      expect(tabsTop - bodyTop).toBeLessThanOrEqual(1);
+      const shortcuts = page.getByRole('group', { name: 'Preparation shortcuts' });
+      await expect(shortcuts.getByRole('button')).toHaveCount(3);
+      await expect(shortcuts.locator('svg')).toHaveCount(3);
+      await expect(page.locator('#application-package a[href^="https:"]')).toHaveCount(0);
+      for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        const boxes = await shortcuts.getByRole('button').evaluateAll((nodes) =>
+          nodes.map((n) => ({
+            y: n.getBoundingClientRect().y,
+            right: n.getBoundingClientRect().right,
+          })),
+        );
+        expect(
+          Math.max(...boxes.map((b) => b.y)) - Math.min(...boxes.map((b) => b.y)),
+        ).toBeLessThan(1);
+        expect(Math.max(...boxes.map((b) => b.right))).toBeLessThan(width);
+      }
+      await page.screenshot({ path: `test-results/package-${engine}.png` });
+      for (const [label, destination] of [
+        ['Resume', 'Tailored resume'],
+        ['Interview', 'Interview preparation'],
+        ['Tasks', 'Preparation'],
+      ]) {
+        await prepare.click();
+        await shortcuts.getByRole('button', { name: label, exact: true }).click();
+        await expect(
+          page.locator('#detail-body').getByRole('heading', { name: destination, exact: true }),
+        ).toBeInViewport();
+      }
       await page.getByRole('button', { name: 'Close opportunity' }).click();
       await page.evaluate(() => {
         window.previousClient = true;
