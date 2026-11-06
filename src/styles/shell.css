@@ -198,10 +198,30 @@ body {
   }
 }
 
-/* Labels and counts form one unit; desktop icons share the title's left edge. */
+/* Desktop labels keep their counts close; mobile counts align to each column end. */
 .tabs button {
   justify-content: flex-start;
   gap: 8px;
+}
+@media (max-width: 720px) {
+  .tabs {
+    column-gap: 24px;
+    row-gap: 8px;
+    margin-bottom: 24px;
+  }
+  .tabs button {
+    justify-content: space-between;
+    align-items: center;
+    min-height: 52px;
+    padding-block: 14px;
+    white-space: nowrap;
+  }
+  .tabs .tab-count {
+    font-size: inherit;
+    line-height: inherit;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
 }
 @media (min-width: 721px) {
   .job-row .rt-verifications {
