@@ -54,6 +54,10 @@ A synthetic 150-job workspace measured 1,233,343 bytes for a full state response
 
 Supported query parameters are `view`, `decision`, `q`, `sort`, `direction` and `fit`. Values are normalized against UI configuration. Typing replaces the current history entry; changing views/filters creates a navigable entry. Personal decisions remain server data. Unsaved editor close, Escape, native dialog close and browser navigation require discard confirmation; browser unload uses its native warning. Failed writes preserve input and show the error inside the editor.
 
+Profile and capability editors retain their opening record as a merge base. Save reads the current workspace before comparing that base, the draft and the latest record. Independent object-field changes merge; arrays are compared as whole fields. Concurrent changes to the same field show the original, draft and saved values for an explicit choice. The original draft remains visible and read-only during comparison. Choosing values updates the draft, then Save performs a fresh comparison again.
+
+The write uses the exact compared revision. If the server rejects it with HTTP 409, the editor reads again and preserves the draft for another explicit Save; it never automatically retries the POST. Failed reads/writes keep the editor open. Capability IDs cannot be changed. Remote deletion is not silently reversed, and confirmation concurrent with changed evidence requires whole-record review. This behavior applies to profile/capability edits, not schedule editing, imports or restore. Drafts live in the open editor, not durable storage; closing or reloading still requires the existing unsaved-changes confirmation.
+
 ## Interface verification
 
 At desktop widths of 1000px and above, the next-step column reserves space for the decision select and up to three action icons on one line. Narrower table layouts may wrap the icons to preserve readable decision labels. Mobile cards retain their existing footer layout. The Shortlisted regression checks both languages from 320px to 1440px, including the maximum action count.

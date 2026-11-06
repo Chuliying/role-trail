@@ -401,3 +401,33 @@ summary {
 #main .historical-fit {
   position: relative;
 }
+
+.edit-conflicts article {
+  margin-block: 24px;
+  padding-block: 16px;
+  border-block: 1px solid var(--line);
+}
+.conflict-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-block: 16px;
+}
+.conflict-values > div {
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface-muted);
+  border-radius: var(--radius);
+}
+.edit-conflicts pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow: auto;
+  margin-block: 12px;
+}
+@media (max-width: 720px) {
+  .conflict-values {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

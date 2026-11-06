@@ -4,6 +4,7 @@ import { createTransport } from '../../../web/transport.mjs';
 import { deriveSnapshot } from '../../../web/snapshot.mjs';
 import type { Action, Workspace } from '../types';
 import { queryKeys } from './client';
+import { recordFor, reconcile, editAction, type EditInput, type EditResult } from './editor-merge';
 
 interface Snapshot {
   state: Workspace;
@@ -12,7 +13,7 @@ interface Snapshot {
 type Request = (
   path: string,
   data?: unknown,
-  options?: { signal?: AbortSignal },
+  options?: { signal?: AbortSignal; unconditional?: boolean },
 ) => Promise<unknown>;
 
 export function useWorkspaceData() {
@@ -64,6 +65,44 @@ export function useWorkspaceData() {
       })) as Workspace,
     onSuccess: commit,
   });
+  const edit = useMutation({
+    mutationKey: ['workspace', 'edit'],
+    retry: false,
+    mutationFn: async (input: EditInput): Promise<EditResult> => {
+      editAction(input.target, input.draft);
+      async function latest() {
+        const state = await client.fetchQuery({
+          queryKey: ['workspace', 'editor-read'],
+          staleTime: 0,
+          gcTime: 0,
+          retry: false,
+          queryFn: async () =>
+            (await request.current!('state', undefined, { unconditional: true })) as Workspace,
+        });
+        await commit(state);
+        return current()!.state;
+      }
+      const state = await latest();
+      const comparison = reconcile(input, recordFor(state, input.target));
+      if (comparison.conflicts.length) return comparison;
+      if (!comparison.merged) return { kind: 'saved', state };
+      try {
+        const saved = (await request.current!('action', {
+          revision: state.revision,
+          action: editAction(input.target, comparison.merged),
+        })) as Workspace;
+        return { kind: 'saved', state: saved };
+      } catch (error) {
+        if (!(error instanceof Error) || !('status' in error) || error.status !== 409) throw error;
+        // A failed CAS never triggers an automatic POST retry.
+        const next = await latest();
+        return reconcile(input, recordFor(next, input.target), true);
+      }
+    },
+    onSuccess: async (result) => {
+      if (result.kind === 'saved') await commit(result.state);
+    },
+  });
   const collect = useMutation({
     mutationKey: ['workspace', 'collect'],
     retry: false,
@@ -105,6 +144,7 @@ export function useWorkspaceData() {
   return {
     query,
     action,
+    edit,
     collect,
     login,
     logout,
@@ -112,6 +152,7 @@ export function useWorkspaceData() {
     unauthorized,
     pending:
       action.isPending ||
+      edit.isPending ||
       collect.isPending ||
       login.isPending ||
       logout.isPending ||

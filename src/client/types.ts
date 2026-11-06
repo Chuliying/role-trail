@@ -150,6 +150,8 @@ export interface EditorRequest {
   title: string;
   initial: string;
   save: JsonSave;
+  target?: import('./api/editor-merge').EditorTarget;
+  base?: import('./api/editor-merge').RecordValue;
 }
 export interface ResearchBundle {
   run: Run;

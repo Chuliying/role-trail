@@ -305,5 +305,19 @@
   "Reset": "Reset",
   "Not assessed": "Not assessed",
   "No assessment has been saved yet. This is not a zero score.": "No assessment has been saved yet. This is not a zero score.",
-  "Checking…": "Checking…"
+  "Checking…": "Checking…",
+  "Editor data must be a JSON object.": "Editor data must be a JSON object.",
+  "Capability identity cannot be changed in this editor.": "Capability identity cannot be changed in this editor.",
+  "Not present": "Not present",
+  "Compare changes": "Compare changes",
+  "Your draft is kept. Choose a value for each conflicting field, then save again.": "Your draft is kept. Choose a value for each conflicting field, then save again.",
+  "Entire record": "Entire record",
+  "Before editing": "Before editing",
+  "My draft": "My draft",
+  "Latest saved": "Latest saved",
+  "Use my draft": "Use my draft",
+  "Use latest": "Use latest",
+  "Workspace changed again. Your draft is kept; review and save again.": "Workspace changed again. Your draft is kept; review and save again.",
+  "Some fields changed elsewhere. Compare them below; your draft is kept.": "Some fields changed elsewhere. Compare them below; your draft is kept.",
+  "Choices applied to your draft. Review it, then save.": "Choices applied to your draft. Review it, then save."
 }

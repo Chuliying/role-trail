@@ -23,7 +23,7 @@ export function createTransport({ getState, onUnauthorized, fetcher = fetch }) {
     let value = await response.json();
     if (!response.ok) {
       if (response.status === 401) onUnauthorized();
-      throw Error(value.error || 'Request failed');
+      throw Object.assign(Error(value.error || 'Request failed'), { status: response.status });
     }
     if (value.kind === 'workspace-delta') {
       try {

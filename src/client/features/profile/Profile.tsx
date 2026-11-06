@@ -32,8 +32,11 @@ export function Profile() {
         <Button
           className="primary"
           onClick={() =>
-            jsonEditor(t('Profile'), profile || sample, (v) =>
-              action({ type: 'profile', profile: v }),
+            jsonEditor(
+              t('Profile'),
+              profile || sample,
+              (v) => action({ type: 'profile', profile: v }),
+              { kind: 'profile' },
             )
           }
         >
@@ -111,13 +114,15 @@ export function Profile() {
           </p>
         </Disclosure>
         <Button
-          onClick={() =>
+          onClick={() => {
+            const id = crypto.randomUUID();
             jsonEditor(
               t('Capability'),
-              { claim: '', tags: [], evidence: [], status: 'proposed' },
+              { id, claim: '', tags: [], evidence: [], status: 'proposed' },
               (v) => action({ type: 'capability', ...v }),
-            )
-          }
+              { kind: 'capability', id },
+            );
+          }}
         >
           {t('Add capability')}
         </Button>
@@ -138,6 +143,7 @@ export function Profile() {
                     status: c.status,
                   },
                   (v) => action({ type: 'capability', ...v }),
+                  { kind: 'capability', id: c.id },
                 )
               }
             >

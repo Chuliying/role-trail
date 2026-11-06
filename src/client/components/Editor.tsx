@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useWorkspace } from '../workspace';
 import { t, errorText } from '../domain';
 import { Button, usePending, useModal } from './controls';
+import { EditConflicts } from './EditConflicts';
+import type { Reconciliation } from '../api/editor-merge';
 export function Editor() {
   const { editor, closeEditor, leaveEditor, editorNotice, notify, mutationPending } =
     useWorkspace();
@@ -36,8 +38,11 @@ function EditorForm({
   const ref = useRef<HTMLDialogElement>(null),
     formRef = useRef<HTMLFormElement>(null),
     [value, setValue] = useState(request.initial),
+    [comparison, setComparison] = useState<Reconciliation | null>(null),
+    base = useRef(request.base ?? null),
     [fields, setFields] = useState({ company: '', title: '', url: '', description: '' }),
     busy = usePending();
+  const { saveEdit } = useWorkspace();
   const dirty =
     request.kind === 'json' ? value !== request.initial : Object.values(fields).some(Boolean);
   const latest = useRef({ dirty, pending: busy.pending });
@@ -83,7 +88,30 @@ function EditorForm({
           void busy.run(async () => {
             try {
               const data = request.kind === 'json' ? JSON.parse(value) : fields;
-              if ((await request.save(data)) !== false) {
+              if (request.target) {
+                const result = await saveEdit({
+                  target: request.target,
+                  base: base.current,
+                  draft: data,
+                });
+                if (result.kind === 'reconcile') {
+                  if (result.conflicts.length) setComparison(result);
+                  else {
+                    base.current = result.latest;
+                    setValue(JSON.stringify(result.merged, null, 2));
+                  }
+                  notify(
+                    t(
+                      result.raced
+                        ? 'Workspace changed again. Your draft is kept; review and save again.'
+                        : 'Some fields changed elsewhere. Compare them below; your draft is kept.',
+                    ),
+                  );
+                  return;
+                }
+                latest.current.dirty = false;
+                onClose();
+              } else if ((await request.save(data)) !== false) {
                 latest.current.dirty = false;
                 onClose();
               }
@@ -105,6 +133,22 @@ function EditorForm({
           </div>
           {request.kind === 'json' ? (
             <>
+              {comparison && (
+                <EditConflicts
+                  comparison={comparison}
+                  onResolve={(merged) => {
+                    if (!merged) {
+                      latest.current.dirty = false;
+                      onClose();
+                      return;
+                    }
+                    base.current = comparison.latest;
+                    setValue(JSON.stringify(merged, null, 2));
+                    setComparison(null);
+                    notify(t('Choices applied to your draft. Review it, then save.'));
+                  }}
+                />
+              )}
               <p className="muted">
                 {t(
                   'Review this structured data before saving. Credentials belong in server environment variables.',
@@ -115,6 +159,7 @@ function EditorForm({
                 spellCheck={false}
                 aria-label={request.title}
                 value={value}
+                readOnly={!!comparison || busy.pending}
                 onChange={(e) => setValue(e.target.value)}
               />
             </>
@@ -160,7 +205,7 @@ function EditorForm({
           <button
             type="submit"
             className={'primary ' + busy.className}
-            disabled={busy.pending || pending}
+            disabled={busy.pending || pending || !!comparison}
             aria-busy={busy.pending || undefined}
           >
             {t('Save')}

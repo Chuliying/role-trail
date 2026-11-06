@@ -5,6 +5,7 @@ import { useNavigation } from './navigation';
 export { defaultView } from './navigation';
 import { t, locale, errorText } from './domain';
 import type { Workspace, View, Action, EditorRequest, JsonSave, DetailTab } from './types';
+import { recordFor, type EditorTarget, type EditInput, type EditResult } from './api/editor-merge';
 interface Context {
   state: Workspace | null;
   staleResumes: Set<string>;
@@ -30,7 +31,8 @@ interface Context {
   setDetailTab: (tab: DetailTab) => void;
   detailSection: string | undefined;
   editor: EditorRequest | null;
-  jsonEditor: (title: string, value: unknown, save: JsonSave) => void;
+  jsonEditor: (title: string, value: unknown, save: JsonSave, target?: EditorTarget) => void;
+  saveEdit: (input: EditInput) => Promise<EditResult>;
   pasteJD: () => void;
   importResearch: () => void;
   closeEditor: () => void;
@@ -135,10 +137,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setEditor(null);
     setEditorNotice('');
   }
-  function jsonEditor(title: string, value: unknown, save: JsonSave) {
+  function jsonEditor(title: string, value: unknown, save: JsonSave, target?: EditorTarget) {
     if (!leaveEditor.current()) return;
     setEditorNotice('');
-    setEditor({ kind: 'json', title, initial: JSON.stringify(value, null, 2), save });
+    const base =
+      target && data.currentState() ? recordFor(data.currentState()!, target) : undefined;
+    setEditor({
+      kind: 'json',
+      title,
+      initial: JSON.stringify(base ?? value, null, 2),
+      save,
+      target,
+      base,
+    });
   }
   function pasteJD() {
     if (!leaveEditor.current()) return;
@@ -227,6 +238,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         detailSection,
         editor,
         jsonEditor,
+        saveEdit: data.edit.mutateAsync,
         pasteJD,
         importResearch,
         closeEditor,

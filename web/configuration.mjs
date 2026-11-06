@@ -612,6 +612,25 @@ export const settings = {
       'No assessment has been saved yet. This is not a zero score.':
         'No assessment has been saved yet. This is not a zero score.',
       'Checking…': 'Checking…',
+      'Editor data must be a JSON object.': 'Editor data must be a JSON object.',
+      'Capability identity cannot be changed in this editor.':
+        'Capability identity cannot be changed in this editor.',
+      'Not present': 'Not present',
+      'Compare changes': 'Compare changes',
+      'Your draft is kept. Choose a value for each conflicting field, then save again.':
+        'Your draft is kept. Choose a value for each conflicting field, then save again.',
+      'Entire record': 'Entire record',
+      'Before editing': 'Before editing',
+      'My draft': 'My draft',
+      'Latest saved': 'Latest saved',
+      'Use my draft': 'Use my draft',
+      'Use latest': 'Use latest',
+      'Workspace changed again. Your draft is kept; review and save again.':
+        'Workspace changed again. Your draft is kept; review and save again.',
+      'Some fields changed elsewhere. Compare them below; your draft is kept.':
+        'Some fields changed elsewhere. Compare them below; your draft is kept.',
+      'Choices applied to your draft. Review it, then save.':
+        'Choices applied to your draft. Review it, then save.',
     },
     'zh-TW': {
       'View full research': '完整搜尋紀錄',
@@ -946,6 +965,24 @@ export const settings = {
       'No assessment has been saved yet. This is not a zero score.':
         '尚未儲存契合度評分，不代表零分或不適合。',
       'Checking…': '確認中…',
+      'Editor data must be a JSON object.': '編輯內容必須是 JSON 物件。',
+      'Capability identity cannot be changed in this editor.':
+        '無法在此編輯器變更能力證據的識別碼。',
+      'Not present': '不存在',
+      'Compare changes': '比對變更',
+      'Your draft is kept. Choose a value for each conflicting field, then save again.':
+        '草稿已保留。請選擇每個衝突欄位要保留的內容，再儲存。',
+      'Entire record': '整筆資料',
+      'Before editing': '編輯前',
+      'My draft': '我的草稿',
+      'Latest saved': '最新已儲存內容',
+      'Use my draft': '保留我的草稿',
+      'Use latest': '採用最新內容',
+      'Workspace changed again. Your draft is kept; review and save again.':
+        '工作區再次更新。草稿已保留，請確認後再次儲存。',
+      'Some fields changed elsewhere. Compare them below; your draft is kept.':
+        '部分欄位已在其他地方變更。草稿已保留，請在下方比對。',
+      'Choices applied to your draft. Review it, then save.': '選擇已套用到草稿，請確認後儲存。',
     },
   },
 };
