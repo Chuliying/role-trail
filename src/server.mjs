@@ -61,6 +61,7 @@ const assets = {
   '/fonts/ibm-plex-sans-400.ttf': ['fonts/ibm-plex-sans-400.ttf', 'font/ttf'],
   '/fonts/ibm-plex-sans-600.ttf': ['fonts/ibm-plex-sans-600.ttf', 'font/ttf'],
   '/style.css': ['style.css', 'text/css'],
+  '/vendor/runtime-LICENSE.txt': ['vendor/runtime-LICENSE.txt', 'text/plain'],
 };
 export async function body(req) {
   if (req.body !== undefined) {

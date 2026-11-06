@@ -336,11 +336,11 @@
     },
     ".row-actions": {
       "display": "flex",
-      "width": "162px",
+      "width": "186px",
       "height": "44px",
       "padding": "0px",
       "margin": "0px",
-      "gap": "8px",
+      "gap": "4px 8px",
       "fontSize": "16px",
       "fontFamily": "Manrope, \"Noto Sans TC\", sans-serif",
       "lineHeight": "28.8px",
@@ -351,7 +351,7 @@
     },
     ".decision-field select": {
       "display": "block",
-      "width": "110px",
+      "width": "134px",
       "height": "44px",
       "padding": "8px 44px 8px 10px",
       "margin": "0px",

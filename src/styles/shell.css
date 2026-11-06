@@ -142,7 +142,7 @@ body {
     width: 130px;
   }
   .job-table th:nth-child(5) {
-    width: 202px;
+    width: 226px;
   }
   .job-table td,
   .job-table th {
@@ -162,10 +162,14 @@ body {
     font-size: 16px;
   }
   .row-actions {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    gap: 4px 8px;
   }
   .decision-field {
-    flex: 1;
+    flex: 1 0 126px;
+  }
+  .row-links {
+    margin-left: auto;
   }
 }
 @media (min-width: 1000px) {
@@ -271,5 +275,20 @@ body {
   /* Align the 22px glyph, retaining its surrounding 44px touch target. */
   .job-row .row-links {
     margin-right: calc((22px - 44px) / 2);
+  }
+}
+
+@media (min-width: 721px) and (max-width: 999px) {
+  .job-table th:nth-child(2) {
+    width: 92px;
+  }
+  .job-table th:nth-child(3) {
+    width: 110px;
+  }
+  .job-table th:nth-child(4) {
+    width: 108px;
+  }
+  .job-table th:nth-child(5) {
+    width: 202px;
   }
 }

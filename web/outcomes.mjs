@@ -154,6 +154,7 @@ export function researchOutcomes({
     (negative({ status: item.to }) ? result.resolvedNegative : result.resolvedPositive).push(item);
   return result;
 }
+/** @param {{resume: {exists:boolean, stale?:boolean,pdf?:boolean,adjustments?:boolean,reviewStatus?:string}, preparation: {exists:boolean,stale?:boolean},tasks?:Array<{done:boolean}>,qualification?:string,submitted?:boolean}} input */
 export function applicationReadiness({
   resume,
   preparation,

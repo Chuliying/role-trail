@@ -1,6 +1,9 @@
+import { build } from 'esbuild';
+import { renderToString } from 'react-dom/server';
+import { rm } from 'node:fs/promises';
 import browserModules from '../web/modules.json' with { type: 'json' };
 import { createHash } from 'node:crypto';
-import { readFile, access, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { readFile, access, writeFile, mkdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { format } from 'prettier';
 import { configuration, browserConfiguration } from '../src/configuration.mjs';
@@ -15,8 +18,45 @@ await writeFile(
   ),
 );
 await mkdir('web/vendor', { recursive: true });
-await copyFile('node_modules/marked/lib/marked.esm.js', 'web/vendor/marked.mjs');
-await copyFile('node_modules/marked/LICENSE', 'web/vendor/marked-LICENSE.md');
+await writeFile(
+  'web/vendor/runtime-LICENSE.txt',
+  (
+    await Promise.all(
+      ['react', 'react-dom', 'scheduler', '@tanstack/react-query', '@tanstack/query-core'].map(
+        async (name) =>
+          name + '\n\n' + (await readFile('node_modules/' + name + '/LICENSE', 'utf8')),
+      ),
+    )
+  ).join('\n\n'),
+);
+await build({
+  entryPoints: ['src/client/main.tsx'],
+  bundle: true,
+  outfile: 'web/app.js',
+  format: 'esm',
+  platform: 'browser',
+  target: ['es2022'],
+  minify: true,
+  legalComments: 'inline',
+  define: { 'process.env.NODE_ENV': '"production"' },
+});
+const ssrFile = new URL('../.role-trail-shell.mjs', import.meta.url);
+let shell;
+try {
+  await build({
+    entryPoints: ['src/client/App.tsx'],
+    bundle: true,
+    outfile: ssrFile.pathname,
+    format: 'esm',
+    platform: 'node',
+    packages: 'external',
+  });
+  const { App } = await import(ssrFile.href + '?build=' + Date.now());
+  const { createElement } = await import('react');
+  shell = renderToString(createElement(App));
+} finally {
+  await rm(ssrFile, { force: true });
+}
 execFileSync(
   process.execPath,
   [
@@ -56,30 +96,8 @@ const escape = (s) =>
 const html = (await readFile('web/index.html', 'utf8'))
   .replace(/<title>[^<]*<\/title>/, '<title>' + escape(configuration.ui.title) + '</title>')
   .replace(
-    /(<a class="brand" href="\/">)[^<]*(<\/a>)/,
-    '$1' + escape(configuration.ui.brand) + '$2',
-  )
-  .replace(
-    /(<nav aria-label="Workspace">)[\s\S]*?(<\/nav>)/,
-    (_, start, end) =>
-      start +
-      '\n' +
-      configuration.ui.navigation
-        .map(
-          (n, i) =>
-            '<button data-page="' +
-            n.id +
-            '"' +
-            (i === 0 ? ' class="active"' : '') +
-            ' data-i18n="' +
-            escape(n.label) +
-            '">' +
-            escape(n.label) +
-            '</button>',
-        )
-        .join('\n') +
-      '\n' +
-      end,
+    /(?:<!-- prettier-ignore -->\s*)?<body>[\s\S]*?<\/body>/,
+    '<!-- prettier-ignore -->\n<body>' + shell + '</body>',
   );
 await writeFile(
   'web/index.html',

@@ -2,12 +2,13 @@
 
 ## Stack
 
-- framework: vanilla
+- framework: react
 - package_manager: npm
 - source_roots: config,src,bin,web,api,scripts,tests,docs,examples,.github,skills,prompts
-- source_extensions: mjs,js,json,md,yml,html,css
+- source_extensions: mjs,js,ts,tsx,json,md,yml,html,css
 - has_ui: true
-- typed_contracts: false
+- typed_contracts: true
+- typecheck_cmd: npm run typecheck
 - test_cmd: npm test
 - dependency_audit_cmd: npm audit
 

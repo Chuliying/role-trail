@@ -216,3 +216,7 @@
     align-self: center;
   }
 }
+
+.filter-anchor {
+  display: contents;
+}

@@ -2,7 +2,7 @@ import { mergeWorkspaceDelta } from './sync.mjs';
 // Network transport does not mutate view state or retry writes.
 export function createTransport({ getState, onUnauthorized, fetcher = fetch }) {
   let validator = null;
-  return async function request(path, data, { unconditional = false } = {}) {
+  return async function request(path, data, { unconditional = false, signal = undefined } = {}) {
     const base = getState();
     const headers = data
       ? {
@@ -14,6 +14,7 @@ export function createTransport({ getState, onUnauthorized, fetcher = fetch }) {
     if (path === 'state' && !unconditional && base && validator?.revision === base.revision)
       headers['If-None-Match'] = validator.etag;
     const response = await fetcher('/api/' + path, {
+      signal,
       method: data ? 'POST' : 'GET',
       headers,
       body: data ? JSON.stringify(data) : undefined,
@@ -28,7 +29,7 @@ export function createTransport({ getState, onUnauthorized, fetcher = fetch }) {
       try {
         value = mergeWorkspaceDelta(base, value);
       } catch {
-        return request('state', undefined, { unconditional: true });
+        return request('state', undefined, { unconditional: true, signal });
       }
     }
     const etag = response.headers.get('etag');

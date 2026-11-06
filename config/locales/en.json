@@ -304,5 +304,6 @@
   "Apply": "Apply",
   "Reset": "Reset",
   "Not assessed": "Not assessed",
-  "No assessment has been saved yet. This is not a zero score.": "No assessment has been saved yet. This is not a zero score."
+  "No assessment has been saved yet. This is not a zero score.": "No assessment has been saved yet. This is not a zero score.",
+  "Checking…": "Checking…"
 }

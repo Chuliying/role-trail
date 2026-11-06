@@ -95,10 +95,13 @@ Git scans do not fetch or execute repository code, hooks, tests, installers or e
 
 ## Verification and contribution
 
+The workbench uses React, strict TypeScript and TanStack React Query. Features share controls and one revision-safe workspace cache; API writes show pending state and are not automatically retried. The CLI and Vercel deployment serve the same prebuilt frontend. See the [browser architecture](docs/browser-runtime.md) for module boundaries, data flow and build details.
+
 ```sh
 npm test                 # unit, API, workflow; real PostgreSQL when available
 npm run build            # static and serverless entry validation
 npx playwright install chromium webkit
+npm run typecheck        # strict TypeScript frontend contracts
 npm run test:ui          # desktop flows plus mobile Chromium/WebKit layout checks
 npm audit
 ```
@@ -124,7 +127,7 @@ The paste-JD review entry and human application decision were inspired by
 This implementation is original; no career-ops code is copied. Credits do not imply endorsement.
 The interview preparation method adapts [How to Get an Offer](https://github.com/AIPMAndy/how-to-get-offer) by AIPMAndy / AI 酋长 Andy under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), adding cited experience, separate eligibility and decisions, and versioned records. No upstream application code is included.
 
-[Himalayas](https://himalayas.app) and [We Work Remotely](https://weworkremotely.com/remote-job-rss-feed) supply attributed listings when configured. WWR uses its public category RSS feeds; keep each listing linked back to WWR. Preserve its source and application links. JD formatting uses [Marked](https://github.com/markedjs/marked) (MIT; bundled license in `web/vendor/marked-LICENSE.md`) for Markdown tokens and [Turndown](https://github.com/mixmark-io/turndown) (MIT) for provider HTML conversion. The reader builds allowed DOM elements without executing raw HTML or loading embedded images. Dependency licenses are retained by npm. Project source: [MIT](LICENSE).
+[Himalayas](https://himalayas.app) and [We Work Remotely](https://weworkremotely.com/remote-job-rss-feed) supply attributed listings when configured. WWR uses its public category RSS feeds; keep each listing linked back to WWR. Preserve its source and application links. JD formatting uses [Marked](https://github.com/markedjs/marked) (MIT; bundled license in `web/vendor/marked-LICENSE.md`) for Markdown tokens and [Turndown](https://github.com/mixmark-io/turndown) (MIT) for provider HTML conversion. The reader builds allowed DOM elements without executing raw HTML or loading embedded images. Bundled React and TanStack Query MIT notices are in `web/vendor/runtime-LICENSE.txt`; other dependency licenses are retained by npm. Project source: [MIT](LICENSE).
 
 ## Search outcomes and application packages
 

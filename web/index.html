@@ -13,117 +13,12 @@
       crossorigin
     />
     <title>Role Trail</title>
-    <link rel="stylesheet" href="/style.css?v=b41bbe28dd6b79a7" />
-    <script src="/app.js?v=b41bbe28dd6b79a7" type="module"></script>
+    <link rel="stylesheet" href="/style.css?v=20eaade669140fac" />
+    <script src="/app.js?v=20eaade669140fac" type="module"></script>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
-  <body>
-    <a class="skip-link" href="#main" data-i18n="Skip to content">Skip to content</a>
-    <header>
-      <a class="brand" href="/">ROLE TRAIL</a>
-      <nav aria-label="Workspace">
-        <button data-page="jobs" class="active" data-i18n="Opportunities">Opportunities</button>
-        <button data-page="tasks" data-i18n="Preparation">Preparation</button>
-        <button data-page="research" data-i18n="Research">Research</button>
-      </nav>
-      <div class="header-actions">
-        <button
-          id="tools-toggle"
-          class="quiet icon-button"
-          aria-label="Tools"
-          data-i18n-label="Tools"
-          aria-expanded="false"
-          popovertarget="workspace-tools"
-          aria-controls="workspace-tools"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14" /></svg>
-        </button>
-      </div>
-    </header>
-    <div
-      id="workspace-tools"
-      class="workspace-menu"
-      popover="auto"
-      aria-label="Workspace tools"
-    ></div>
-    <main id="main" tabindex="-1" aria-busy="true">
-      <div
-        class="workspace-skeleton"
-        role="status"
-        aria-label="Loading workspace…"
-        data-i18n-label="Loading workspace…"
-      >
-        <span class="sr-only" data-i18n="Loading workspace…">Loading workspace…</span>
-        <div class="skeleton-shapes" aria-hidden="true">
-          <span class="skeleton-line skeleton-heading"></span
-          ><span class="skeleton-line skeleton-toolbar"></span>
-          <div class="skeleton-card">
-            <div class="skeleton-top">
-              <span class="skeleton-line skeleton-company"></span
-              ><span class="skeleton-line skeleton-score"></span>
-            </div>
-            <span class="skeleton-line skeleton-title"></span
-            ><span class="skeleton-line skeleton-title short"></span
-            ><span class="skeleton-line skeleton-meta"></span>
-          </div>
-          <div class="skeleton-card">
-            <div class="skeleton-top">
-              <span class="skeleton-line skeleton-company"></span
-              ><span class="skeleton-line skeleton-score"></span>
-            </div>
-            <span class="skeleton-line skeleton-title"></span
-            ><span class="skeleton-line skeleton-title short"></span
-            ><span class="skeleton-line skeleton-meta"></span>
-          </div>
-          <div class="skeleton-card">
-            <div class="skeleton-top">
-              <span class="skeleton-line skeleton-company"></span
-              ><span class="skeleton-line skeleton-score"></span>
-            </div>
-            <span class="skeleton-line skeleton-title"></span
-            ><span class="skeleton-line skeleton-title short"></span
-            ><span class="skeleton-line skeleton-meta"></span>
-          </div>
-        </div>
-      </div>
-    </main>
-    <div id="notice" role="status" aria-live="polite"></div>
-    <dialog id="detail" aria-labelledby="detail-title">
-      <div class="dialog-bar">
-        <span>OPPORTUNITY</span
-        ><button
-          id="close-detail"
-          aria-label="Close opportunity"
-          data-i18n-label="Close opportunity"
-          class="quiet icon-button"
-          type="button"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
-        </button>
-      </div>
-      <div
-        id="detail-tabs"
-        class="detail-jumps"
-        role="tablist"
-        aria-label="Opportunity sections"
-      ></div>
-      <div id="detail-notice" role="status" hidden></div>
-      <div id="detail-body"></div>
-      <footer id="detail-footer" class="dialog-footer"></footer>
-    </dialog>
-    <dialog id="editor" aria-labelledby="editor-title">
-      <form id="editor-form">
-        <div class="dialog-bar">
-          <h2 id="editor-title" data-i18n="Edit">Edit</h2>
-          <button type="button" id="close-editor" data-i18n="Close">Close</button>
-        </div>
-        <div class="editor-body" id="editor-body"></div>
-        <div class="dialog-footer">
-          <button type="submit" class="primary" data-i18n="Save">Save</button>
-        </div>
-      </form>
-    </dialog>
-  </body>
+  <!-- prettier-ignore -->
+  <body><a class="skip-link" href="#main" data-i18n="Skip to content">Skip to content</a><header><a class="brand" href="/">ROLE TRAIL</a><nav aria-label="Workspace"><button type="button" data-page="jobs" data-i18n="Opportunities" class="active">Opportunities</button><button type="button" data-page="tasks" data-i18n="Preparation" class="">Preparation</button><button type="button" data-page="research" data-i18n="Research" class="">Research</button></nav><div class="header-actions"><button id="tools-toggle" type="button" class="quiet icon-button" aria-label="Tools" data-i18n-label="Tools" aria-expanded="false" popoverTarget="workspace-tools" aria-controls="workspace-tools"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 6h14M5 12h14M5 18h14"></path></svg></button></div></header><div id="workspace-tools" class="workspace-menu" popover="auto" aria-label="Workspace tools"><button type="button" id="paste-jd" data-group="research" class="tool-item">Paste JD</button><button type="button" id="import-research" data-group="research" class="tool-item">Import research</button><button type="button" id="collect" data-group="research" class="tool-item">Search now</button><hr class="menu-separator"/><button type="button" id="profile-toggle" data-group="workspace" class="tool-item">Profile</button><button type="button" id="refresh" data-group="workspace" class="tool-item">Refresh</button><hr class="menu-separator"/><button type="button" class="tool-item language-toggle">繁體中文</button></div><main id="main" tabindex="-1" aria-busy="true"><div class="workspace-skeleton" role="status" aria-label="Loading workspace…"><span class="sr-only">Loading workspace…</span><div class="skeleton-shapes" aria-hidden="true"><span class="skeleton-line skeleton-heading"></span><span class="skeleton-line skeleton-toolbar"></span><div class="skeleton-card"><div class="skeleton-top"><span class="skeleton-line skeleton-company"></span><span class="skeleton-line skeleton-score"></span></div><span class="skeleton-line skeleton-title"></span><span class="skeleton-line skeleton-title short"></span><span class="skeleton-line skeleton-meta"></span></div><div class="skeleton-card"><div class="skeleton-top"><span class="skeleton-line skeleton-company"></span><span class="skeleton-line skeleton-score"></span></div><span class="skeleton-line skeleton-title"></span><span class="skeleton-line skeleton-title short"></span><span class="skeleton-line skeleton-meta"></span></div><div class="skeleton-card"><div class="skeleton-top"><span class="skeleton-line skeleton-company"></span><span class="skeleton-line skeleton-score"></span></div><span class="skeleton-line skeleton-title"></span><span class="skeleton-line skeleton-title short"></span><span class="skeleton-line skeleton-meta"></span></div></div></div></main><div id="notice" role="status" aria-live="polite" class=""></div></body>
 </html>

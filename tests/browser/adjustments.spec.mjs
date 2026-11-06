@@ -81,3 +81,29 @@ test('brand icons are served and the Chinese fit heading stays on one line', asy
   await expect(fit).toContainText('契合度');
   await expect(fit).toHaveCSS('white-space', 'nowrap');
 });
+
+test('resetting filters preserves the Shortlisted decision tab', async ({ page }) => {
+  await page.goto('/?decision=shortlisted');
+  await page.locator('#filter-toggle').click();
+  await page.getByRole('searchbox').fill('test');
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page).toHaveURL(/decision=shortlisted/);
+  await expect(page).not.toHaveURL(/q=/);
+  await expect(page.locator('.tabs .active')).toContainText('Shortlisted');
+});
+
+test('applying filters preserves a Back navigation made while the dialog is open', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.locator('.tabs button').filter({ hasText: 'Shortlisted' }).click();
+  await page.locator('#filter-toggle').click();
+  await page.getByRole('searchbox').fill('Engineer');
+  await page.goBack();
+  await expect(page).not.toHaveURL(/decision=shortlisted/);
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page).not.toHaveURL(/decision=shortlisted/);
+  await expect(page).toHaveURL(/q=Engineer/);
+  await expect(page.locator('.tabs .active')).toContainText('To Review');
+});

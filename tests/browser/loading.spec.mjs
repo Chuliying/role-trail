@@ -123,3 +123,44 @@ for (const engine of ['chromium', 'webkit']) {
     }
   });
 }
+
+for (const language of ['en', 'zh-TW']) {
+  test(`React hydrates the initial shell without replacing it (${language})`, async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.addInitScript(
+      (language) => localStorage.setItem('role-trail.language', language),
+      language,
+    );
+    let releaseScript, releaseState;
+    const scriptGate = new Promise((resolve) => {
+      releaseScript = resolve;
+    });
+    const stateGate = new Promise((resolve) => {
+      releaseState = resolve;
+    });
+    await page.route('**/app.js?*', async (route) => {
+      await scriptGate;
+      await route.continue();
+    });
+    await page.route('**/api/state', async (route) => {
+      await stateGate;
+      await route.continue();
+    });
+    await page.goto('/', { waitUntil: 'commit' });
+    await expect(page.locator('.workspace-skeleton')).toBeVisible();
+    await page.evaluate(() => {
+      window.firstPaintSkeleton = document.querySelector('.workspace-skeleton');
+    });
+    releaseScript();
+    await expect(page.locator('#tools-toggle')).toBeDisabled();
+    expect(
+      await page.evaluate(
+        () => window.firstPaintSkeleton === document.querySelector('.workspace-skeleton'),
+      ),
+    ).toBe(true);
+    releaseState();
+    await expect(page.locator('.job-row').first()).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+}

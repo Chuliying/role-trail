@@ -2,6 +2,7 @@
 @import '../web/verification.css';
 @import '../web/fonts/google-fonts.css';
 @source "../web";
+@source "./client";
 @source "../web/index.html";
 @import './tokens.css';
 @import '../web/fonts/brand.css';

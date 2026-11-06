@@ -15,6 +15,7 @@ export const staticFiles = [
   'fonts/ibm-plex-sans-600.ttf',
   'style.css',
   'vendor/marked-LICENSE.md',
+  'vendor/runtime-LICENSE.txt',
 ];
 export async function buildDeployment(output) {
   const source = fileURLToPath(new URL('../web/', import.meta.url)),

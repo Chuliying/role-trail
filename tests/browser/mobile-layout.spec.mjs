@@ -87,11 +87,31 @@ for (const engine of ['chromium', 'webkit']) {
       // Page transitions are intentional; typing and state refreshes must not replay them.
       for (const reduced of [false, true]) {
         await page.emulateMedia({ reducedMotion: reduced ? 'reduce' : 'no-preference' });
-        const animations = await page.evaluate(() => {
+        await page.evaluate(() => {
+          const main = document.querySelector('#main');
+          window.pageTransitionAnimations = [];
+          main.animate = function (...args) {
+            const animation = Element.prototype.animate.apply(this, args);
+            window.pageTransitionAnimations.push(this.getAnimations().length);
+            return animation;
+          };
           document.querySelector('nav [data-page="tasks"]').click();
-          return document.querySelector('#main').getAnimations().length;
         });
-        expect(animations).toBe(reduced ? 0 : 1);
+        // Observe animation creation, not a brief running interval that may finish
+        // before a WebKit assertion round trip after React commits the view.
+        await expect(page.locator('nav [data-page="tasks"]')).toHaveClass(/active/);
+        if (!reduced)
+          await expect
+            .poll(() => page.evaluate(() => window.pageTransitionAnimations))
+            .toEqual([1]);
+        else {
+          await page.evaluate(
+            () =>
+              new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+          );
+          expect(await page.evaluate(() => window.pageTransitionAnimations)).toEqual([]);
+        }
+        await page.locator('#main').evaluate((main) => delete main.animate);
         await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
         await page.locator('#main').evaluate(async (n) => {
           await Promise.all(n.getAnimations().map((a) => a.finished.catch(() => {})));

@@ -304,5 +304,6 @@
   "Apply": "套用",
   "Reset": "重設",
   "Not assessed": "尚未評分",
-  "No assessment has been saved yet. This is not a zero score.": "尚未儲存契合度評分，不代表零分或不適合。"
+  "No assessment has been saved yet. This is not a zero score.": "尚未儲存契合度評分，不代表零分或不適合。",
+  "Checking…": "確認中…"
 }

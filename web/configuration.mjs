@@ -611,6 +611,7 @@ export const settings = {
       'Not assessed': 'Not assessed',
       'No assessment has been saved yet. This is not a zero score.':
         'No assessment has been saved yet. This is not a zero score.',
+      'Checking…': 'Checking…',
     },
     'zh-TW': {
       'View full research': '完整搜尋紀錄',
@@ -944,6 +945,7 @@ export const settings = {
       'Not assessed': '尚未評分',
       'No assessment has been saved yet. This is not a zero score.':
         '尚未儲存契合度評分，不代表零分或不適合。',
+      'Checking…': '確認中…',
     },
   },
 };

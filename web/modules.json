@@ -1,23 +1,11 @@
 [
   "app.js",
   "configuration.mjs",
-  "controls.mjs",
-  "editor.mjs",
-  "filters.mjs",
   "i18n.mjs",
-  "markdown.mjs",
-  "navigation.mjs",
   "outcomes.mjs",
-  "score-popover.mjs",
   "snapshot.mjs",
   "status.mjs",
   "sync.mjs",
   "transport.mjs",
-  "vendor/marked.mjs",
-  "verification.mjs",
-  "views-jobs.mjs",
-  "views-opportunity.mjs",
-  "views-preparation.mjs",
-  "views-profile.mjs",
-  "views-research.mjs"
+  "verification.mjs"
 ]
