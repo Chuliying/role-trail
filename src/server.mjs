@@ -57,6 +57,7 @@ const assets = {
   '/fonts/ibm-plex-sans-600.ttf': ['fonts/ibm-plex-sans-600.ttf', 'font/ttf'],
   '/i18n.mjs': ['i18n.mjs', 'text/javascript'],
   '/app.js': ['app.js', 'text/javascript'],
+  '/configuration.mjs': ['configuration.mjs', 'text/javascript'],
   '/status.mjs': ['status.mjs', 'text/javascript'],
   '/markdown.mjs': ['markdown.mjs', 'text/javascript'],
   '/vendor/marked.mjs': ['vendor/marked.mjs', 'text/javascript'],

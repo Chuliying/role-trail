@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "104",
+      "label": "104",
+      "homepage": "https://www.104.com.tw/jobs/search/",
+      "feedTypes": ["104"],
+      "route": "Read software/product results and individual JDs with available host tools. If direct access fails, use a bounded search-engine query and employer pages. A user-approved Apify route may provide listing summaries; inspect actual completeness and account limits before using it. Don't call snippets full JDs or silently schedule a billed trial."
+    },
+    {
+      "id": "job-frog",
+      "label": "Job-Frog",
+      "homepage": "https://www.job-frog.com/",
+      "feedTypes": ["job-frog"],
+      "route": "Search product/software terms; expand company groups to individual roles. Company counts and aggregate cards are not full JD counts. Rotate terms if semiconductor results dominate."
+    },
+    {
+      "id": "wellfound",
+      "label": "Wellfound",
+      "homepage": "https://wellfound.com/jobs",
+      "feedTypes": [],
+      "route": "Inspect role results, then individual postings and the employer's current careers page. Verify hiring countries and first-posted versus reposted dates."
+    },
+    {
+      "id": "japan-dev",
+      "label": "Japan Dev",
+      "homepage": "https://japan-dev.com/jobs",
+      "feedTypes": [],
+      "route": "Use Remote Work Worldwide when relevant. Overseas applications or Japan-only remote work do not establish permission to remain in another country. Inspect the employer's JD."
+    },
+    {
+      "id": "tokyodev",
+      "label": "TokyoDev",
+      "homepage": "https://www.tokyodev.com/jobs",
+      "feedTypes": [],
+      "route": "Check whether applying from abroad requires moving to Japan. Verify working language, employment form and actual long-term work location."
+    },
+    {
+      "id": "himalayas",
+      "label": "Himalayas",
+      "homepage": "https://himalayas.app/jobs",
+      "feedTypes": ["himalayas"],
+      "route": "Use the public API/feed with the chosen country and timezone; encode `+` in timezone query values. Record pages and country restrictions, then verify the original employer JD."
+    },
+    {
+      "id": "wantedly",
+      "label": "Wantedly",
+      "homepage": "https://www.wantedly.com/projects",
+      "feedTypes": [],
+      "route": "Use the user's languages and appropriate terms; for English-speaking overseas applicants, terms such as 海外在住可 and 海外から勤務 may help. Verify that the selected team/role permits the user's working language. An English website alone is insufficient. Distinguish employment from contracting."
+    },
+    {
+      "id": "linkedin",
+      "label": "LinkedIn",
+      "homepage": "https://www.linkedin.com/jobs/",
+      "feedTypes": [],
+      "route": "Use accessible job search/guest results or the user's authorized session. Track pagination and distinguish result cards from complete descriptions. Confirm the role on the employer's site."
+    },
+    {
+      "id": "indeed",
+      "label": "Indeed",
+      "homepage": "https://www.indeed.com/jobs",
+      "feedTypes": ["indeed"],
+      "route": "Use available public/host routes or an explicitly configured JobSpy environment. Check the provider country/location and actual description output. Keep dependency/runtime failures distinct from zero matches. Search-engine snippets are fallback leads, not an Indeed JD fetch."
+    },
+    {
+      "id": "google-jobs",
+      "label": "Google Jobs",
+      "homepage": "https://www.google.com/search?ibp=htl%3Bjobs",
+      "feedTypes": ["google-jobs"],
+      "route": "Prefer the configured SerpApi route when the user has authorized it. Preserve pagination limits, excerpts and relative-date wording. A normal Google web query is separate coverage, not Google Jobs coverage. No keys or key-bearing URLs in logs."
+    },
+    {
+      "id": "official",
+      "label": "Official careers",
+      "homepage": null,
+      "feedTypes": ["greenhouse", "lever"],
+      "route": "Follow selected and newly discovered employers. Use public Greenhouse/Lever feeds where applicable; otherwise inspect their careers pages or ATS. Preserve original application links. An unavailable board or missing search result does not prove a role closed."
+    },
+    {
+      "id": "we-work-remotely",
+      "label": "We Work Remotely",
+      "homepage": "https://weworkremotely.com/",
+      "feedTypes": ["we-work-remotely"],
+      "route": "Use the selected frontend, full-stack and product RSS categories through the built-in `we-work-remotely` feed. Record each category and its bounded item count, then deduplicate by listing URL. Categories are not skill filters. Keep WWR attribution and inspect the original employer JD before confirming opening status, location, working hours, language, AI responsibilities or ownership. Anywhere in the World is a lead, not verified country eligibility. RSS `pubDate` does not prove employer first publication."
+    }
+  ],
+  "feeds": [
+    {
+      "id": "himalayas",
+      "required": [],
+      "options": {}
+    },
+    {
+      "id": "greenhouse",
+      "required": ["board"],
+      "options": {}
+    },
+    {
+      "id": "lever",
+      "required": ["company"],
+      "options": {}
+    },
+    {
+      "id": "google-jobs",
+      "required": [],
+      "options": {}
+    },
+    {
+      "id": "indeed",
+      "required": [],
+      "options": {}
+    },
+    {
+      "id": "104",
+      "required": [],
+      "options": {}
+    },
+    {
+      "id": "job-frog",
+      "required": [],
+      "options": {}
+    },
+    {
+      "id": "we-work-remotely",
+      "required": ["category"],
+      "options": {
+        "category": ["front-end-programming", "full-stack-programming", "product"]
+      }
+    }
+  ]
+}

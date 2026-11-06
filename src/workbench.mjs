@@ -2,7 +2,7 @@ import { artifactHash, artifactId, attachPDF, researchArtifact } from './artifac
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename, unlink, lstat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { positiveFresh, canonical } from '../web/status.mjs';
+import { positiveFresh, canonical, freshness } from '../web/status.mjs';
 import { validateSchedule } from './schedule-config.mjs';
 import { privateWorkspace, validateProfile, validateFeeds } from './onboarding.mjs';
 export const hash = (x) =>
@@ -210,7 +210,7 @@ export function jobStatus(j, review = {}) {
     return 'archived';
   return j.checks.length &&
     j.checks.every((c) => positiveFresh(c)) &&
-    positiveFresh(j.availability, 7)
+    positiveFresh(j.availability, freshness.availabilityDays)
     ? 'verified'
     : 'needs_review';
 }

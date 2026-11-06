@@ -1,6 +1,8 @@
 // Shared positive-evidence policy for the browser and domain layer.
 // Negative evidence is retained separately; expiration never unarchives a job.
-export function positiveFresh(fact, days = 30, at = Date.now()) {
+import { settings } from './configuration.mjs';
+export const freshness = settings.verification.freshness;
+export function positiveFresh(fact, days = freshness.checkDays, at = Date.now()) {
   const checked = Date.parse(fact?.checkedAt);
   const age = at - checked;
   return (

@@ -1,4 +1,5 @@
 // Shared, data-only rules. Callers provide canonical identities, factual statuses and artifacts.
+import { freshness } from './status.mjs';
 const day = (value, timeZone) =>
   new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -86,7 +87,7 @@ export function researchOutcomes({
         const id = identity + '\n' + f.key,
           old = prior.get(id),
           next = preserve(old, f);
-        const days = f.key === 'availability' ? 7 : 30;
+        const days = f.key === 'availability' ? freshness.availabilityDays : freshness.checkDays;
         const stale =
           old &&
           !negative(old) &&

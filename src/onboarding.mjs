@@ -1,4 +1,4 @@
-import { wwrCategories } from './providers/we-work-remotely.mjs';
+import { feedDefinition } from './configuration.mjs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdir, writeFile, readFile, realpath, lstat } from 'node:fs/promises';
@@ -96,21 +96,11 @@ export function validateFeeds(feeds = []) {
       Object.values(f).some((v) => typeof v !== 'string' || v.length > 500)
     )
       throw Error('Invalid feed configuration; never put credentials in profiles');
-    if (
-      ![
-        'himalayas',
-        'greenhouse',
-        'lever',
-        'google-jobs',
-        'indeed',
-        '104',
-        'job-frog',
-        'we-work-remotely',
-      ].includes(f.type)
-    )
-      throw Error('Unsupported feed');
-    if (f.type === 'we-work-remotely' && !wwrCategories.includes(f.category))
-      throw Error('Unsupported WWR category');
+    const definition = feedDefinition(f.type);
+    if (!definition) throw Error('Unsupported feed');
+    for (const key of definition.required) if (!f[key]?.trim()) throw Error('Feed requires ' + key);
+    for (const [key, options] of Object.entries(definition.options))
+      if (f[key] !== undefined && !options.includes(f[key])) throw Error('Unsupported feed ' + key);
     if (f.type === 'greenhouse' && !/^[a-zA-Z0-9_-]{1,80}$/.test(f.board || ''))
       throw Error('Greenhouse board slug required');
     if (f.type === 'lever' && !/^[a-zA-Z0-9_-]{1,80}$/.test(f.company || ''))

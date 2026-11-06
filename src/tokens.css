@@ -1,0 +1,61 @@
+@theme {
+  --color-canvas: #f3efe6;
+  --color-surface: #fbf9f4;
+  --color-surface-muted: #e9e4da;
+  --color-action-hover: #24324a;
+  --color-ink: #1e2430;
+  --color-muted: #5b6069;
+  --color-line: #d8d2c7;
+  --color-action: #2e3f5c;
+  --color-selected: #e0e5ed;
+  --color-success: #56634e;
+  --color-success-bg: #e7e9de;
+  --color-warning: #806033;
+  --color-warning-bg: #eee6d8;
+  --color-danger: #8d574d;
+  --color-danger-bg: #efe2dc;
+  --color-info: #4f6177;
+  --color-info-bg: #e4e8ed;
+}
+:root {
+  --content-width: 1160px;
+  --page-gutter: 24px;
+  --font-brand: 'M PLUS U', 'Noto Sans TC', sans-serif;
+  --font-body: 'Manrope', 'Noto Sans TC', sans-serif;
+  --canvas: var(--color-canvas);
+  --surface: var(--color-surface);
+  --surface-muted: var(--color-surface-muted);
+  --action-hover: var(--color-action-hover);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --line: var(--color-line);
+  --action: var(--color-action);
+  --selected: var(--color-selected);
+  --success: var(--color-success);
+  --success-bg: var(--color-success-bg);
+  --warning: var(--color-warning);
+  --warning-bg: var(--color-warning-bg);
+  --danger: var(--color-danger);
+  --danger-bg: var(--color-danger-bg);
+  --info: var(--color-info);
+  --info-bg: var(--color-info-bg);
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --radius: 6px;
+  --motion-quick: 120ms;
+  --motion-enter: 180ms;
+  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  font:
+    16px/1.6 ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+}

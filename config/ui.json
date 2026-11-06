@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "brand": "ROLE TRAIL",
+  "title": "Role Trail",
+  "defaults": {
+    "pageSize": 20,
+    "sort": "recent",
+    "minimumFit": 0,
+    "decision": "review"
+  },
+  "navigation": [
+    {
+      "id": "jobs",
+      "label": "Opportunities"
+    },
+    {
+      "id": "tasks",
+      "label": "Preparation"
+    },
+    {
+      "id": "research",
+      "label": "Research"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "review",
+      "label": "To Review"
+    },
+    {
+      "id": "shortlisted",
+      "label": "Shortlisted"
+    },
+    {
+      "id": "applied",
+      "label": "Applied"
+    },
+    {
+      "id": "passed",
+      "label": "Passed"
+    }
+  ],
+  "sortOptions": [
+    {
+      "id": "recent",
+      "label": "Newest search",
+      "description": "Newest search, then fit",
+      "direction": "desc"
+    },
+    {
+      "id": "score",
+      "label": "Highest fit",
+      "description": "Highest fit, then search",
+      "direction": "desc"
+    },
+    {
+      "id": "company",
+      "label": "Company A–Z",
+      "description": "Company A–Z",
+      "direction": "asc"
+    }
+  ],
+  "fitFilters": [
+    {
+      "value": 0,
+      "label": "Any fit"
+    },
+    {
+      "value": 7,
+      "label": "Fit 7+"
+    },
+    {
+      "value": 8,
+      "label": "Fit 8+"
+    },
+    {
+      "value": 9,
+      "label": "Fit 9+"
+    }
+  ],
+  "tools": [
+    {
+      "id": "paste-jd",
+      "label": "Paste JD",
+      "group": "research"
+    },
+    {
+      "id": "import-research",
+      "label": "Import research",
+      "group": "research"
+    },
+    {
+      "id": "collect",
+      "label": "Search now",
+      "group": "research"
+    },
+    {
+      "id": "profile-toggle",
+      "label": "Profile",
+      "group": "workspace"
+    },
+    {
+      "id": "refresh",
+      "label": "Refresh",
+      "group": "workspace"
+    }
+  ]
+}

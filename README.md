@@ -145,3 +145,9 @@ PDF bytes and full research bundles live in content-addressed artifact storage, 
 The existing private installation now uses this runtime without copied application code. Acceptance covered 67 Node tests, eight browser flows, exact deployment-asset parity, original PDF downloads, retained artifact hashes, database write guards, origin checks and revision conflicts. These are bounded checks of this release; the next scheduled LLM invocation and each provider’s ongoing availability still need operational observation.
 
 The shared UI preserves the compact workbench layout: four decision tabs, three mobile navigation items, and secondary tools for JD input/import. Chinese browser locales use Traditional Chinese controls; English remains available for other locales. Saved JDs and evidence are not translated. IBM Plex Sans is bundled under the [SIL Open Font License](web/fonts/OFL.txt). Retired clients receive an explicit reopen instruction; freshly loaded CSS/JS use content versions to avoid mixing releases.
+
+### Shared configuration
+
+Source routes, feed options, interface labels, tool menu, sorting defaults and verification presentation live in versioned [`config/`](config/). The build validates them and generates the browser catalog; the server and agent workflow use the same definitions. Private profiles choose their own sources and requirements. Credentials never belong in the catalog. See [configuration](docs/configuration.md) for the file map and adapter boundaries.
+
+The workspace uses a centered desktop table, mobile cards, a single tool menu and locally hosted M PLUS U branding. Column headers toggle sort direction; numeric sorting includes visibly muted historical scores and keeps unrated roles last. Decision changes show immediate scoped progress, prevent duplicate writes and restore the saved selection on failure.

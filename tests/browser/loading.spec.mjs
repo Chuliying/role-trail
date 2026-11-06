@@ -81,9 +81,10 @@ for (const engine of ['chromium', 'webkit']) {
         await refreshGate;
         await route.continue();
       });
-      const refresh = page.getByRole('button', { name: 'Refresh', exact: true });
+      const refresh = page.locator('#tools-toggle');
       const width = (await refresh.boundingBox()).width;
       await refresh.click();
+      await page.locator('#refresh').click();
       await expect(refresh).toHaveAttribute('aria-busy', 'true');
       await expect(title).toBeVisible();
       expect((await refresh.boundingBox()).width).toBe(width);
@@ -99,6 +100,7 @@ for (const engine of ['chromium', 'webkit']) {
         }),
       );
       await refresh.click();
+      await page.locator('#refresh').click();
       await expect(page.locator('#notice')).toContainText('Offline test');
       await expect(title).toBeVisible();
       await expect(refresh).toBeEnabled();
@@ -111,6 +113,7 @@ for (const engine of ['chromium', 'webkit']) {
         });
       });
       await refresh.click();
+      await page.locator('#refresh').click();
       await expect.poll(() => page.evaluate(() => window.loadingTestMarker)).toBeUndefined();
       await expect(
         page.getByRole('button', { name: 'Product Engineer', exact: true }),

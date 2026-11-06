@@ -5,18 +5,25 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#f3efe6" />
+    <link
+      rel="preload"
+      href="/fonts/google/mplus-u-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <title>Role Trail</title>
-    <link rel="stylesheet" href="/style.css?v=5bed725dbfb84307" />
-    <script src="/app.js?v=5bed725dbfb84307" type="module"></script>
+    <link rel="stylesheet" href="/style.css?v=9babc6c7318e83b3" />
+    <script src="/app.js?v=9babc6c7318e83b3" type="module"></script>
   </head>
   <body>
     <a class="skip-link" href="#main" data-i18n="Skip to content">Skip to content</a>
     <header>
       <a class="brand" href="/">ROLE TRAIL</a>
       <nav aria-label="Workspace">
-        <button data-page="jobs" class="active" data-i18n="Opportunities">Opportunities</button
-        ><button data-page="tasks" data-i18n="Preparation">Preparation</button
-        ><button data-page="research" data-i18n="Research">Research</button>
+        <button data-page="jobs" class="active" data-i18n="Opportunities">Opportunities</button>
+        <button data-page="tasks" data-i18n="Preparation">Preparation</button>
+        <button data-page="research" data-i18n="Research">Research</button>
       </nav>
       <div class="header-actions">
         <button
@@ -25,31 +32,19 @@
           aria-label="Tools"
           data-i18n-label="Tools"
           aria-expanded="false"
+          popovertarget="workspace-tools"
+          aria-controls="workspace-tools"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 6h14M5 12h14M5 18h14" />
-          </svg></button
-        ><button
-          id="profile-toggle"
-          class="quiet icon-button"
-          aria-label="Profile"
-          data-i18n-label="Profile"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 8a3 3 0 1 0 6 0 3 3 0 1 0-6 0M5 21v-3a7 7 0 0 1 14 0v3" />
-          </svg></button
-        ><button
-          id="refresh"
-          class="quiet icon-button"
-          aria-label="Refresh"
-          data-i18n-label="Refresh"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20 7a8 8 0 0 0-14-2L3 8m0-5v5h5M4 17a8 8 0 0 0 14 2l3-3m0 5v-5h-5" />
-          </svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14" /></svg>
         </button>
       </div>
     </header>
+    <div
+      id="workspace-tools"
+      class="workspace-menu"
+      popover="auto"
+      aria-label="Workspace tools"
+    ></div>
     <main id="main" tabindex="-1" aria-busy="true">
       <div
         class="workspace-skeleton"

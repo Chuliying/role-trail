@@ -79,11 +79,9 @@ for (const engine of ['chromium', 'webkit']) {
       await page.evaluate(() => {
         window.previousClient = true;
       });
+      await page.locator('#tools-toggle').click();
       await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-      await expect(page.getByRole('button', { name: 'Refresh', exact: true })).not.toHaveAttribute(
-        'aria-busy',
-        'true',
-      );
+      await expect(page.locator('#tools-toggle')).not.toHaveAttribute('aria-busy', 'true');
       expect(await page.evaluate(() => window.previousClient)).toBe(true);
       await expect(rows.first()).toBeVisible();
       // Page transitions are intentional; typing and state refreshes must not replay them.

@@ -2,31 +2,31 @@ import { renderMarkdown as structured } from './markdown.mjs';
 import { locale, t } from './i18n.mjs';
 import { createVerificationGroup, verificationIcon } from './verification.mjs';
 import { researchOutcomes, applicationReadiness } from './outcomes.mjs';
-import { positiveFresh, currentScore, canonical } from './status.mjs';
-const staleResumes = new Set();
+import { positiveFresh, currentScore, canonical, freshness } from './status.mjs';
+import { settings } from './configuration.mjs';
+const ui = settings.ui;
+const sourceLabel = (id) => settings.sources.find((s) => s.id === id)?.label || id;
+let staleResumes = new Set();
 let collecting = false;
 let refreshing = false;
 let renderedView = null;
 let detailTab = 'jd';
-let toolsOpen = false,
-  filtersOpen = true,
-  limit = 20;
+let filtersOpen = true,
+  limit = ui.defaults.pageSize;
 let state,
   page = 'jobs',
-  tab = 'review',
+  tab = ui.defaults.decision,
   query = '',
-  sort = 'recent',
-  minimum = 0,
+  sort = ui.defaults.sort,
+  sortDirection = ui.sortOptions.find((s) => s.id === ui.defaults.sort).direction,
+  minimum = ui.defaults.minimumFit,
   currentJob = null;
 const $ = (s) => document.querySelector(s),
   main = $('#main');
 // The HTML owns the first-paint skeleton; retries clone the same markup.
 const workspaceSkeleton = main.querySelector('.workspace-skeleton')?.cloneNode(true);
 const labels = {
-  review: 'To Review',
-  shortlisted: 'Shortlisted',
-  applied: 'Applied',
-  passed: 'Passed',
+  ...Object.fromEntries(ui.decisions.map((d) => [d.id, t(d.label)])),
   archive: t('Archive'),
 };
 function el(tag, attrs = {}, ...children) {
@@ -231,6 +231,11 @@ const sha = async (x, raw = false) =>
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 function notify(message) {
+  if ($('#editor').open) {
+    $('#editor-notice').textContent = message;
+    $('#editor-notice').hidden = false;
+    return;
+  }
   if ($('#detail').open) {
     $('#detail-notice').textContent = message;
     $('#detail-notice').hidden = false;
@@ -251,28 +256,35 @@ async function api(path, data) {
     if (r.status === 401) login();
     throw Error(b.error || 'Request failed');
   }
+  return b;
+}
+// Derive from one snapshot, then commit data and derived flags together. An older
+// read must never replace a newer successful write while hashing is in flight.
+async function applyState(b) {
+  if (state && b.revision < state.revision) return;
+  const stale = new Set();
   if (b.schemaVersion === 1 && Array.isArray(b.resumes) && Array.isArray(b.jobs)) {
-    staleResumes.clear();
     const profileDigest = await sha(b.profile);
+    const jobs = new Map(b.jobs.map((j) => [j.id, j]));
+    const capabilities = new Map(b.capabilities.map((c) => [c.id, c]));
     await Promise.all(
       b.resumes.map(async (r) => {
-        const j = b.jobs.find((j) => j.id === r.jobId);
+        const j = jobs.get(r.jobId);
         if (
           !j ||
           r.jdHash !== (await sha([j.company, j.title, j.description])) ||
           (r.bindingKind !== 'legacy' &&
             (r.profileHash !== profileDigest ||
-              r.capabilityHash !==
-                (await sha(r.capabilityIds.map((id) => b.capabilities.find((c) => c.id === id)))) ||
-              r.capabilityIds.some(
-                (id) => !b.capabilities.some((c) => c.id === id && c.status === 'confirmed'),
-              )))
+              r.capabilityHash !== (await sha(r.capabilityIds.map((id) => capabilities.get(id)))) ||
+              r.capabilityIds.some((id) => capabilities.get(id)?.status !== 'confirmed')))
         )
-          staleResumes.add(r.jobId + ':' + r.version);
+          stale.add(r.jobId + ':' + r.version);
       }),
     );
   }
-  return b;
+  if (state && b.revision < state.revision) return;
+  state = b;
+  staleResumes = stale;
 }
 async function refresh({ checkVersion = false } = {}) {
   if (refreshing) return;
@@ -298,7 +310,7 @@ async function refresh({ checkVersion = false } = {}) {
         return;
       }
     }
-    state = await api('state');
+    await applyState(await api('state'));
     render();
     if (currentJob && $('#detail').open) await showJob(currentJob);
     return true;
@@ -323,13 +335,26 @@ async function refresh({ checkVersion = false } = {}) {
 }
 async function action(a) {
   try {
-    state = await api('action', { revision: state.revision, action: a });
+    await applyState(await api('action', { revision: state.revision, action: a }));
     render();
     if (currentJob && $('#detail').open) await showJob(currentJob);
     return true;
   } catch (e) {
     notify(e.message);
     return false;
+  }
+}
+async function changeControl(control, payload, rollback) {
+  control.disabled = true;
+  control.setAttribute('aria-busy', 'true');
+  const field = control.closest('.decision-field');
+  if (field) field.dataset.pending = 'true';
+  try {
+    if (!(await action(payload))) rollback();
+  } finally {
+    control.disabled = false;
+    control.removeAttribute('aria-busy');
+    if (field) delete field.dataset.pending;
   }
 }
 function heading(title, subtitle, ...actions) {
@@ -386,11 +411,16 @@ function login() {
 }
 function edit(title, fields, save) {
   $('#editor-title').textContent = title;
-  $('#editor-body').replaceChildren(...fields);
+  $('#editor-body').replaceChildren(
+    el('div', { id: 'editor-notice', class: 'error', role: 'alert', hidden: '' }),
+    ...fields,
+  );
   $('#editor-form').onsubmit = async (e) => {
     e.preventDefault();
     const control = e.currentTarget.querySelector('[type=submit]');
     if (control.disabled) return;
+    $('#editor-notice').hidden = true;
+    $('#editor-notice').textContent = '';
     const done = busy(control);
     try {
       if ((await save()) !== false) $('#editor').close();
@@ -454,6 +484,42 @@ function render() {
     });
   }
 }
+const displayedScore = (job) =>
+  Number.isFinite(job.assessment?.score) ? job.assessment.score : -1;
+function sortHeader(key, label) {
+  const active = sort === key;
+  const control = button(
+    t(label),
+    () => {
+      sortDirection =
+        sort === key
+          ? sortDirection === 'asc'
+            ? 'desc'
+            : 'asc'
+          : ui.sortOptions.find((s) => s.id === key).direction;
+      sort = key;
+      render();
+    },
+    'sort-control',
+  );
+  control.append(
+    verificationIcon(
+      active
+        ? sortDirection === 'asc'
+          ? 'm6 15 6-6 6 6'
+          : 'm6 9 6 6 6-6'
+        : 'm8 9 4-4 4 4M8 15l4 4 4-4',
+    ),
+  );
+  return el(
+    'th',
+    {
+      scope: 'col',
+      'aria-sort': active ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined,
+    },
+    control,
+  );
+}
 function jobs() {
   const all = state.jobs.filter((j) =>
     tab === 'archive'
@@ -466,50 +532,61 @@ function jobs() {
         (j.company + ' ' + j.title + ' ' + j.description)
           .toLowerCase()
           .includes(query.toLowerCase()) &&
-        (!minimum || currentScore(j) >= minimum),
+        (!minimum || displayedScore(j) >= minimum),
     )
-    .sort((a, b) =>
-      sort === 'score'
-        ? currentScore(b) - currentScore(a) || Date.parse(b.searchedAt) - Date.parse(a.searchedAt)
-        : sort === 'company'
-          ? a.company.localeCompare(b.company)
-          : Date.parse(b.searchedAt) - Date.parse(a.searchedAt) ||
-            currentScore(b) - currentScore(a),
-    );
+    .sort((a, b) => {
+      const direction = sortDirection === 'asc' ? 1 : -1;
+      if (sort === 'score') {
+        const x = displayedScore(a),
+          y = displayedScore(b);
+        if (x < 0 || y < 0)
+          return (x < 0) - (y < 0) || Date.parse(b.searchedAt) - Date.parse(a.searchedAt);
+        return direction * (x - y) || Date.parse(b.searchedAt) - Date.parse(a.searchedAt);
+      }
+      return sort === 'company'
+        ? direction * a.company.localeCompare(b.company)
+        : direction * (Date.parse(a.searchedAt) - Date.parse(b.searchedAt)) ||
+            displayedScore(b) - displayedScore(a);
+    });
+  let composing = false;
+  const updateSearch = (e) => {
+    if (composing || e.isComposing) return;
+    query = e.target.value;
+    const start = e.target.selectionStart;
+    render();
+    const n = $('input[type=search]');
+    n.focus();
+    n.setSelectionRange(start, start);
+  };
   const search = el('input', {
     type: 'search',
     placeholder: t('Search roles, companies or skills'),
     'aria-label': t('Search opportunities'),
     value: query,
-    oninput: (e) => {
-      query = e.target.value;
-      const start = e.target.selectionStart;
-      render();
-      const n = $('input[type=search]');
-      n.focus();
-      n.setSelectionRange(start, start);
+    oncompositionstart: () => {
+      composing = true;
     },
+    oncompositionend: (e) => {
+      composing = false;
+      updateSearch(e);
+    },
+    oninput: updateSearch,
   });
   const sorter = el(
     'select',
     {
       'aria-label': t('Sort opportunities'),
       title:
-        sort === 'recent'
-          ? t('Newest search, then fit')
-          : sort === 'score'
-            ? t('Highest fit, then search')
-            : t('Company A–Z'),
+        t(ui.sortOptions.find((s) => s.id === sort).description) +
+        ' · ' +
+        t(sortDirection === 'asc' ? 'Ascending' : 'Descending'),
       onchange: (e) => {
         sort = e.target.value;
+        sortDirection = ui.sortOptions.find((s) => s.id === sort).direction;
         render();
       },
     },
-    ...Object.entries({
-      recent: t('Newest search'),
-      score: t('Highest fit'),
-      company: t('Company A–Z'),
-    }).map(([v, t]) => el('option', { value: v }, t)),
+    ...ui.sortOptions.map((s) => el('option', { value: s.id }, t(s.label))),
   );
   sorter.value = sort;
   const filter = el(
@@ -521,12 +598,7 @@ function jobs() {
         render();
       },
     },
-    ...[
-      [0, t('Any fit')],
-      [7, t('Fit 7+')],
-      [8, t('Fit 8+')],
-      [9, t('Fit 9+')],
-    ].map(([v, t]) => el('option', { value: v }, t)),
+    ...ui.fitFilters.map((f) => el('option', { value: f.value }, t(f.label))),
   );
   filter.value = String(minimum);
   main.replaceChildren(
@@ -556,7 +628,7 @@ function jobs() {
             label,
             () => {
               tab = v;
-              limit = 20;
+              limit = ui.defaults.pageSize;
               render();
             },
             tab === v ? 'active' : '',
@@ -569,24 +641,21 @@ function jobs() {
     ),
     el(
       'div',
-      { class: 'search-row' },
-      search,
-      button(
-        t('Filters'),
-        () => {
-          filtersOpen = !filtersOpen;
-          render();
-        },
-        'filter-toggle',
+      { class: 'workbench-filters' },
+      el(
+        'div',
+        { class: 'search-row' },
+        search,
+        button(
+          t('Filters'),
+          () => {
+            filtersOpen = !filtersOpen;
+            render();
+          },
+          'filter-toggle',
+        ),
       ),
-    ),
-    el('div', { class: 'toolbar', hidden: !filtersOpen ? '' : null }, filter, sorter),
-    el(
-      'div',
-      { class: 'actions workspace-tools', id: 'workspace-tools', hidden: !toolsOpen ? '' : null },
-      button(t('Paste JD'), pasteJD),
-      button(t('Import research'), importResearch),
-      button(t('Search now'), collect),
+      el('div', { class: 'toolbar', hidden: !filtersOpen ? '' : null }, filter, sorter),
     ),
   );
   if (!rows.length) {
@@ -620,31 +689,10 @@ function jobs() {
       el(
         'tr',
         {},
-        el(
-          'th',
-          {},
-          button(t('Role / company ↕'), () => {
-            sort = 'company';
-            render();
-          }),
-        ),
-        el(
-          'th',
-          {},
-          button(t('Fit ↓'), () => {
-            sort = 'score';
-            render();
-          }),
-        ),
+        sortHeader('company', 'Role / company'),
+        sortHeader('score', 'Fit'),
         el('th', {}, t('Work mode')),
-        el(
-          'th',
-          {},
-          button(t('Searched ↓'), () => {
-            sort = 'recent';
-            render();
-          }),
-        ),
+        sortHeader('recent', 'Searched'),
         el('th', {}, t('Next step')),
       ),
     ),
@@ -658,7 +706,14 @@ function jobs() {
           'select',
           {
             'aria-label': 'Decision for ' + j.title,
-            onchange: (e) => action({ type: 'review', jobId: j.id, status: e.target.value }),
+            onchange: (e) =>
+              changeControl(
+                e.target,
+                { type: 'review', jobId: j.id, status: e.target.value },
+                () => {
+                  select.value = state.reviews[j.id]?.status || 'review';
+                },
+              ),
           },
           Object.entries(labels)
             .filter(([v]) => v !== 'archive')
@@ -748,7 +803,16 @@ function jobs() {
             el(
               'div',
               { class: 'row-actions' },
-              select,
+              el(
+                'span',
+                { class: 'decision-field' },
+                select,
+                el(
+                  'span',
+                  { class: 'decision-progress', role: 'status' },
+                  el('span', { class: 'sr-only' }, t('Saving…')),
+                ),
+              ),
               el(
                 'div',
                 { class: 'row-links' },
@@ -797,7 +861,7 @@ function jobs() {
       button(
         t('Show more'),
         () => {
-          limit += 20;
+          limit += ui.defaults.pageSize;
           render();
         },
         'load-more',
@@ -866,7 +930,7 @@ async function collect() {
   collecting = true;
   notify('Searching configured sources…');
   try {
-    state = await api('collect', { revision: state.revision });
+    await applyState(await api('collect', { revision: state.revision }));
     render();
     notify('Search recorded. Review source coverage for limitations.');
   } catch (e) {
@@ -969,7 +1033,8 @@ async function showJob(id) {
       { class: 'detail-section', id: 'verification-evidence', tabindex: '-1' },
       el('h2', {}, 'Eligibility & availability'),
       badge(
-        j.availability.status === 'open' && !positiveFresh(j.availability, 7)
+        j.availability.status === 'open' &&
+          !positiveFresh(j.availability, freshness.availabilityDays)
           ? 'stale'
           : j.availability.status,
         j.availability.status === 'closed' ? 'danger' : 'warning',
@@ -1349,7 +1414,13 @@ function todo(task) {
       type: 'checkbox',
       checked: task.done,
       onchange: (e) =>
-        action({ type: 'task', id: task.id, jobId: task.jobId, done: e.target.checked }),
+        changeControl(
+          e.target,
+          { type: 'task', id: task.id, jobId: task.jobId, done: e.target.checked },
+          () => {
+            e.target.checked = state.tasks.find((t) => t.id === task.id)?.done ?? task.done;
+          },
+        ),
     }),
     el(
       'div',
@@ -1399,10 +1470,12 @@ function tasks() {
               const before = (state.resumeRequests || []).filter(
                 (r) => r.status === 'queued',
               ).length;
-              state = await api('action', {
-                revision: state.revision,
-                action: { type: 'requestResume', jobId: j.id },
-              });
+              await applyState(
+                await api('action', {
+                  revision: state.revision,
+                  action: { type: 'requestResume', jobId: j.id },
+                }),
+              );
               if ((state.resumeRequests || []).filter((r) => r.status === 'queued').length > before)
                 count++;
             } catch (e) {
@@ -1477,7 +1550,7 @@ function qualification(j) {
   return j.checks.length &&
     required.every((k) => j.checks.some((c) => c.key === k.key)) &&
     j.checks.every((c) => positiveFresh(c) && c.source && c.evidence) &&
-    positiveFresh(j.availability, 7) &&
+    positiveFresh(j.availability, freshness.availabilityDays) &&
     j.availability.source &&
     j.availability.evidence
     ? 'verified'
@@ -1619,7 +1692,12 @@ async function showResearch(run, trigger = document.activeElement) {
         const group = el(
           'section',
           {},
-          el('div', { class: 'research-source-heading' }, el('h4', {}, c.source), badge(c.status)),
+          el(
+            'div',
+            { class: 'research-source-heading' },
+            el('h4', {}, sourceLabel(c.source)),
+            badge(c.status),
+          ),
         );
         if (Number.isFinite(counts.screened) && Number.isFinite(counts.fullJd))
           group.append(
@@ -1701,7 +1779,7 @@ function research() {
             el(
               'article',
               {},
-              el('h3', {}, c.source),
+              el('h3', {}, sourceLabel(c.source)),
               badge(
                 c.status,
                 c.status === 'blocked' ? 'danger' : c.status === 'not_run' ? 'warning' : '',
@@ -1891,10 +1969,12 @@ function profile() {
         if (!file.files[0]) return notify('Select a backup file');
         if (!confirm('Replace this workspace with the selected backup?')) return;
         try {
-          state = await api('restore', {
-            revision: state.revision,
-            state: JSON.parse(await file.files[0].text()),
-          });
+          await applyState(
+            await api('restore', {
+              revision: state.revision,
+              state: JSON.parse(await file.files[0].text()),
+            }),
+          );
           render();
           notify('Backup restored');
         } catch (e) {
@@ -1916,26 +1996,53 @@ document.querySelectorAll('[data-i18n]').forEach((n) => {
 document.querySelectorAll('[data-i18n-label]').forEach((n) => {
   n.setAttribute('aria-label', t(n.dataset.i18nLabel));
 });
-// Preserve content on data refresh; navigate only when the deployed entry version changed.
-$('#refresh').onclick = async () => {
-  if (refreshing) return;
-  const done = busy($('#refresh'));
-  try {
-    await refresh({ checkVersion: true });
-  } finally {
-    done();
-  }
+const menu = $('#workspace-tools'),
+  toolsTrigger = $('#tools-toggle');
+const toolActions = {
+  'paste-jd': pasteJD,
+  'import-research': importResearch,
+  collect,
+  'profile-toggle': () => {
+    page = 'profile';
+    render();
+  },
+  refresh: async () => {
+    if (refreshing) return false;
+    const done = busy(toolsTrigger);
+    try {
+      return await refresh({ checkVersion: true });
+    } finally {
+      done();
+    }
+  },
 };
-$('#tools-toggle').onclick = () => {
-  toolsOpen = !toolsOpen;
-  $('#tools-toggle').setAttribute('aria-expanded', String(toolsOpen));
-  page = 'jobs';
-  render();
+menu.replaceChildren(
+  ...ui.tools.map((tool) => {
+    const control = button(
+      t(tool.label),
+      () => {
+        menu.hidePopover();
+        return toolActions[tool.id]();
+      },
+      'tool-item',
+    );
+    control.id = tool.id;
+    control.dataset.group = tool.group;
+    return control;
+  }),
+);
+toolsTrigger.onclick = () => {
+  const rect = toolsTrigger.getBoundingClientRect();
+  menu.style.top = Math.max(8, Math.min(rect.bottom + 8, innerHeight - 280)) + 'px';
+  menu.style.right = Math.max(16, innerWidth - rect.right) + 'px';
 };
-$('#profile-toggle').onclick = () => {
-  page = 'profile';
-  render();
-};
+menu.addEventListener('toggle', (e) => {
+  toolsTrigger.setAttribute('aria-expanded', String(e.newState === 'open'));
+  if (e.newState === 'open') menu.querySelector('button').focus({ preventScroll: true });
+});
+menu.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') toolsTrigger.focus({ preventScroll: true });
+});
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) location.reload();
 });

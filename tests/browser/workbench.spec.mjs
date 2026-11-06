@@ -103,6 +103,7 @@ test('mobile research wraps long URLs; detail and profile fit viewport', async (
   ).toBe(true);
   await page.screenshot({ path: 'test-results/mobile-detail.png' });
   await page.getByRole('button', { name: 'Close opportunity' }).click();
+  await page.locator('#tools-toggle').click();
   await page.getByRole('button', { name: 'Profile', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Capability evidence' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
@@ -810,6 +811,7 @@ test('workspace hierarchy keeps details optional and shared task labels independ
   await page.getByRole('tab', { name: 'JD', exact: true }).click();
   await page.screenshot({ path: 'test-results/audit-detail-mobile.png' });
   await page.getByRole('button', { name: 'Close opportunity', exact: true }).click();
+  await page.locator('#tools-toggle').click();
   await page.getByRole('button', { name: 'Profile', exact: true }).click();
   for (const width of [320, 390, 1280]) {
     await page.setViewportSize({ width, height: 900 });

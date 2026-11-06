@@ -7,6 +7,7 @@ export const staticFiles = [
   ...fontFiles,
   'index.html',
   'app.js',
+  'configuration.mjs',
   'i18n.mjs',
   'fonts/OFL.txt',
   'fonts/ibm-plex-sans-400.ttf',

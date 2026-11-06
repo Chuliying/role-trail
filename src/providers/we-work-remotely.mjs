@@ -1,6 +1,7 @@
 import { htmlToMarkdown } from '../jd-content.mjs';
+import { feedDefinition } from '../configuration.mjs';
 
-export const wwrCategories = ['front-end-programming', 'full-stack-programming', 'product'];
+export const wwrCategories = feedDefinition('we-work-remotely').options.category;
 export function wwrFeedURL(category) {
   if (!wwrCategories.includes(category)) throw Error('Unsupported WWR category');
   return `https://weworkremotely.com/categories/remote-${category}-jobs.rss`;
