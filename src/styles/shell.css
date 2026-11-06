@@ -207,6 +207,7 @@ body {
   .tabs {
     column-gap: 24px;
     row-gap: 8px;
+    padding-block: 8px;
     margin-bottom: 24px;
   }
   .tabs button {
