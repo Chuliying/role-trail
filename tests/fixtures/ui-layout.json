@@ -32,7 +32,7 @@
     },
     ".brand": {
       "display": "block",
-      "width": "126.469px",
+      "width": "content-constrained",
       "height": "22px",
       "padding": "0px",
       "margin": "0px",
@@ -92,7 +92,7 @@
     },
     ".job-title": {
       "display": "block",
-      "width": "324px",
+      "width": "content-constrained",
       "height": "44px",
       "padding": "0px",
       "margin": "0px",
@@ -137,7 +137,7 @@
     },
     "nav": {
       "display": "flex",
-      "width": "390px",
+      "width": "content-constrained",
       "height": "59px",
       "padding": "0px 8px 8px",
       "margin": "0px",
@@ -213,7 +213,7 @@
       },
       ".jd": {
         "display": "block",
-        "width": "358px",
+        "width": "content-constrained",
         "height": "558.078px",
         "padding": "0px",
         "margin": "0px",
@@ -261,7 +261,7 @@
     },
     ".brand": {
       "display": "block",
-      "width": "139.109px",
+      "width": "content-constrained",
       "height": "24.1875px",
       "padding": "0px",
       "margin": "0px",
@@ -321,7 +321,7 @@
     },
     ".job-title": {
       "display": "inline-flex",
-      "width": "132.516px",
+      "width": "content-constrained",
       "height": "32px",
       "padding": "0px",
       "margin": "0px",
@@ -366,7 +366,7 @@
     },
     "nav": {
       "display": "flex",
-      "width": "331.078px",
+      "width": "content-constrained",
       "height": "44px",
       "padding": "0px",
       "margin": "0px",
@@ -442,7 +442,7 @@
       },
       ".jd": {
         "display": "block",
-        "width": "644.156px",
+        "width": "content-constrained",
         "height": "466.906px",
         "padding": "0px",
         "margin": "0px",

@@ -59,3 +59,5 @@ Supported query parameters are `view`, `decision`, `q`, `sort`, `direction` and 
 Automated checks cover 390px mobile and 1000/1440/1920px desktop geometry, viewport-centered navigation, cell padding, label/count grouping, overflow and score targets. Chromium and WebKit exercise shared mobile flows; a WebKit case also checks score tapping and persistent language selection. English/Traditional Chinese keys and interpolation parameters must match. JD headings/lists and user evidence are rendered from their source content without translation.
 
 The checks use synthetic fixtures. They do not prove every device size, assistive technology, external job source or future scheduled agent run will succeed.
+
+The style baseline keeps fixed geometry and design tokens exact. Text-sized brand/title/navigation widths and the JD’s `ch` reading measure use containment and font-relative assertions, because macOS and Linux font metrics differ. The CI browser environment is version-and-digest pinned; see [CI verification](ci.md).

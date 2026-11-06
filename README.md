@@ -106,6 +106,8 @@ npm run test:ui          # desktop flows plus mobile Chromium/WebKit layout chec
 npm audit
 ```
 
+GitHub Actions runs the same suite in a version-and-digest-pinned Playwright Linux container. It checks TypeScript, formatting, audit, Node/PostgreSQL and browser flows, with a 15-minute job limit and downloadable failure traces. Local success and CI success are separate evidence; see the [CI guide and incident record](docs/ci.md).
+
 The PostgreSQL test starts an isolated temporary cluster if local PostgreSQL tools are available. CI supplies a separate test database. Never point `ROLE_TRAIL_TEST_DATABASE_URL` at a real workspace. [Release evidence](docs/release-check.md).
 
 This is an early release with no uptime or job-board access guarantee. Optional accounts, a user's Vercel deployment and a future scheduled trigger require installation-specific verification. Check those in your own installation before relying on unattended runs.
@@ -137,7 +139,7 @@ Each role has an application-package overview with resume adjustments, interview
 
 The calculation rules live in `web/outcomes.mjs`; integrations can use that data-only module without adopting another workspace's profile or private records.
 
-Verification badges use a shared component and stylesheet (`web/verification.mjs` and `web/verification.css`). Common checks—remote work, AI product work, frontend/backend/full-stack/design responsibility, language, working hours, compensation, employment and ownership—have semantic icons. Other checks show a generic icon **with the user's label**, not an unexplained checkmark. Only supported, positive, current facts get badges (7 days for openings; 30 for other checks). Click or tap a badge, or focus it and press Enter, to read the evidence. An icon never means the whole job meets every requirement.
+Verification badges use shared React controls (`src/client/components/controls.tsx`), the policy helper `web/verification.mjs` and `web/verification.css`. Common checks—remote work, AI product work, frontend/backend/full-stack/design responsibility, language, working hours, compensation, employment and ownership—have semantic icons. Other checks show a generic icon **with the user's label**, not an unexplained checkmark. Only supported, positive, current facts get badges (7 days for openings; 30 for other checks). Click or tap a badge, or focus it and press Enter, to read the evidence. An icon never means the whole job meets every requirement.
 
 ## One application, separate installations
 
@@ -145,9 +147,9 @@ The public repository owns the UI, domain rules, API, PostgreSQL/local storage, 
 
 PDF bytes and full research bundles live in content-addressed artifact storage, outside the page-state JSON. `resume-pdf` renders and saves a version; `pdf-save` attaches an externally rendered PDF without changing its review status. `backup` exports the state and referenced artifacts. Job-Frog expands bounded company groups; Taiwan Indeed uses the optional JobSpy bridge; 104's optional capped Apify trial yields summaries, not verified complete JDs. No provider or paid quota is enabled just by installing the app.
 
-The existing private installation now uses this runtime without copied application code. Acceptance covered 67 Node tests, eight browser flows, exact deployment-asset parity, original PDF downloads, retained artifact hashes, database write guards, origin checks and revision conflicts. These are bounded checks of this release; the next scheduled LLM invocation and each provider’s ongoing availability still need operational observation.
+The existing private installation now uses this runtime without copied application code. The earlier cutover acceptance covered 67 Node tests, eight browser flows, exact deployment-asset parity, original PDF downloads, retained artifact hashes, database write guards, origin checks and revision conflicts. Those are historical, bounded checks; the next scheduled LLM invocation and each provider’s ongoing availability still need operational observation.
 
-The shared UI preserves the compact workbench layout: four decision tabs, three mobile navigation items, and secondary tools for JD input/import. The tools menu switches between English and Traditional Chinese; the choice persists in this browser. Browser language supplies the initial default. Saved JDs and evidence are not translated. IBM Plex Sans is bundled under the [SIL Open Font License](web/fonts/OFL.txt). Retired clients receive an explicit reopen instruction; freshly loaded CSS/JS use content versions to avoid mixing releases.
+The shared UI preserves the compact workbench layout: four decision tabs, three mobile navigation items, and secondary tools for JD input/import. The tools menu switches between English and Traditional Chinese; the choice persists in this browser. Browser language supplies the initial default. Saved JDs and evidence are not translated. The interface uses locally hosted Manrope and Noto Sans TC, with M PLUS U for the logo; their licenses ship in [`web/fonts/`](web/fonts/). Retired clients receive an explicit reopen instruction; freshly loaded CSS/JS use content versions to avoid mixing releases.
 
 ### Shared configuration
 
@@ -157,6 +159,6 @@ The workspace uses a centered desktop table, mobile cards, a single tool menu an
 
 ### Workspace navigation and feedback
 
-The header stays visible while scrolling. Desktop search controls form a compact right-aligned group; tab counts sit beside their labels. Mobile scores use smaller circles with a full touch target. Hover, click, or keyboard activation opens the saved scoring reason and evidence; historical scores remain muted and labelled inside the explanation. Work-mode details stay in the job dialog.
+The header stays visible while scrolling. Search, fit and sort controls open from one adjustments button: a desktop popover or a mobile sheet. Desktop tab counts sit beside their labels; mobile counts align to the trailing edge of two equal columns, with balanced vertical spacing. Mobile scores use smaller circles with a full touch target. Hover, click, or keyboard activation opens the saved scoring reason and evidence; historical scores remain muted and labelled inside the explanation. Work-mode details stay in the job dialog.
 
 View, decision filter, search, sort direction and minimum fit survive reload and browser back/forward through URL parameters. Unsaved editor input requires an explicit discard; failed saves retain the input. Small mutations use revision-bound deltas, and unchanged refreshes return an empty 304 response. Initial and changed reads still load the full workspace. See [browser architecture and verification](docs/browser-runtime.md).
