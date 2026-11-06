@@ -5,6 +5,7 @@ import { researchOutcomes, applicationReadiness } from './outcomes.mjs';
 import { positiveFresh, currentScore, canonical } from './status.mjs';
 const staleResumes = new Set();
 let collecting = false;
+let refreshing = false;
 let renderedView = null;
 let detailTab = 'jd';
 let toolsOpen = false,
@@ -40,6 +41,60 @@ function el(tag, attrs = {}, ...children) {
   }
   return n;
 }
+// Keep the control's layout and accessible name while a request is in flight.
+function busy(control) {
+  control.classList.remove('request-complete');
+  const disabled = control.disabled;
+  control.style.setProperty('--busy-ink', getComputedStyle(control).color);
+  control.disabled = true;
+  control.setAttribute('aria-busy', 'true');
+  const timer = setTimeout(() => control.classList.add('busy-visible'), 180);
+  return (success = false) => {
+    clearTimeout(timer);
+    control.disabled = disabled;
+    control.removeAttribute('aria-busy');
+    control.classList.remove('busy-visible');
+    if (success && control.isConnected) {
+      control.classList.add('request-complete');
+      setTimeout(() => control.classList.remove('request-complete'), 700);
+    }
+  };
+}
+function skeleton(kind, label) {
+  const line = (cls = '') => el('span', { class: 'skeleton-line ' + cls });
+  const region = el('div', { class: kind + '-skeleton', role: 'status', 'aria-label': label });
+  region.append(el('span', { class: 'sr-only' }, label));
+  const shapes = el('div', { class: 'skeleton-shapes', 'aria-hidden': 'true' });
+  if (kind === 'workspace') {
+    shapes.append(line('skeleton-heading'), line('skeleton-toolbar'));
+    for (let i = 0; i < 3; i++)
+      shapes.append(
+        el(
+          'div',
+          { class: 'skeleton-card' },
+          el('div', { class: 'skeleton-top' }, line('skeleton-company'), line('skeleton-score')),
+          line('skeleton-title'),
+          line('skeleton-title short'),
+          line('skeleton-meta'),
+        ),
+      );
+  } else {
+    shapes.append(line('skeleton-company'), line('skeleton-heading'));
+    for (let i = 0; i < 2; i++)
+      shapes.append(
+        el(
+          'div',
+          { class: 'skeleton-paragraph' },
+          line('skeleton-title'),
+          line(),
+          line(),
+          line('short'),
+        ),
+      );
+  }
+  region.append(shapes);
+  return region;
+}
 const button = (label, fn, cls = '') =>
   el(
     'button',
@@ -51,13 +106,12 @@ const button = (label, fn, cls = '') =>
         try {
           const result = fn(event);
           if (result?.then) {
-            control.disabled = true;
-            control.setAttribute('aria-busy', 'true');
+            const done = busy(control);
+            let saved = false;
             try {
-              await result;
+              saved = (await result) === true;
             } finally {
-              control.disabled = false;
-              control.removeAttribute('aria-busy');
+              done(saved);
             }
           }
         } catch (error) {
@@ -226,12 +280,50 @@ async function api(path, data) {
   }
   return b;
 }
-async function refresh() {
+async function refresh({ checkVersion = false } = {}) {
+  if (refreshing) return;
+  refreshing = true;
+  const initial = !state;
+  main.setAttribute('aria-busy', 'true');
+  if (initial) {
+    main.replaceChildren(skeleton('workspace', t('Loading workspace…')));
+    document
+      .querySelectorAll('nav button, #tools-toggle, #profile-toggle')
+      .forEach((n) => (n.disabled = true));
+  }
   try {
+    if (checkVersion) {
+      const response = await fetch('/', { cache: 'no-store' });
+      if (!response.ok) throw Error('Could not refresh workspace.');
+      const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+      const next = html.querySelector('script[src^="/app.js"]')?.getAttribute('src');
+      const current = document.querySelector('script[src^="/app.js"]')?.getAttribute('src');
+      if (next && current && next !== current) {
+        location.reload();
+        return;
+      }
+    }
     state = await api('state');
     render();
+    if (currentJob && $('#detail').open) await showJob(currentJob);
+    return true;
   } catch (e) {
-    if (!$('.login')) main.replaceChildren(el('div', { class: 'error' }, e.message));
+    if (!$('.login')) {
+      if (initial)
+        main.replaceChildren(
+          el('div', { class: 'error', role: 'alert' }, e.message),
+          button(t('Retry'), () => refresh()),
+        );
+      else notify(e.message);
+    }
+    return false;
+  } finally {
+    refreshing = false;
+    main.removeAttribute('aria-busy');
+    if (state)
+      document
+        .querySelectorAll('nav button, #tools-toggle, #profile-toggle')
+        .forEach((n) => (n.disabled = false));
   }
 }
 async function action(a) {
@@ -262,12 +354,17 @@ function login() {
         onsubmit: async (e) => {
           e.preventDefault();
           const input = $('#access-key');
+          const control = e.currentTarget.querySelector('[type=submit]');
+          if (control.disabled) return;
+          const done = busy(control);
           try {
             await api('login', { key: input.value });
             input.value = '';
             await refresh();
           } catch (x) {
             notify(x.message);
+          } finally {
+            done();
           }
         },
       },
@@ -297,10 +394,15 @@ function edit(title, fields, save) {
   $('#editor-body').replaceChildren(...fields);
   $('#editor-form').onsubmit = async (e) => {
     e.preventDefault();
+    const control = e.currentTarget.querySelector('[type=submit]');
+    if (control.disabled) return;
+    const done = busy(control);
     try {
       if ((await save()) !== false) $('#editor').close();
     } catch (x) {
       notify(x.message);
+    } finally {
+      done();
     }
   };
   $('#editor').showModal();
@@ -925,7 +1027,15 @@ async function showJob(id) {
         class: 'form-inline',
         onsubmit: async (e) => {
           e.preventDefault();
-          await action({ type: 'task', jobId: id, text: input.value, done: false });
+          const control = e.currentTarget.querySelector('[type=submit]');
+          if (control.disabled || !input.value.trim()) return;
+          const done = busy(control);
+          let saved = false;
+          try {
+            saved = await action({ type: 'task', jobId: id, text: input.value, done: false });
+          } finally {
+            done(saved);
+          }
         },
       },
       input,
@@ -937,17 +1047,10 @@ async function showJob(id) {
   const queued = request?.status === 'queued';
   const requestButton = button(
     t(queued ? 'Queued for agent' : 'Request resume'),
-    async (event) => {
-      const control = event.currentTarget;
-      control.disabled = true;
-      control.setAttribute('aria-busy', 'true');
-      try {
-        const ok = await action({ type: 'requestResume', jobId: id });
-        if (ok) notify(t('Queued for Codex / Claude.'));
-      } finally {
-        control.disabled = false;
-        control.removeAttribute('aria-busy');
-      }
+    async () => {
+      const ok = await action({ type: 'requestResume', jobId: id });
+      if (ok) notify(t('Queued for Codex / Claude.'));
+      return ok;
     },
     'primary',
   );
@@ -1492,7 +1595,9 @@ async function showResearch(run, trigger = document.activeElement) {
   dialog.showModal();
   const load = async () => {
     footer.hidden = true;
-    content.replaceChildren(el('p', { class: 'loading', role: 'status' }, t('Loading research…')));
+    content.classList.remove('content-arrived');
+    content.setAttribute('aria-busy', 'true');
+    content.replaceChildren(skeleton('reader', t('Loading research…')));
     try {
       const url = '/api/research?run=' + encodeURIComponent(run.id);
       const response = await fetch(url, { signal: controller.signal });
@@ -1552,6 +1657,7 @@ async function showResearch(run, trigger = document.activeElement) {
         el('a', { href: url + '&download=1', class: 'button', download: '' }, t('Download JSON')),
       );
       footer.hidden = false;
+      content.classList.add('content-arrived');
       content.scrollTop = 0;
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -1563,6 +1669,8 @@ async function showResearch(run, trigger = document.activeElement) {
         ),
         button(t('Retry'), load),
       );
+    } finally {
+      content.removeAttribute('aria-busy');
     }
   };
   await load();
@@ -1807,8 +1915,16 @@ document.querySelectorAll('[data-i18n]').forEach((n) => {
 document.querySelectorAll('[data-i18n-label]').forEach((n) => {
   n.setAttribute('aria-label', t(n.dataset.i18nLabel));
 });
-// Refresh must load the current UI assets, not keep an obsolete in-memory client.
-$('#refresh').onclick = () => location.reload();
+// Preserve content on data refresh; navigate only when the deployed entry version changed.
+$('#refresh').onclick = async () => {
+  if (refreshing) return;
+  const done = busy($('#refresh'));
+  try {
+    await refresh({ checkVersion: true });
+  } finally {
+    done();
+  }
+};
 $('#tools-toggle').onclick = () => {
   toolsOpen = !toolsOpen;
   $('#tools-toggle').setAttribute('aria-expanded', String(toolsOpen));

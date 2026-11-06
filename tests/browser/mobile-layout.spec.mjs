@@ -80,7 +80,11 @@ for (const engine of ['chromium', 'webkit']) {
         window.previousClient = true;
       });
       await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-      await expect.poll(() => page.evaluate(() => window.previousClient)).toBeUndefined();
+      await expect(page.getByRole('button', { name: 'Refresh', exact: true })).not.toHaveAttribute(
+        'aria-busy',
+        'true',
+      );
+      expect(await page.evaluate(() => window.previousClient)).toBe(true);
       await expect(rows.first()).toBeVisible();
       // Page transitions are intentional; typing and state refreshes must not replay them.
       for (const reduced of [false, true]) {

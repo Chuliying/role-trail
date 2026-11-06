@@ -46,7 +46,7 @@ for (const engine of ['chromium', 'webkit']) {
         .evaluateAll((ns) => ns.map((n) => n.getBoundingClientRect().x));
       expect(new Set(left).size).toBe(1);
       await page.route('**/api/action', async (route) => {
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 700));
         await route.fulfill({
           status: 400,
           contentType: 'application/json',
@@ -56,7 +56,8 @@ for (const engine of ['chromium', 'webkit']) {
       const generate = page.getByRole('button', { name: 'Request resume', exact: true });
       await generate.click();
       await expect(generate).toBeDisabled();
-      expect(await generate.evaluate((n) => getComputedStyle(n, '::before').animationName)).toBe(
+      await expect(generate).toHaveClass(/busy-visible/);
+      expect(await generate.evaluate((n) => getComputedStyle(n, '::after').animationName)).toBe(
         'busy-spin',
       );
       await expect(dialog.getByRole('status')).toContainText(
@@ -69,6 +70,9 @@ for (const engine of ['chromium', 'webkit']) {
       await expect(
         page.getByRole('button', { name: 'Queued for agent', exact: true }),
       ).toBeDisabled();
+      await expect(
+        page.getByRole('button', { name: 'Queued for agent', exact: true }),
+      ).not.toHaveAttribute('aria-busy', 'true');
       const after = await (await page.request.get('/api/state')).json();
       expect(after.resumes).toEqual(before.resumes);
       expect(after.resumeRequests.filter((r) => r.status === 'queued')).toHaveLength(1);

@@ -51,9 +51,29 @@ for (const engine of ['chromium', 'webkit']) {
       await page.reload();
       await page.getByRole('button', { name: 'Research', exact: true }).click();
       const open = page.getByRole('button', { name: 'View full research', exact: true }).first();
+      let releaseHistory;
+      const historyGate = new Promise((resolve) => (releaseHistory = resolve));
+      await page.route('**/api/research?run=*', async (route) => {
+        await historyGate;
+        await route.continue();
+      });
       await open.click();
       const dialog = page.getByRole('dialog', { name: 'Full research record', exact: true });
       await expect(dialog).toBeVisible();
+      await expect(dialog.locator('.reader-skeleton')).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Close research' })).toBeEnabled();
+      expect((await dialog.boundingBox()).width).toBe(390);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      expect(
+        await dialog
+          .locator('.skeleton-line')
+          .first()
+          .evaluate((n) => getComputedStyle(n).animationName),
+      ).toBe('none');
+      await page.screenshot({ path: `test-results/research-loading-${engine}.png` });
+      releaseHistory();
+      await expect(dialog.locator('.reader-skeleton')).toHaveCount(0);
+      await page.unroute('**/api/research?run=*');
       await expect(dialog.getByText('Saved historical search', { exact: true })).toBeVisible();
       await dialog.locator('summary').filter({ hasText: 'Snapshot engineer' }).click();
       await expect(

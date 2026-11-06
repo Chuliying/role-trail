@@ -1827,35 +1827,157 @@ summary {
   align-items: center;
   justify-content: flex-end;
 }
+/* One restrained motion vocabulary; loading never shifts a control's label. */
 @keyframes busy-spin {
   to {
     transform: rotate(360deg);
   }
 }
-button[aria-busy='true']::before,
-.loading::before {
-  content: '';
-  display: inline-block;
-  flex: none;
-  width: 16px;
-  height: 16px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: busy-spin 750ms linear infinite;
+@keyframes skeleton-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+@keyframes loading-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 button[aria-busy='true'] {
-  gap: 8px;
+  position: relative;
 }
-.loading {
+button.busy-visible:not(#refresh) {
+  color: transparent;
+}
+button.busy-visible:not(#refresh) > * {
+  visibility: hidden;
+}
+button[aria-busy='true']::before {
+  content: none;
+}
+button.busy-visible:not(#refresh)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--busy-ink, var(--action));
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: busy-spin 800ms linear infinite;
+}
+#refresh.busy-visible svg {
+  animation: busy-spin 1s linear infinite;
+}
+.skeleton-shapes {
+  opacity: 0;
+  animation: loading-reveal 150ms ease 180ms forwards;
+}
+.skeleton-line {
+  display: block;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--line);
+  animation: skeleton-breathe 1.6s ease-in-out 180ms infinite;
+}
+.skeleton-heading {
+  width: 45%;
+  height: 24px;
+  margin-bottom: 24px;
+}
+.skeleton-toolbar {
+  height: 44px;
+  margin-bottom: 24px;
+}
+.skeleton-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 16px;
+}
+.skeleton-top {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.skeleton-company {
+  width: 28%;
+}
+.skeleton-score {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+.skeleton-title {
+  height: 18px;
+  width: 85%;
+  margin-bottom: 12px;
+}
+.skeleton-line.short {
+  width: 60%;
+}
+.skeleton-meta {
+  width: 40%;
+  margin-top: 28px;
+}
+.skeleton-paragraph {
+  display: grid;
+  gap: 16px;
+  margin-top: 32px;
+}
+.reader-skeleton .skeleton-company {
+  margin-bottom: 24px;
+}
+.reader-skeleton .skeleton-heading {
+  width: 70%;
+}
+@media (min-width: 721px) {
+  .workspace-skeleton .skeleton-card {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 32px;
+    align-items: center;
+    margin: 0;
+    border-radius: 0;
+    border-width: 0 0 1px;
+    padding: 24px 16px;
+  }
+  .workspace-skeleton .skeleton-top {
+    margin: 0;
+  }
+  .workspace-skeleton .skeleton-company {
+    width: 60%;
+  }
+  .workspace-skeleton .skeleton-title {
+    margin: 0;
+  }
+  .workspace-skeleton .skeleton-title.short {
+    display: none;
+  }
+  .workspace-skeleton .skeleton-meta {
+    width: 70%;
+    margin: 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  button[aria-busy='true']::before,
-  .loading::before {
+  .skeleton-shapes {
     animation: none;
+    opacity: 1;
+  }
+  .skeleton-line,
+  #refresh.busy-visible svg,
+  button.busy-visible::after {
+    animation: none !important;
   }
 }
 
@@ -1933,5 +2055,32 @@ button[aria-busy='true'] {
   }
   .research-reader .dialog-footer {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+.content-arrived {
+  animation: loading-reveal 150ms ease both;
+}
+button.request-complete {
+  position: relative;
+  color: transparent;
+}
+button.request-complete > * {
+  visibility: hidden;
+}
+button.request-complete::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 8px;
+  height: 14px;
+  border: solid var(--busy-ink, var(--action));
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .content-arrived {
+    animation: none;
   }
 }
