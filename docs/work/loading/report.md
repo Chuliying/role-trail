@@ -1,6 +1,6 @@
 # Scoped loading feedback
 
-Initial workspace and archived-research reads use content-shaped skeletons. Shapes appear after 180 ms, breathe over 1.6 seconds and use existing neutral tokens. Reduced-motion uses static placeholders. Research content fades in over 150 ms. Modal controls stay available; closing still aborts the fetch.
+Initial workspace and archived-research reads use content-shaped skeletons. Shapes appear after 180 ms, show a left-to-right highlight sweep over 1.8 seconds and use existing neutral tokens. Reduced-motion uses static placeholders. Research content fades in over 150 ms. Modal controls stay available; closing still aborts the fetch.
 
 Manual refresh preserves visible content. It reads the deployed entry document without cache and reloads only when the app version differs. Otherwise it refreshes shared state in place. A failed refresh keeps the previous content and shows the error. The refresh icon rotates only while that request is running.
 
@@ -9,3 +9,7 @@ Async buttons and forms use a shared delayed, centered indicator, without adding
 References: [Atlassian skeleton usage](https://atlassian.design/components/skeleton/usage) and [Carbon loading patterns](https://www.carbondesignsystem.com/building-blocks/core/patterns/loading). Durations are local design choices, not claims from these references.
 
 Verification: observed failing loading tests before implementation; final 75 Node tests, 20 browser tests, build and dependency audit passed. Chromium/WebKit mobile tests cover delayed reads, reduced motion, overflow, constant refresh width, old content during refresh, error recovery, changed-version navigation, research placeholders and queued-state semantics. Synthetic screenshots were visually inspected. No schema or stored-data changes.
+
+## Shimmer refinement
+
+Replaced the low-visibility opacity pulse with a moving highlight clipped inside each placeholder. The sweep uses a transformed pseudo-element and existing neutral surface tokens; it does not move the layout or sweep over real content. Reduced motion removes the highlight entirely. Chromium and WebKit tests assert changing transform values and disabled motion, rather than relying on a still screenshot alone.

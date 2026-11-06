@@ -19,7 +19,26 @@ for (const engine of ['chromium', 'webkit']) {
       await page.goto('http://127.0.0.1:4319');
       await expect(page.locator('.workspace-skeleton')).toBeVisible();
       await expect(page.locator('#main')).toHaveAttribute('aria-busy', 'true');
+      const shimmer = page.locator('.skeleton-title').first();
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      expect(await shimmer.evaluate((n) => getComputedStyle(n, '::after').animationName)).toBe(
+        'skeleton-sweep',
+      );
+      const firstTransform = await shimmer.evaluate(
+        (n) => getComputedStyle(n, '::after').transform,
+      );
+      await expect
+        .poll(() => shimmer.evaluate((n) => getComputedStyle(n, '::after').transform))
+        .not.toBe(firstTransform);
+      await expect
+        .poll(() => page.locator('.skeleton-shapes').evaluate((n) => getComputedStyle(n).opacity))
+        .toBe('1');
+      await page.screenshot({ path: `test-results/shimmer-${engine}.png` });
       await page.emulateMedia({ reducedMotion: 'reduce' });
+      expect(await shimmer.evaluate((n) => getComputedStyle(n, '::after').animationName)).toBe(
+        'none',
+      );
+      expect(await shimmer.evaluate((n) => getComputedStyle(n, '::after').display)).toBe('none');
       expect(
         await page
           .locator('.skeleton-line')
