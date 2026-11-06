@@ -48,7 +48,7 @@ One frontend source for CLI and protected Vercel deployment. Common controls han
 
 ### T02 | Claude Code review and delivery
 
-- Status: in_progress
+- Status: completed
 - Depends On: [T01]
 
 #### Intent
@@ -79,3 +79,5 @@ Public code pushed and private wrapper pinned to reviewed runtime; protected dep
 - 2026-11-06: User requested removal of obsolete files with Git recovery. Confirmed all 12 retired browser modules exist in baseline history; added private generated-output cleanup and exact file-inventory regression. CC review completed; addressing its concrete findings before frozen-candidate rerun.
 
 - 2026-11-06: Frozen candidate passed Node85/browser69, typecheck/build/format/audit and clean install. Requested CC Opus5.5 high rereview reports no blockers; delivery proceeds under existing user authorization to synchronize public runtime and private deployment.
+
+- 2026-11-06: Runtime bfd5fd2 pushed to public main and pinned by the private wrapper. Protected deployment reached READY; authenticated assets matched and all compared state collections/revision remained unchanged. Private obsolete-output regression, asset parity and audit passed. Delivery complete; this plan-only follow-up does not change the reviewed runtime pin.
