@@ -1566,14 +1566,19 @@ function outcomeSummary() {
 async function showResearch(run, trigger = document.activeElement) {
   const content = el('div', { class: 'research-reader-body' });
   const footer = el('footer', { class: 'dialog-footer', hidden: true });
-  const close = iconButton(t('Close research'), 'm6 6 12 12M6 18 18 6', () => dialog.close());
+  const close = iconButton(
+    t('Close research'),
+    'm6 6 12 12M6 18 18 6',
+    () => dialog.close(),
+    'quiet',
+  );
   const dialog = el(
     'dialog',
     { class: 'research-reader', 'aria-labelledby': 'research-reader-title' },
     el(
       'header',
       { class: 'dialog-bar' },
-      el('h2', { id: 'research-reader-title' }, t('Full research record')),
+      el('h2', { id: 'research-reader-title', tabindex: '-1' }, t('Full research record')),
       close,
     ),
     content,
@@ -1593,6 +1598,7 @@ async function showResearch(run, trigger = document.activeElement) {
   );
   document.body.append(dialog);
   dialog.showModal();
+  dialog.querySelector('h2').focus({ preventScroll: true });
   const load = async () => {
     footer.hidden = true;
     content.classList.remove('content-arrived');

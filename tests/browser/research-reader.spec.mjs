@@ -60,6 +60,28 @@ for (const engine of ['chromium', 'webkit']) {
       await open.click();
       const dialog = page.getByRole('dialog', { name: 'Full research record', exact: true });
       await expect(dialog).toBeVisible();
+      const closeControl = dialog.getByRole('button', { name: 'Close research' });
+      const closeStyle = await closeControl.evaluate((n) => {
+        const s = getComputedStyle(n);
+        return {
+          outline: s.outlineStyle,
+          border: s.borderTopColor,
+          width: n.getBoundingClientRect().width,
+          height: n.getBoundingClientRect().height,
+        };
+      });
+      expect(closeStyle).toEqual({
+        outline: 'none',
+        border: 'rgba(0, 0, 0, 0)',
+        width: 44,
+        height: 44,
+      });
+      await page.keyboard.press('Tab');
+      // Mobile WebKit follows the host's Full Keyboard Access preference for Tab stops.
+      await closeControl.focus();
+      await expect(closeControl).toBeFocused();
+      expect(await closeControl.evaluate((n) => getComputedStyle(n).boxShadow)).not.toBe('none');
+
       await expect(dialog.locator('.reader-skeleton')).toBeVisible();
       await expect(dialog.getByRole('button', { name: 'Close research' })).toBeEnabled();
       expect((await dialog.boundingBox()).width).toBe(390);
