@@ -37,6 +37,12 @@ for (const language of ['en', 'zh-TW']) {
         };
       });
       expect(fit.available).toBeGreaterThanOrEqual(fit.required);
+      if (width >= 1000) {
+        const field = await select.boundingBox();
+        const links = await page.locator('.job-row .row-links').first().boundingBox();
+        expect(Math.abs(field.y + field.height / 2 - links.y - links.height / 2)).toBeLessThan(1);
+        expect(links.x).toBeGreaterThanOrEqual(field.x + field.width);
+      }
       if ([390, 769, 1280].includes(width))
         await page.screenshot({
           animations: 'disabled',

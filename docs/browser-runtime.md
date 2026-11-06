@@ -56,6 +56,8 @@ Supported query parameters are `view`, `decision`, `q`, `sort`, `direction` and 
 
 ## Interface verification
 
+At desktop widths of 1000px and above, the next-step column reserves space for the decision select and up to three action icons on one line. Narrower table layouts may wrap the icons to preserve readable decision labels. Mobile cards retain their existing footer layout. The Shortlisted regression checks both languages from 320px to 1440px, including the maximum action count.
+
 Automated checks cover 390px mobile and 1000/1440/1920px desktop geometry, viewport-centered navigation, cell padding, label/count grouping, overflow and score targets. Chromium and WebKit exercise shared mobile flows; a WebKit case also checks score tapping and persistent language selection. English/Traditional Chinese keys and interpolation parameters must match. JD headings/lists and user evidence are rendered from their source content without translation.
 
 The checks use synthetic fixtures. They do not prove every device size, assistive technology, external job source or future scheduled agent run will succeed.

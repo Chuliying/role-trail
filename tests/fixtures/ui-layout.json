@@ -336,7 +336,7 @@
     },
     ".row-actions": {
       "display": "flex",
-      "width": "186px",
+      "width": "274px",
       "height": "44px",
       "padding": "0px",
       "margin": "0px",
@@ -351,7 +351,7 @@
     },
     ".decision-field select": {
       "display": "block",
-      "width": "134px",
+      "width": "222px",
       "height": "44px",
       "padding": "8px 44px 8px 10px",
       "margin": "0px",

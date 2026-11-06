@@ -173,6 +173,12 @@ body {
   }
 }
 @media (min-width: 1000px) {
+  .job-table th:nth-child(5) {
+    width: 314px;
+  }
+  .row-actions {
+    flex-wrap: nowrap;
+  }
   body > header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
