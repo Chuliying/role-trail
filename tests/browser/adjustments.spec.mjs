@@ -28,6 +28,9 @@ test('mobile filters fit the viewport and source hover stays still', async ({ pa
   await expect(source.locator('svg')).toHaveCSS('transform', 'none');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#filter-toggle').click();
+  await page
+    .locator('#list-filters')
+    .evaluate((n) => Promise.all(n.getAnimations().map((a) => a.finished.catch(() => {}))));
   const rect = await page.locator('#list-filters').boundingBox();
   expect(rect.x).toBe(0);
   expect(rect.width).toBe(390);

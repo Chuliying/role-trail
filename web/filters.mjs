@@ -42,40 +42,53 @@ export function filterControl(context) {
       direction = ui.sortOptions.find((s) => s.id === sort.value).direction;
     });
     const panel = el('dialog', { id: 'list-filters', 'aria-labelledby': 'list-filters-title' });
-    const close = () => panel.close();
-    const reset = context.button(
-      t('Reset'),
-      () => {
-        search.value = '';
-        fit.value = String(ui.defaults.minimumFit);
-        sort.value = ui.defaults.sort;
-        direction = defaultDirection;
-      },
-      'quiet',
-    );
+    let closing;
+    function close() {
+      if (closing) return closing;
+      panel.dataset.closing = 'true';
+      form.inert = true;
+      closing = (async () => {
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          await Promise.all(
+            panel.getAnimations().map((animation) => animation.finished.catch(() => {})),
+          );
+        }
+        if (panel.open) panel.close();
+      })();
+      return closing;
+    }
+    const reset = context.button(t('Reset'), () => {
+      search.value = '';
+      fit.value = String(ui.defaults.minimumFit);
+      sort.value = ui.defaults.sort;
+      direction = defaultDirection;
+    });
     const apply = el('button', { type: 'submit', class: 'primary' }, t('Apply'));
     const field = (label, input) =>
       el('label', { class: 'filter-field' }, el('span', {}, t(label)), input);
     const form = el(
       'form',
       {
-        onsubmit: (event) => {
+        onsubmit: async (event) => {
           event.preventDefault();
-          Object.assign(view, {
+          if (closing) return;
+          const draft = {
             query: search.value.slice(0, 500),
             minimum: Number(fit.value),
             sort: sort.value,
             sortDirection: direction,
             limit: ui.defaults.pageSize,
-          });
-          close();
+          };
+          await close();
+          Object.assign(view, draft);
           context.render();
+          document.getElementById('filter-toggle')?.focus({ preventScroll: true });
         },
       },
       el(
         'div',
-        { class: 'filter-panel-heading' },
-        el('h2', { id: 'list-filters-title' }, t('Filters')),
+        { class: 'dialog-bar filter-panel-heading' },
+        el('h2', { id: 'list-filters-title', tabindex: '-1', autofocus: '' }, t('Filters')),
         context.iconButton(t('Close'), 'M6 6l12 12M18 6 6 18', close, 'quiet'),
       ),
       el(
@@ -91,6 +104,10 @@ export function filterControl(context) {
     document.body.append(panel);
     trigger.setAttribute('aria-expanded', 'true');
     panel.showModal();
+    panel.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      close();
+    });
     panel.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !event.isComposing) {
         event.preventDefault();
