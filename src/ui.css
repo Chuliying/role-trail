@@ -1858,3 +1858,80 @@ button[aria-busy='true'] {
     animation: none;
   }
 }
+
+/* Historical research uses the same reader frame, with explicit file download. */
+.research-reader[open] {
+  display: flex;
+  flex-direction: column;
+  height: min(900px, calc(100dvh - 40px));
+  overflow: hidden;
+}
+.research-reader .dialog-bar,
+.research-reader .dialog-footer {
+  flex: none;
+  padding-inline: 24px;
+}
+.research-reader .dialog-bar h2 {
+  font-size: 17px;
+}
+.research-reader-body {
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  padding: 24px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+.research-reader-body > h3 {
+  margin: 32px 0 16px;
+}
+.research-reader-body p {
+  margin: 0 0 16px;
+}
+.research-reader-body pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.research-reader-coverage > section {
+  padding-block: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.research-source-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.research-source-heading h4 {
+  margin: 0;
+}
+.research-reader .dialog-footer a {
+  width: 100%;
+}
+.research-reader .dialog-footer[hidden] {
+  display: none;
+}
+@media (max-width: 720px) {
+  .research-reader[open] {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+  .research-reader .dialog-bar,
+  .research-reader .dialog-footer,
+  .research-reader-body {
+    padding-inline: 16px;
+  }
+  .research-reader .dialog-footer {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}

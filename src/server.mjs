@@ -1,3 +1,4 @@
+import { artifactHash } from './artifacts.mjs';
 import http from 'node:http';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -183,6 +184,39 @@ export function handler({ store, cloud = false, key, origin, platformProtected =
         )
           throw Error('Invalid PDF encoding');
         return send(200, await store.savePDF(b.revision, b.input, Buffer.from(b.pdf, 'base64')));
+      }
+      if (path === '/api/research' && req.method === 'GET') {
+        const u = new URL(req.url, 'http://localhost');
+        const state = await store.read();
+        const run = state.runs.find((r) => r.id === u.searchParams.get('run'));
+        if (!run?.archiveHash) return send(404, { error: 'Research archive not found' });
+        let bytes;
+        try {
+          bytes = await store.getArtifact(run.archiveHash);
+        } catch (e) {
+          if (e.code === 'ENOENT' || e.message === 'Artifact not found')
+            return send(404, { error: 'Research archive not found' });
+          throw e;
+        }
+        let bundle;
+        try {
+          bundle = JSON.parse(bytes.toString('utf8'));
+        } catch {}
+        if (
+          artifactHash(bytes) !== run.archiveHash ||
+          !bundle ||
+          bundle.run?.id !== run.id ||
+          !Array.isArray(bundle.run?.coverage) ||
+          !Array.isArray(bundle.jobs)
+        )
+          return send(422, { error: 'Saved research archive is invalid' });
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        if (u.searchParams.get('download') === '1')
+          res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="research-${run.archiveHash.slice(0, 16)}.json"`,
+          );
+        return res.end(bytes);
       }
       if (path === '/api/artifact' && req.method === 'GET') {
         const id = new URL(req.url, 'http://localhost').searchParams.get('hash');

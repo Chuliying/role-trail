@@ -1460,6 +1460,114 @@ function outcomeSummary() {
   return box;
 }
 
+async function showResearch(run, trigger = document.activeElement) {
+  const content = el('div', { class: 'research-reader-body' });
+  const footer = el('footer', { class: 'dialog-footer', hidden: true });
+  const close = iconButton(t('Close research'), 'm6 6 12 12M6 18 18 6', () => dialog.close());
+  const dialog = el(
+    'dialog',
+    { class: 'research-reader', 'aria-labelledby': 'research-reader-title' },
+    el(
+      'header',
+      { class: 'dialog-bar' },
+      el('h2', { id: 'research-reader-title' }, t('Full research record')),
+      close,
+    ),
+    content,
+    footer,
+  );
+  const controller = new AbortController();
+  dialog.addEventListener(
+    'close',
+    () => {
+      controller.abort();
+      dialog.remove();
+      requestAnimationFrame(() => {
+        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      });
+    },
+    { once: true },
+  );
+  document.body.append(dialog);
+  dialog.showModal();
+  const load = async () => {
+    footer.hidden = true;
+    content.replaceChildren(el('p', { class: 'loading', role: 'status' }, t('Loading research…')));
+    try {
+      const url = '/api/research?run=' + encodeURIComponent(run.id);
+      const response = await fetch(url, { signal: controller.signal });
+      const bundle = await response.json();
+      if (!response.ok) throw Error(bundle.error || 'Could not load research.');
+      if (!bundle.run || !Array.isArray(bundle.run.coverage) || !Array.isArray(bundle.jobs))
+        throw Error('Saved research archive is invalid');
+      if (!dialog.open) return;
+      const archived = bundle.run;
+      content.replaceChildren(
+        el('p', { class: 'meta' }, date(archived.finishedAt || archived.startedAt)),
+      );
+      if (archived.note) content.append(structured(archived.note));
+      content.append(el('h3', {}, t('Source coverage')));
+      const coverage = el('div', { class: 'research-reader-coverage' });
+      for (const c of archived.coverage) {
+        const counts = c.metrics || c;
+        const group = el(
+          'section',
+          {},
+          el('div', { class: 'research-source-heading' }, el('h4', {}, c.source), badge(c.status)),
+        );
+        if (Number.isFinite(counts.screened) && Number.isFinite(counts.fullJd))
+          group.append(
+            el(
+              'p',
+              { class: 'meta' },
+              `${t('Screened')}: ${counts.screened} · ${t('Full JDs')}: ${counts.fullJd}`,
+            ),
+          );
+        else if (Number.isFinite(c.inspected))
+          group.append(el('p', { class: 'meta' }, `${t('Legacy count')}: ${c.inspected}`));
+        if (c.query) group.append(el('p', { class: 'query-text' }, c.query));
+        if (c.note) group.append(structured(c.note));
+        coverage.append(group);
+      }
+      content.append(coverage, el('h3', {}, t('Saved jobs')));
+      if (!bundle.jobs.length)
+        content.append(el('p', { class: 'muted' }, t('No jobs were saved in this run.')));
+      for (const j of bundle.jobs) {
+        const title = [j.company, j.title].filter(Boolean).join(' · ') || t('Saved job');
+        const job = disclosure(title);
+        // Stored source content is untrusted: render through the safe Markdown reader.
+        if (typeof j.description === 'string' && j.description.trim())
+          job.append(structured(j.description));
+        else job.append(el('p', { class: 'muted' }, t('No job description was saved.')));
+        try {
+          const u = new URL(j.url);
+          if (u.protocol === 'https:' && !u.username && !u.password)
+            job.append(link(t('Original job ↗'), u.href));
+        } catch {}
+        job.append(disclosure('Stored fields', el('pre', {}, JSON.stringify(j, null, 2))));
+        content.append(job);
+      }
+      content.append(disclosure('Original JSON', el('pre', {}, JSON.stringify(bundle, null, 2))));
+      footer.replaceChildren(
+        el('a', { href: url + '&download=1', class: 'button', download: '' }, t('Download JSON')),
+      );
+      footer.hidden = false;
+      content.scrollTop = 0;
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      content.replaceChildren(
+        el(
+          'p',
+          { class: 'request-note', role: 'alert' },
+          t(error.message === 'Failed to fetch' ? 'Could not load research.' : error.message),
+        ),
+        button(t('Retry'), load),
+      );
+    }
+  };
+  await load();
+}
+
 function research() {
   main.replaceChildren(
     heading(t('Research log'), null, button(t('Search now'), collect, 'primary')),
@@ -1475,7 +1583,7 @@ function research() {
           ? disclosure('Run notes', el('p', { class: 'muted research-note' }, run.note))
           : null,
         run.archiveHash
-          ? link(t('Original research bundle \u2197'), '/api/artifact?hash=' + run.archiveHash)
+          ? button(t('View full research'), (event) => showResearch(run, event.currentTarget))
           : null,
         el(
           'div',

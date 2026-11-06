@@ -87,3 +87,49 @@ test('authenticated PDF route returns original bytes and never exposes them befo
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('research reader returns authenticated original JSON and an explicitly named download', async () => {
+  const { createServer } = await import('../src/server.mjs');
+  const { once } = await import('node:events');
+  const dir = await mkdtemp(join(tmpdir(), 'rt-research-reader-'));
+  const store = new LocalStore(dir);
+  let s = await store.read();
+  for (const a of demoActions()) s = await store.update(s.revision, a);
+  const run = s.runs[0],
+    bytes = await store.getArtifact(run.archiveHash);
+  const key = 'c'.repeat(64),
+    server = createServer({ store, cloud: true, key, origin: 'https://example.test' });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const url =
+    'http://127.0.0.1:' + server.address().port + '/api/research?run=' + encodeURIComponent(run.id);
+  const headers = { authorization: 'Bearer ' + key };
+  try {
+    assert.equal((await fetch(url)).status, 401);
+    let r = await fetch(url, { headers });
+    assert.equal(r.status, 200);
+    assert.match(r.headers.get('content-type'), /application\/json/);
+    assert.deepEqual(Buffer.from(await r.arrayBuffer()), bytes);
+    r = await fetch(url + '&download=1', { headers });
+    assert.match(
+      r.headers.get('content-disposition'),
+      /^attachment; filename="research-[a-f0-9]+\.json"$/,
+    );
+    assert.deepEqual(Buffer.from(await r.arrayBuffer()), bytes);
+    assert.equal((await fetch(url + '-missing', { headers })).status, 404);
+    const get = store.getArtifact.bind(store);
+    store.getArtifact = async () => Buffer.from('');
+    r = await fetch(url, { headers });
+    assert.equal(r.status, 422);
+    assert.match((await r.json()).error, /research/i);
+    store.getArtifact = async () => {
+      throw Object.assign(Error('Artifact not found'), { code: 'ENOENT' });
+    };
+    assert.equal((await fetch(url, { headers })).status, 404);
+    store.getArtifact = get;
+  } finally {
+    server.close();
+    server.closeAllConnections();
+    await rm(dir, { recursive: true, force: true });
+  }
+});

@@ -676,9 +676,7 @@ test('touch cards avoid sticky hover, redundant totals and long-text overflow', 
     expect
       .soft(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
       .toBe(true);
-    const bundle = page
-      .getByRole('link', { name: 'Original research bundle ↗', exact: true })
-      .first();
+    const bundle = page.getByRole('button', { name: 'View full research', exact: true }).first();
     const parent = bundle.locator('..');
     const c = await bundle.boundingBox(),
       d = await parent.locator('.coverage').boundingBox();
