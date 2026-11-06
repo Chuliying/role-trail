@@ -13,3 +13,7 @@ Verification: observed failing loading tests before implementation; final 75 Nod
 ## Shimmer refinement
 
 Replaced the low-visibility opacity pulse with a moving highlight clipped inside each placeholder. The sweep uses a transformed pseudo-element and existing neutral surface tokens; it does not move the layout or sweep over real content. Reduced motion removes the highlight entirely. Chromium and WebKit tests assert changing transform values and disabled motion, rather than relying on a still screenshot alone.
+
+## First HTML paint
+
+The entry HTML still contained visible `Loading workspace…` text, so the first render preceded the JavaScript skeleton. The entry now includes the workspace skeleton itself and a visually hidden status label. JavaScript adopts that existing node and clones the same markup for retries, avoiding a second animation cycle or separate layout definition. A generic reader fallback tolerates an older cached HTML shell. Regression tests delay the entry module before first paint, assert that no visible loading paragraph exists, then verify node identity survives module startup in Chromium and WebKit.

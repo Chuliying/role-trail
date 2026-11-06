@@ -16,7 +16,27 @@ for (const engine of ['chromium', 'webkit']) {
         await gate;
         await route.continue();
       });
-      await page.goto('http://127.0.0.1:4319');
+      let releaseScript;
+      const scriptGate = new Promise((resolve) => (releaseScript = resolve));
+      await page.route('**/app.js?*', async (route) => {
+        await scriptGate;
+        await route.continue();
+      });
+      await page.goto('http://127.0.0.1:4319', { waitUntil: 'commit' });
+      // Exercise first HTML paint, before the module or its imports can run.
+      await expect(page.locator('.workspace-skeleton')).toBeVisible();
+      await expect(page.locator('#main > .loading')).toHaveCount(0);
+      await page.evaluate(
+        () => (window.initialSkeleton = document.querySelector('.workspace-skeleton')),
+      );
+      releaseScript();
+      await expect(page.locator('#tools-toggle')).toBeDisabled();
+      expect(
+        await page.evaluate(
+          () => window.initialSkeleton === document.querySelector('.workspace-skeleton'),
+        ),
+      ).toBe(true);
+
       await expect(page.locator('.workspace-skeleton')).toBeVisible();
       await expect(page.locator('#main')).toHaveAttribute('aria-busy', 'true');
       const shimmer = page.locator('.skeleton-title').first();

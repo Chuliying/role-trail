@@ -20,6 +20,8 @@ let state,
   currentJob = null;
 const $ = (s) => document.querySelector(s),
   main = $('#main');
+// The HTML owns the first-paint skeleton; retries clone the same markup.
+const workspaceSkeleton = main.querySelector('.workspace-skeleton')?.cloneNode(true);
 const labels = {
   review: 'To Review',
   shortlisted: 'Shortlisted',
@@ -61,37 +63,29 @@ function busy(control) {
   };
 }
 function skeleton(kind, label) {
+  if (kind === 'workspace') {
+    const region = workspaceSkeleton?.cloneNode(true) || skeleton('reader', label);
+    region.className = 'workspace-skeleton';
+    region.setAttribute('aria-label', label);
+    region.querySelector('.sr-only').textContent = label;
+    return region;
+  }
   const line = (cls = '') => el('span', { class: 'skeleton-line ' + cls });
   const region = el('div', { class: kind + '-skeleton', role: 'status', 'aria-label': label });
   region.append(el('span', { class: 'sr-only' }, label));
   const shapes = el('div', { class: 'skeleton-shapes', 'aria-hidden': 'true' });
-  if (kind === 'workspace') {
-    shapes.append(line('skeleton-heading'), line('skeleton-toolbar'));
-    for (let i = 0; i < 3; i++)
-      shapes.append(
-        el(
-          'div',
-          { class: 'skeleton-card' },
-          el('div', { class: 'skeleton-top' }, line('skeleton-company'), line('skeleton-score')),
-          line('skeleton-title'),
-          line('skeleton-title short'),
-          line('skeleton-meta'),
-        ),
-      );
-  } else {
-    shapes.append(line('skeleton-company'), line('skeleton-heading'));
-    for (let i = 0; i < 2; i++)
-      shapes.append(
-        el(
-          'div',
-          { class: 'skeleton-paragraph' },
-          line('skeleton-title'),
-          line(),
-          line(),
-          line('short'),
-        ),
-      );
-  }
+  shapes.append(line('skeleton-company'), line('skeleton-heading'));
+  for (let i = 0; i < 2; i++)
+    shapes.append(
+      el(
+        'div',
+        { class: 'skeleton-paragraph' },
+        line('skeleton-title'),
+        line(),
+        line(),
+        line('short'),
+      ),
+    );
   region.append(shapes);
   return region;
 }
@@ -286,7 +280,8 @@ async function refresh({ checkVersion = false } = {}) {
   const initial = !state;
   main.setAttribute('aria-busy', 'true');
   if (initial) {
-    main.replaceChildren(skeleton('workspace', t('Loading workspace…')));
+    if (!main.querySelector('.workspace-skeleton'))
+      main.replaceChildren(skeleton('workspace', t('Loading workspace…')));
     document
       .querySelectorAll('nav button, #tools-toggle, #profile-toggle')
       .forEach((n) => (n.disabled = true));
