@@ -87,6 +87,14 @@ for (const engine of ['chromium', 'webkit']) {
       for (const width of [320, 390, 720]) {
         await page.setViewportSize({ width, height: 844 });
         const row = page.locator('.job-row').first();
+        const select = row.locator('select');
+        await select.focus();
+        const control = await select.evaluate((node) => {
+          const style = getComputedStyle(node);
+          return { left: parseFloat(style.paddingLeft), background: style.backgroundColor };
+        });
+        expect(control.left).toBeGreaterThanOrEqual(16);
+        expect(control.background).not.toBe('rgba(0, 0, 0, 0)');
         const edge = await row.locator('.job-title').boundingBox();
         for (const selector of ['.score', '.mobile-dates', '.source-link svg']) {
           const box = await row.locator(selector).boundingBox();

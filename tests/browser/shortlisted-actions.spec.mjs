@@ -32,11 +32,15 @@ for (const language of ['en', 'zh-TW']) {
           c = document.createElement('canvas').getContext('2d');
         c.font = `${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
         return {
+          inset: parseFloat(s.paddingLeft),
+          background: s.backgroundColor,
           available: node.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight),
           required: c.measureText(node.selectedOptions[0].text).width,
         };
       });
       expect(fit.available).toBeGreaterThanOrEqual(fit.required);
+      expect(fit.inset).toBeGreaterThanOrEqual(16);
+      expect(fit.background).not.toBe('rgba(0, 0, 0, 0)');
       if (width >= 1000) {
         const field = await select.boundingBox();
         const links = await page.locator('.job-row .row-links').first().boundingBox();
