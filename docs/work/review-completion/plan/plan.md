@@ -88,7 +88,7 @@ Application entry coordinates modules; styles have explicit layers/files and pre
 
 ### T04 | Deliver the shared runtime
 
-- Status: in_progress
+- Status: done
 - Depends On: [T03]
 
 #### Intent
@@ -105,6 +105,12 @@ All four findings have code, regression evidence and a matching live runtime.
 - npm test
 - npm run format:check
 - npm audit
+
+#### Verification Evidence
+
+- PASS | local:../implement-report.md | npm test
+- PASS | local:../implement-report.md | npm run format:check
+- PASS | local:../implement-report.md | npm audit
 
 ## Change Log
 
