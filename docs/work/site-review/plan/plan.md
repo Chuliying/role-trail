@@ -91,7 +91,7 @@ Header and content share edges; text columns have useful widths and controls rem
 
 ### T04 | Verification and delivery
 
-- Status: in_progress
+- Status: done
 - Depends On: [T03]
 
 #### Intent
@@ -112,8 +112,18 @@ Public source and private deployed runtime match, with no user-data writes.
 - npm run format:check
 - npm audit
 
+#### Verification Evidence
+
+- PASS | local:../implement-report.md | npm test
+- PASS | local:../implement-report.md | npm run build
+- PASS | local:../implement-report.md | npm run test:ui
+- PASS | local:../implement-report.md | npm run format:check
+- PASS | local:../implement-report.md | npm audit
+
 ## Change Log
 
 - 2026-11-06: Review expanded by user to declarative source/site configuration and desktop layout.
 
 - 2026-11-06: Added M PLUS U branding, shared tool popover, bidirectional historical-score sorting and immediate decision-save feedback. T01–T03 verified; delivery remains T04.
+
+- 2026-11-06: T04 complete. Public runtime dd20c2d pushed; private wrapper pinned, asset parity verified, protected deployment READY and authenticated live asset versions match. Delivery evidence summarized in implement report.

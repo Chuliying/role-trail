@@ -37,3 +37,7 @@ Existing protection paths were inspected: safe DOM/Markdown construction, extern
 - [shadcn Select](https://ui.shadcn.com/docs/components/base/select) and [Spinner](https://ui.shadcn.com/docs/components/base/spinner) — interaction/composition reference. CLI confirmed a manual, non-React project; no React component runtime was installed. Native selection preserves mobile platform behavior.
 
 Graph freshness: `repo_map.py status --root .` returned `state=missing`; this review used scoped searches and direct source reads.
+
+## Delivery
+
+Runtime commit `dd20c2d4f11c03a6d478e649cbe362d5db8f3671` was pushed. The private wrapper pins that commit; its byte-for-byte asset test and dependency audit passed. Its guarded deployment reached READY on 2026-11-06 at 01:15 UTC with all-deployment authentication retained. Authenticated checks matched the entry versions, app, CSS, generated configuration, status module and M PLUS U font against the installed package. Deployment identifiers and receipts stay with the private installation. This documentation-only follow-up does not change the pinned runtime.
