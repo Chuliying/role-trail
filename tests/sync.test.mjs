@@ -83,6 +83,7 @@ test('entity deltas reconstruct updates, removals, ordering and optional collect
   const before = {
     ...emptyState(),
     revision: 5,
+    migration: { sourceRevision: 1, artifacts: [] },
     jobs: [
       { id: 'a', description: 'keep' },
       { id: 'b', description: 'old' },
@@ -95,6 +96,7 @@ test('entity deltas reconstruct updates, removals, ordering and optional collect
   const after = {
     ...before,
     revision: 6,
+    migration: { sourceRevision: 2, artifacts: [] },
     jobs: [
       { id: 'b', description: 'new' },
       { id: 'c', description: 'added' },
@@ -114,6 +116,7 @@ test('entity deltas reconstruct updates, removals, ordering and optional collect
   assert.throws(() => mergeWorkspaceDelta({ ...before, revision: 4 }, delta), /base mismatch/);
   const removed = { ...after, revision: 7 };
   delete removed.resumeRequests;
+  delete removed.migration;
   assert.deepEqual(mergeWorkspaceDelta(after, workspaceDelta(after, removed)), removed);
 });
 test('transport recovers a mismatched delta with one read and never repeats a write', async () => {

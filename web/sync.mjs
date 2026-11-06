@@ -10,6 +10,7 @@ const arrays = new Set([
   'resumeRequests',
 ]);
 const fields = new Set([
+  'migration',
   'schemaVersion',
   'revision',
   'updatedAt',
