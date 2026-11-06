@@ -91,10 +91,17 @@ for (const engine of ['chromium', 'webkit']) {
         await select.focus();
         const control = await select.evaluate((node) => {
           const style = getComputedStyle(node);
-          return { left: parseFloat(style.paddingLeft), background: style.backgroundColor };
+          return {
+            left: parseFloat(style.paddingLeft),
+            background: style.backgroundColor,
+            outline: style.outlineStyle,
+            shadow: style.boxShadow,
+          };
         });
         expect(control.left).toBeGreaterThanOrEqual(16);
         expect(control.background).not.toBe('rgba(0, 0, 0, 0)');
+        expect(control.outline).toBe('none');
+        expect(control.shadow).toBe('none');
         const edge = await row.locator('.job-title').boundingBox();
         for (const selector of ['.score', '.mobile-dates', '.source-link svg']) {
           const box = await row.locator(selector).boundingBox();

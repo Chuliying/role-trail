@@ -60,6 +60,8 @@ At desktop widths of 1000px and above, the next-step column reserves space for t
 
 Decision selects share a 16px leading inset and a faint surface tint on desktop and mobile. The arrow keeps its separate 16px trailing inset. Mobile footers wrap actions only when their combined minimum widths cannot fit; labels never lose their padding to make room. Chromium and WebKit check the focused control as well as its resting geometry.
 
+Focus indicators have no outline or inset ring. Keyboard focus uses a quiet fill and text underline; primary controls retain their dark action fill. Select regressions verify that focused controls have neither outline nor box shadow.
+
 Automated checks cover 390px mobile and 1000/1440/1920px desktop geometry, viewport-centered navigation, cell padding, label/count grouping, overflow and score targets. Chromium and WebKit exercise shared mobile flows; a WebKit case also checks score tapping and persistent language selection. English/Traditional Chinese keys and interpolation parameters must match. JD headings/lists and user evidence are rendered from their source content without translation.
 
 The checks use synthetic fixtures. They do not prove every device size, assistive technology, external job source or future scheduled agent run will succeed.

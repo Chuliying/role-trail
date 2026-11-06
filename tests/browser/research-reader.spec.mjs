@@ -80,7 +80,9 @@ for (const engine of ['chromium', 'webkit']) {
       // Mobile WebKit follows the host's Full Keyboard Access preference for Tab stops.
       await closeControl.focus();
       await expect(closeControl).toBeFocused();
-      expect(await closeControl.evaluate((n) => getComputedStyle(n).boxShadow)).not.toBe('none');
+      await expect(closeControl).toHaveCSS('box-shadow', 'none');
+      await expect(closeControl).toHaveCSS('text-decoration-line', 'underline');
+      await expect(closeControl).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 
       await expect(dialog.locator('.reader-skeleton')).toBeVisible();
       await expect(dialog.getByRole('button', { name: 'Close research' })).toBeEnabled();

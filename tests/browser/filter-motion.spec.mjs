@@ -34,9 +34,8 @@ for (const engine of ['chromium', 'webkit']) {
       await page.keyboard.press('Tab');
       // Native WebKit may tab directly to the text field, depending on full keyboard access.
       await expect(panel.locator(':focus')).toHaveCount(1);
-      expect(await panel.locator(':focus').evaluate((n) => getComputedStyle(n).boxShadow)).not.toBe(
-        'none',
-      );
+      await expect(panel.locator(':focus')).toHaveCSS('box-shadow', 'none');
+      await expect(panel.locator(':focus')).toHaveCSS('text-decoration-line', 'underline');
       await page.locator('#list-filters-title').focus();
       await page.screenshot({ path: `test-results/filter-refined-${engine}.png` });
       await page.getByRole('searchbox').fill('discard');

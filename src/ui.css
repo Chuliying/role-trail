@@ -15,3 +15,15 @@
 @import './styles/shell.css';
 
 @import './styles/filters.css';
+
+:is(button, a, input, select, textarea, summary, [role='button']):focus-visible {
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+:is(button, input, select, textarea, summary, [role='button']):focus-visible {
+  background-color: var(--surface-muted);
+}
+.primary:focus-visible {
+  background-color: var(--action-hover);
+}

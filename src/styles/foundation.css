@@ -76,21 +76,9 @@ a {
   color: var(--action);
   text-underline-offset: 3px;
 }
-/* Focus is shown within the control; pointer/reading focus has no outer ring. */
+/* Focus indicators use fill and text decoration, never a perimeter ring. */
 *:focus {
   outline: none;
-}
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-summary:focus-visible,
-[role='button']:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--action);
-}
-.primary:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--surface);
 }
 
 header {
