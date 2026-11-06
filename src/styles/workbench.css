@@ -106,16 +106,6 @@ h1 {
   margin-bottom: 16px;
   gap: 8px;
 }
-.toolbar select {
-  width: 100%;
-  min-width: 0;
-  padding-right: 36px;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%235B6069' d='m1 1 5 5 5-5'/%3E%3C/svg%3E");
-  background-size: 10px 7px;
-  background-position: right 14px center;
-  background-repeat: no-repeat;
-}
 .workspace-tools {
   padding: 12px 0 20px;
 }
@@ -206,7 +196,8 @@ h1 {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px 10px;
-    padding: 16px;
+    --card-gutter: 16px;
+    padding: var(--card-gutter);
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--surface);
@@ -286,8 +277,8 @@ h1 {
   .job-row td:nth-child(5) {
     grid-column: 1 / -1;
     grid-row: 4;
-    margin: 4px -16px -16px;
-    padding: 8px 12px;
+    margin: 4px calc(-1 * var(--card-gutter)) calc(-1 * var(--card-gutter));
+    padding: 8px var(--card-gutter);
     width: auto;
     border: 0;
     border-top: 1px solid var(--line);
@@ -303,8 +294,7 @@ h1 {
     min-width: 0;
     max-width: 150px;
     min-height: 44px;
-    padding-inline: 4px;
-    background: transparent;
+    background-color: transparent;
     border-color: transparent;
   }
   .job-row .row-links {

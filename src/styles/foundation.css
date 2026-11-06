@@ -688,3 +688,13 @@ dialog::backdrop {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Shared native select: reserve a stable arrow gutter, including in dialogs. */
+.select-control {
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%235B6069' stroke-width='1.5' d='m1 1 5 5 5-5'/%3E%3C/svg%3E");
+  background-size: 10px 7px;
+  background-position: right 16px center;
+  background-repeat: no-repeat;
+}

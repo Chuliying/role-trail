@@ -96,3 +96,38 @@
     flex: 1;
   }
 }
+
+/* The compact desktop toolbar shares the tabs baseline; mobile tools stay by the heading. */
+.list-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-areas: 'title tools' 'tabs tabs';
+  align-items: center;
+}
+.list-heading .page-heading {
+  grid-area: title;
+}
+.list-heading .list-filter-toggle {
+  grid-area: tools;
+  align-self: start;
+}
+.list-heading .tabs {
+  grid-area: tabs;
+  min-width: 0;
+}
+@media (min-width: 721px) {
+  .list-heading {
+    grid-template-areas: 'title title' 'tabs tools';
+    border-bottom: 1px solid var(--line);
+  }
+  .list-heading .tabs {
+    margin-bottom: 0;
+    border-bottom: 0;
+  }
+  .list-heading + .table-wrap {
+    border-top: 0;
+  }
+  .list-heading .list-filter-toggle {
+    align-self: center;
+  }
+}

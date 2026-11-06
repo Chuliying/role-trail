@@ -18,8 +18,8 @@ export function createScorePopover({ date, showJob, selectDetailTab }) {
   window.addEventListener('resize', place);
   window.addEventListener('scroll', place, true);
   return (job) => {
-    const a = job.assessment;
-    if (!Number.isFinite(a?.score)) return null;
+    const a = job.assessment || {};
+    const rated = Number.isFinite(a.score);
     const id = 'score-explanation-' + ++serial;
     const trigger = el(
       'button',
@@ -27,11 +27,17 @@ export function createScorePopover({ date, showJob, selectDetailTab }) {
         type: 'button',
         class: 'score-trigger',
         'aria-label':
-          t(a.stale ? 'Previous fit' : 'Fit') + ' ' + a.score + '; ' + t('Show assessment'),
+          (rated ? t(a.stale ? 'Previous fit' : 'Fit') + ' ' + a.score : t('Not assessed')) +
+          '; ' +
+          t('Show assessment'),
         'aria-controls': id,
         'aria-expanded': 'false',
       },
-      el('span', { class: 'score' + (a.stale ? ' historical-fit' : '') }, a.score),
+      el(
+        'span',
+        { class: rated ? 'score' + (a.stale ? ' historical-fit' : '') : 'score-missing' },
+        rated ? a.score : '—',
+      ),
     );
     const panel = el(
       'section',
@@ -42,7 +48,13 @@ export function createScorePopover({ date, showJob, selectDetailTab }) {
         a.stale ? t('Previous assessment') : t('Assessment evidence'),
         a.checkedAt ? ' · ' + date(a.checkedAt) : '',
       ),
-      el('p', {}, a.reason || t('No assessment explanation saved.')),
+      el(
+        'p',
+        {},
+        rated
+          ? a.reason || t('No assessment explanation saved.')
+          : t('No assessment has been saved yet. This is not a zero score.'),
+      ),
       a.evidence?.length ? el('ul', {}, ...a.evidence.map((e) => el('li', {}, e))) : null,
       el(
         'button',

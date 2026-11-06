@@ -1,3 +1,4 @@
+import { selectControl } from './controls.mjs';
 import { filterControl } from './filters.mjs';
 // Rendering only; effects and current workspace are supplied by the controller.
 export function createViewsJobs(context) {
@@ -72,28 +73,33 @@ export function createViewsJobs(context) {
               displayedScore(b) - displayedScore(a);
       });
     context.main.replaceChildren(
-      context.heading(context.t('Opportunities'), null, filterControl(context)),
       context.el(
         'div',
-        { class: 'tabs', role: 'group', 'aria-label': context.t('Application decisions') },
-        Object.entries(context.labels)
-          .filter(([v]) => v !== 'archive')
-          .map(([v, label]) => {
-            const count = context.state.jobs.filter((j) => inBucket(j, v)).length;
-            const b = context.button(
-              label,
-              () => {
-                context.view.tab = v;
-                context.view.limit = context.ui.defaults.pageSize;
-                context.render();
-              },
-              context.view.tab === v ? 'active' : '',
-            );
-            b.setAttribute('aria-label', label);
-            b.setAttribute('aria-pressed', String(context.view.tab === v));
-            b.append(context.el('span', { class: 'tab-count', 'aria-hidden': 'true' }, count));
-            return b;
-          }),
+        { class: 'list-heading' },
+        context.heading(context.t('Opportunities')),
+        filterControl(context),
+        context.el(
+          'div',
+          { class: 'tabs', role: 'group', 'aria-label': context.t('Application decisions') },
+          Object.entries(context.labels)
+            .filter(([v]) => v !== 'archive')
+            .map(([v, label]) => {
+              const count = context.state.jobs.filter((j) => inBucket(j, v)).length;
+              const b = context.button(
+                label,
+                () => {
+                  context.view.tab = v;
+                  context.view.limit = context.ui.defaults.pageSize;
+                  context.render();
+                },
+                context.view.tab === v ? 'active' : '',
+              );
+              b.setAttribute('aria-label', label);
+              b.setAttribute('aria-pressed', String(context.view.tab === v));
+              b.append(context.el('span', { class: 'tab-count', 'aria-hidden': 'true' }, count));
+              return b;
+            }),
+        ),
       ),
     );
     if (!rows.length) {
@@ -145,8 +151,7 @@ export function createViewsJobs(context) {
         rows.slice(0, context.view.limit).map((j) => {
           const r = context.latestResume(j.id),
             dec = context.state.reviews[j.id]?.status || 'review';
-          const select = context.el(
-            'select',
+          const select = selectControl(
             {
               'aria-label': context.t('Decision for ') + j.title,
               onchange: (e) =>

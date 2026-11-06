@@ -608,6 +608,9 @@ export const settings = {
       unverified: 'unverified',
       Apply: 'Apply',
       Reset: 'Reset',
+      'Not assessed': 'Not assessed',
+      'No assessment has been saved yet. This is not a zero score.':
+        'No assessment has been saved yet. This is not a zero score.',
     },
     'zh-TW': {
       'View full research': '完整搜尋紀錄',
@@ -938,6 +941,9 @@ export const settings = {
       unverified: '待查證',
       Apply: '套用',
       Reset: '重設',
+      'Not assessed': '尚未評分',
+      'No assessment has been saved yet. This is not a zero score.':
+        '尚未儲存契合度評分，不代表零分或不適合。',
     },
   },
 };

@@ -14,6 +14,14 @@ export function el(tag, attrs = {}, ...children) {
   }
   return n;
 }
+// Native selection semantics, shared inset and arrow across every surface.
+export function selectControl(attrs = {}, ...options) {
+  return el(
+    'select',
+    { ...attrs, class: ['select-control', attrs.class].filter(Boolean).join(' ') },
+    ...options,
+  );
+}
 // Keep the control's layout and accessible name while a request is in flight.
 export function busy(control) {
   control.classList.remove('request-complete');

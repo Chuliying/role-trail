@@ -1,3 +1,4 @@
+import { selectControl } from './controls.mjs';
 // Keep unsaved filters local to the overlay. The shared URL changes only on Apply.
 export function filterControl(context) {
   const { el, t, ui, view } = context;
@@ -26,14 +27,12 @@ export function filterControl(context) {
       'aria-label': t('Search opportunities'),
       placeholder: t('Search roles, companies or skills'),
     });
-    const fit = el(
-      'select',
+    const fit = selectControl(
       { 'aria-label': t('Minimum fit') },
       ui.fitFilters.map((f) => el('option', { value: f.value }, t(f.label))),
     );
     fit.value = String(view.minimum);
-    const sort = el(
-      'select',
+    const sort = selectControl(
       { 'aria-label': t('Sort opportunities') },
       ui.sortOptions.map((s) => el('option', { value: s.id }, t(s.label))),
     );
