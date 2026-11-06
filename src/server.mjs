@@ -1,3 +1,5 @@
+import browserModules from '../web/modules.json' with { type: 'json' };
+import { workspaceDelta } from '../web/sync.mjs';
 import { artifactHash } from './artifacts.mjs';
 import http from 'node:http';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -45,6 +47,7 @@ export function authorized(req, { cloud, key, platformProtected = false }) {
 }
 const root = fileURLToPath(new URL('../web/', import.meta.url));
 const assets = {
+  ...Object.fromEntries(browserModules.map((p) => ['/' + p, [p, 'text/javascript']])),
   ...Object.fromEntries(
     fontFiles.map((p) => [
       '/' + p,
@@ -55,14 +58,6 @@ const assets = {
   '/index.html': ['index.html', 'text/html'],
   '/fonts/ibm-plex-sans-400.ttf': ['fonts/ibm-plex-sans-400.ttf', 'font/ttf'],
   '/fonts/ibm-plex-sans-600.ttf': ['fonts/ibm-plex-sans-600.ttf', 'font/ttf'],
-  '/i18n.mjs': ['i18n.mjs', 'text/javascript'],
-  '/app.js': ['app.js', 'text/javascript'],
-  '/configuration.mjs': ['configuration.mjs', 'text/javascript'],
-  '/status.mjs': ['status.mjs', 'text/javascript'],
-  '/markdown.mjs': ['markdown.mjs', 'text/javascript'],
-  '/vendor/marked.mjs': ['vendor/marked.mjs', 'text/javascript'],
-  '/verification.mjs': ['verification.mjs', 'text/javascript'],
-  '/outcomes.mjs': ['outcomes.mjs', 'text/javascript'],
   '/style.css': ['style.css', 'text/css'],
 };
 export async function body(req) {
@@ -155,18 +150,35 @@ export function handler({ store, cloud = false, key, origin, platformProtected =
         );
         return send(200, { ok: true });
       }
-      if (path === '/api/state' && req.method === 'GET') return send(200, await store.read());
+      const etag = (s) => '"workspace-' + artifactHash(JSON.stringify(s)).slice(0, 24) + '"';
+      const wantsDelta = req.headers['x-role-trail-response'] === 'delta';
+      const sendState = (s, before) => {
+        res.setHeader('ETag', etag(s));
+        return send(200, wantsDelta && before ? workspaceDelta(before, s) : s);
+      };
+      if (path === '/api/state' && req.method === 'GET') {
+        const s = await store.read(),
+          tag = etag(s);
+        res.setHeader('ETag', tag);
+        if (req.headers['if-none-match'] === tag) {
+          res.statusCode = 304;
+          return res.end();
+        }
+        return send(200, s);
+      }
       if (path === '/api/export' && req.method === 'GET') {
         res.setHeader('Content-Disposition', 'attachment; filename="role-trail-backup.json"');
         return send(200, await store.read());
       }
       if (path === '/api/action' && req.method === 'POST') {
         const b = await body(req);
-        return send(200, await store.update(b.revision, b.action));
+        const before = wantsDelta ? await store.read() : null;
+        return sendState(await store.update(b.revision, b.action), before);
       }
       if (path === '/api/restore' && req.method === 'POST') {
         const b = await body(req);
-        return send(200, await store.restore(b.revision, b.state));
+        const before = wantsDelta ? await store.read() : null;
+        return sendState(await store.restore(b.revision, b.state), before);
       }
       if (path === '/api/draft' && req.method === 'POST') {
         const b = await body(req),
@@ -174,7 +186,7 @@ export function handler({ store, cloud = false, key, origin, platformProtected =
         if (s.revision !== b.revision) throw Error('Revision conflict');
         const { draftAction } = await import('./resume.mjs');
         const draft = draftAction(s, b.jobId);
-        return send(200, draft ? await store.update(b.revision, draft) : s);
+        return sendState(draft ? await store.update(b.revision, draft) : s, s);
       }
       if (path === '/api/pdf' && req.method === 'POST') {
         const b = await body(req);
@@ -184,7 +196,11 @@ export function handler({ store, cloud = false, key, origin, platformProtected =
           !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(b.pdf)
         )
           throw Error('Invalid PDF encoding');
-        return send(200, await store.savePDF(b.revision, b.input, Buffer.from(b.pdf, 'base64')));
+        const before = wantsDelta ? await store.read() : null;
+        return sendState(
+          await store.savePDF(b.revision, b.input, Buffer.from(b.pdf, 'base64')),
+          before,
+        );
       }
       if (path === '/api/research' && req.method === 'GET') {
         const u = new URL(req.url, 'http://localhost');
@@ -257,7 +273,10 @@ export function handler({ store, cloud = false, key, origin, platformProtected =
         if (s.revision !== b.revision) throw Error('Revision conflict');
         const { collect, saveResearch } = await import('./collect.mjs');
         const bundle = await collect(s.profile);
-        return send(200, await saveResearch(store, bundle));
+        const before = wantsDelta ? await store.read() : null;
+        const after = await saveResearch(store, bundle);
+        // Collector may reconcile at a later revision: only emit a delta from the requested base.
+        return sendState(after, before?.revision === b.revision ? before : null);
       }
       send(404, { error: 'Not found' });
     } catch (e) {

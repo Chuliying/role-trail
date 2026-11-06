@@ -1,6 +1,7 @@
 import sources from '../config/sources.json' with { type: 'json' };
 import ui from '../config/ui.json' with { type: 'json' };
 import verification from '../config/verification.json' with { type: 'json' };
+import en from '../config/locales/en.json' with { type: 'json' };
 import zh from '../config/locales/zh-TW.json' with { type: 'json' };
 
 // Executable capabilities are a code boundary, not strings that can load modules.
@@ -145,12 +146,21 @@ export function validateConfiguration(c) {
     if (!/^[a-z][a-z0-9]*$/.test(key) || !Object.hasOwn(v.icons, target)) fail();
   fields(v.freshness, ['availabilityDays', 'checkDays']);
   if (Object.values(v.freshness).some((n) => !Number.isInteger(n) || n < 1 || n > 365)) fail();
-  fields(c.messages, ['zh-TW']);
+  fields(c.messages, ['en', 'zh-TW']);
   if (!object(c.messages['zh-TW'])) fail();
-  for (const [key, value] of Object.entries(c.messages['zh-TW'])) {
-    text(key, 3000);
-    text(value, 3000);
+  for (const pack of Object.values(c.messages)) {
+    if (!object(pack)) fail();
+    for (const [key, value] of Object.entries(pack)) {
+      text(key, 3000);
+      text(value, 3000);
+    }
   }
+  if (
+    Object.keys(c.messages.en || {})
+      .sort()
+      .join() !== Object.keys(c.messages['zh-TW']).sort().join()
+  )
+    fail();
   return c;
 }
 function freeze(v) {
@@ -161,7 +171,7 @@ function freeze(v) {
   return v;
 }
 export const configuration = freeze(
-  validateConfiguration({ sources, ui, verification, messages: { 'zh-TW': zh } }),
+  validateConfiguration({ sources, ui, verification, messages: { en, 'zh-TW': zh } }),
 );
 export const feedDefinition = (id) => configuration.sources.feeds.find((f) => f.id === id);
 export const sourceDefinition = (id) => {

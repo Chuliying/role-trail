@@ -1,3 +1,4 @@
+import browserModules from '../web/modules.json' with { type: 'json' };
 import { createHash } from 'node:crypto';
 import { readFile, access, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
@@ -29,31 +30,14 @@ execFileSync(
   { stdio: 'inherit' },
 );
 for (const file of [
+  ...browserModules.map((p) => 'web/' + p),
   'web/index.html',
   'web/style.css',
-  'web/app.js',
-  'web/configuration.mjs',
-  'web/i18n.mjs',
-  'web/status.mjs',
-  'web/outcomes.mjs',
-  'web/verification.mjs',
-  'web/markdown.mjs',
-  'web/vendor/marked.mjs',
   'web/verification.css',
   'api/index.mjs',
 ])
   await access(file);
-for (const file of [
-  'web/app.js',
-  'web/configuration.mjs',
-  'web/i18n.mjs',
-  'web/status.mjs',
-  'web/outcomes.mjs',
-  'web/verification.mjs',
-  'web/markdown.mjs',
-  'web/vendor/marked.mjs',
-  'api/index.mjs',
-])
+for (const file of [...browserModules.map((p) => 'web/' + p), 'api/index.mjs'])
   execFileSync(process.execPath, ['--check', file]);
 const config = JSON.parse(await readFile('vercel.json', 'utf8'));
 if (config.outputDirectory !== 'web') throw Error('Only public static assets may be deployed');
@@ -61,17 +45,7 @@ console.log('Static workbench and serverless entry validated; Vercel builds the 
 
 // A fresh navigation must not mix cached entry assets from different releases.
 const bytes = await Promise.all(
-  [
-    'web/app.js',
-    'web/configuration.mjs',
-    'web/i18n.mjs',
-    'web/style.css',
-    'web/status.mjs',
-    'web/outcomes.mjs',
-    'web/verification.mjs',
-    'web/markdown.mjs',
-    'web/vendor/marked.mjs',
-  ].map((p) => readFile(p)),
+  [...browserModules.map((p) => 'web/' + p), 'web/style.css'].map((p) => readFile(p)),
 );
 const version = createHash('sha256').update(Buffer.concat(bytes)).digest('hex').slice(0, 16);
 const escape = (s) =>

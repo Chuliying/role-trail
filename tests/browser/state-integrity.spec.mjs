@@ -114,7 +114,9 @@ test('an older refresh cannot undo a successful decision save', async ({ page })
   const gate = new Promise((resolve) => (release = resolve));
   const ready = new Promise((resolve) => (captured = resolve));
   await page.route('**/api/state', async (route) => {
-    const response = await route.fetch();
+    const response = await route.fetch({
+      headers: { ...route.request().headers(), 'if-none-match': '' },
+    });
     const snapshot = await response.json();
     captured();
     await gate;

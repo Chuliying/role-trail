@@ -1,23 +1,17 @@
+import browserModules from '../web/modules.json' with { type: 'json' };
 import { mkdir, copyFile, readFile, lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve, join, dirname } from 'node:path';
 import { artifactHash } from './artifacts.mjs';
 import fontFiles from '../web/fonts/manifest.json' with { type: 'json' };
 export const staticFiles = [
+  ...browserModules,
   ...fontFiles,
   'index.html',
-  'app.js',
-  'configuration.mjs',
-  'i18n.mjs',
   'fonts/OFL.txt',
   'fonts/ibm-plex-sans-400.ttf',
   'fonts/ibm-plex-sans-600.ttf',
   'style.css',
-  'status.mjs',
-  'outcomes.mjs',
-  'verification.mjs',
-  'markdown.mjs',
-  'vendor/marked.mjs',
   'vendor/marked-LICENSE.md',
 ];
 export async function buildDeployment(output) {

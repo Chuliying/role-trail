@@ -60,3 +60,17 @@ test('browser catalogs and deployment allowlist match validated source JSON', as
   assert.equal(settings.ui.defaults.pageSize, ui.defaults.pageSize);
   assert.equal(settings.ui.defaults.sort, 'recent');
 });
+
+test('language packs cover matching UI keys and interpolation parameters', async () => {
+  const { configuration, validateConfiguration } = await import('../src/configuration.mjs');
+  const { en, 'zh-TW': zh } = configuration.messages;
+  assert.deepEqual(Object.keys(en).sort(), Object.keys(zh).sort());
+  const params = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+  for (const key of Object.keys(en)) assert.deepEqual(params(en[key]), params(zh[key]), key);
+  const missing = structuredClone(configuration);
+  delete missing.messages['zh-TW'].Opportunities;
+  assert.throws(() => validateConfiguration(missing), /configuration/i);
+  const { staticFiles } = await import('../src/deployment.mjs');
+  const manifest = JSON.parse(await readFile(new URL('../web/modules.json', import.meta.url)));
+  for (const name of manifest) assert.ok(staticFiles.includes(name), name);
+});

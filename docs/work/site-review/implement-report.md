@@ -18,7 +18,9 @@ The five state failures and four layout/sort/menu checks were reproduced before 
 
 These are regression checks, not a claim that every possible behavior or external platform was benchmarked. No live profile, decision, task, application or research data was changed for acceptance.
 
-## Remaining review findings
+## Remaining review findings at the original review
+
+These four findings were subsequently addressed in [review completion](../review-completion/implement-report.md). The original observations below remain as the review record; full-workspace database reads and lack of crash-recovery autosave are still documented limits.
 
 - **P2 — editing recovery:** the generic editor still lacks an unsaved-change guard on close. This pass fixes visible errors but does not add draft recovery.
 - **P2 — payload growth:** state reads and mutations return the full workspace. PostgreSQL stores one revision-locked JSON state with a 3.5 MB limit. Frontend pagination limits rendered rows, not transferred state. Measure realistic larger workspaces before splitting payloads; no scaling benchmark was run here.

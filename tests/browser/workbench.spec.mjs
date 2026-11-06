@@ -46,6 +46,7 @@ test('review, shortlist, task, tailored resume and archive survive reload', asyn
   await page.getByRole('button', { name: 'Request shortlisted resumes', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('0 resume request(s) queued');
   await page.reload();
+  await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Product Engineer', exact: true }).click();
   await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
@@ -191,17 +192,23 @@ test('stale scores, old verification and application history are represented hon
     jobs: [{ ...job, description: 'Embedded firmware' }],
   });
   await page.reload();
+  await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   const row = page.locator('tbody tr').filter({ hasText: 'Regression role' });
   await expect(row.getByRole('button', { name: /Previous fit/ })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   const previous = row.getByRole('button', { name: /Previous fit/ });
-  expect((await previous.boundingBox()).height).toBe(32);
-  expect(await previous.evaluate((n) => getComputedStyle(n).borderRadius)).toBe('50%');
+  expect((await previous.boundingBox()).height).toBe(44);
+  expect((await previous.locator('.score').boundingBox()).height).toBeCloseTo(25.6, 1);
+  expect(await previous.locator('.score').evaluate((n) => getComputedStyle(n).borderRadius)).toBe(
+    '50%',
+  );
   await expect(previous).toHaveText('9');
-  await expect(previous.locator('svg,.score')).toHaveCount(0);
+  await expect(previous.locator('svg')).toHaveCount(0);
   await row.screenshot({ path: 'test-results/compact-stale-score.png' });
   await previous.click();
+  await expect(page.locator('.score-explanation:popover-open')).toContainText('React match');
+  await page.getByRole('button', { name: 'View assessment', exact: true }).click();
   await expect(page.locator('#fit-evidence')).toContainText('Stale assessment');
   await page.getByRole('button', { name: 'Close opportunity' }).click();
   await expect(row.getByLabel('Remote policy verified')).toHaveCount(0);
@@ -297,6 +304,7 @@ test('agent preparation appears in the workspace and shows stale after a new res
   expect(response.status()).toBe(200);
   s = await response.json();
   await page.reload();
+  await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Practice fixture', exact: true }).click();
   await page.getByRole('tab', { name: 'Preparation', exact: true }).click();
@@ -323,6 +331,7 @@ test('agent preparation appears in the workspace and shows stale after a new res
   });
   expect(response.status()).toBe(200);
   await page.reload();
+  await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
   await page.getByRole('button', { name: 'Shortlisted', exact: true }).click();
   await page.getByRole('button', { name: 'Practice fixture', exact: true }).click();
   await page.getByRole('tab', { name: 'Preparation', exact: true }).click();

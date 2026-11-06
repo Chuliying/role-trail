@@ -1,0 +1,411 @@
+/* Reading surface: preserve semantic typography and list markers after Tailwind reset. */
+.jd {
+  max-width: 66ch;
+  font-size: 16px;
+}
+.jd p {
+  margin: 0 0 14px;
+  white-space: normal;
+}
+.jd h3,
+.jd h4,
+.jd h5,
+.jd h6 {
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 28px 0 12px;
+  text-wrap: pretty;
+}
+.jd h3 {
+  font-size: 19px;
+}
+.jd h4 {
+  font-size: 17px;
+}
+.jd h5,
+.jd h6 {
+  font-size: 16px;
+}
+.jd > :first-child {
+  margin-top: 0;
+}
+.jd ul,
+.jd ol {
+  padding-left: 24px;
+  margin: 10px 0 20px;
+}
+.jd ul {
+  list-style: disc;
+}
+.jd ol {
+  list-style: decimal;
+}
+.jd li {
+  padding-left: 4px;
+}
+.jd li > p {
+  margin-bottom: 6px;
+}
+.jd li > ul,
+.jd li > ol {
+  margin-block: 6px;
+}
+.jd strong {
+  font-weight: 600;
+}
+.jd blockquote {
+  border-left: 2px solid var(--line);
+  margin: 16px 0;
+  padding-left: 16px;
+  color: var(--muted);
+}
+.jd hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin-block: 24px;
+}
+.jd pre {
+  padding: 12px;
+  background: var(--surface-muted);
+  font-size: 13px;
+  overflow-x: auto;
+}
+.jd-table {
+  overflow-x: auto;
+  max-width: 100%;
+  margin-block: 16px;
+}
+.jd-table table {
+  display: table;
+  width: 100%;
+  table-layout: auto;
+}
+.jd-table thead {
+  display: table-header-group;
+}
+.jd-table tbody {
+  display: table-row-group;
+}
+.jd-table tr {
+  display: table-row;
+  padding: 0;
+}
+.jd-table th,
+.jd-table td {
+  display: table-cell;
+  width: auto;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.jd-table td::before {
+  content: none;
+}
+@media (max-width: 720px) {
+  .detail-jumps {
+    position: sticky;
+    top: 61px;
+    z-index: 1;
+    background: var(--surface);
+    padding-top: 4px;
+    margin-top: 16px;
+  }
+  .detail-section {
+    scroll-margin-top: 125px;
+  }
+  .jd {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+}
+
+/* One icon vocabulary for metadata and secondary row actions. */
+.time-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.time-mark svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  flex: none;
+}
+.row-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.row-links .icon-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+}
+/* The heading receives reading focus, but is not an interactive control. */
+#detail-title:focus {
+  outline: none;
+}
+
+/* The reader scrolls between fixed dialog chrome; actions never cover content. */
+#detail[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#detail > .dialog-bar,
+#detail-footer {
+  flex: none;
+}
+#detail-body {
+  min-height: 0;
+  padding-top: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#detail-body > .company {
+  margin-top: 20px;
+}
+#detail-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 12px;
+  padding: 10px var(--reader-gutter);
+  background: var(--surface);
+}
+#detail-footer > * {
+  min-width: 0;
+  min-height: 44px;
+  white-space: normal;
+}
+#detail .detail-jumps {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+#detail .detail-section {
+  scroll-margin-top: 64px;
+}
+/* Motion signals a state change; it never moves reading content or delays an action. */
+button,
+.button,
+select,
+input,
+textarea,
+summary {
+  transition:
+    background-color var(--motion-quick) ease,
+    color var(--motion-quick) ease,
+    border-color var(--motion-quick) ease,
+    box-shadow var(--motion-quick) ease;
+}
+@keyframes reader-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes content-reveal {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  dialog[open],
+  dialog[open]::backdrop {
+    animation: reader-enter var(--motion-enter) var(--motion-ease);
+  }
+  .disclosure[open] > :not(summary),
+  #notice.visible {
+    animation: content-reveal var(--motion-quick) var(--motion-ease);
+  }
+  button:active:not(:disabled):not(.job-title),
+  .button:active {
+    transform: translateY(1px);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .source-link svg {
+    transition: transform var(--motion-quick) var(--motion-ease);
+  }
+  .source-link:hover svg {
+    transform: translate(1px, -1px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* A single reading grid and real panels, shared by mobile and desktop. */
+#detail {
+  --reader-gutter: 24px;
+}
+#detail .dialog-bar {
+  padding-inline: var(--reader-gutter);
+}
+#detail-body {
+  padding: 0 var(--reader-gutter) 24px;
+}
+#detail-tabs {
+  flex: none;
+  position: static;
+  margin: 0 var(--reader-gutter);
+  padding: 0;
+}
+#detail-tabs [role='tab'] {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  padding-block: 12px;
+}
+#detail-tabs [aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--action);
+}
+#detail-body > [role='tabpanel'] {
+  outline: none;
+}
+#detail .detail-section {
+  padding: 24px 0 0;
+  margin: 24px 0 0;
+}
+#detail [role='tabpanel'] > .detail-section:first-child {
+  border: 0;
+  margin-top: 0;
+  padding-top: 12px;
+}
+#detail .package-overview {
+  padding-inline: 0;
+}
+#detail-footer .footer-source {
+  border: 0;
+  background: var(--surface-muted);
+}
+#detail-footer .footer-archive {
+  border: 0;
+  padding: 10px;
+}
+#detail-notice {
+  flex: none;
+  margin: 8px var(--reader-gutter);
+  padding: 10px 12px;
+  background: var(--info-bg);
+  color: var(--info);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+#detail button[aria-busy='true'] {
+  opacity: 0.6;
+  cursor: progress;
+}
+.historical-fit {
+  color: var(--muted);
+  font-size: 19px;
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  #detail {
+    --reader-gutter: 16px;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+  #detail .dialog-bar {
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+  #detail-footer {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .job-row .job-title {
+    text-indent: 0;
+    display: block;
+  }
+  .job-row .row-actions select {
+    padding-left: 4px;
+  }
+  .job-row .rt-verification {
+    justify-content: flex-start;
+    padding-inline: 0;
+  }
+}
+
+/* Readable typography and quiet, self-contained score markers. */
+.job-title,
+.job-row .job-title {
+  line-height: 1.6;
+}
+.jd {
+  line-height: 1.9;
+}
+.jd p {
+  margin-bottom: 20px;
+}
+.jd li {
+  margin-block: 8px;
+}
+#detail-body {
+  line-height: 1.85;
+}
+#detail h1 {
+  line-height: 1.5;
+}
+#detail h2 {
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+#detail .detail-section {
+  margin-top: 28px;
+  padding-top: 28px;
+}
+#detail .actions + p {
+  margin-top: 16px;
+}
+#main .score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border-radius: 50%;
+  background: var(--action);
+  color: var(--surface);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+}
+#main .historical-fit {
+  background: var(--muted);
+}
+#main .historical-fit::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+#main .historical-fit {
+  position: relative;
+}
