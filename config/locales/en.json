@@ -300,5 +300,7 @@
   "Resolve eligibility checks": "Resolve eligibility checks",
   "verified": "verified",
   "excluded": "excluded",
-  "unverified": "unverified"
+  "unverified": "unverified",
+  "Apply": "Apply",
+  "Reset": "Reset"
 }

@@ -1,3 +1,4 @@
+import imageAssets from '../web/assets.json' with { type: 'json' };
 import browserModules from '../web/modules.json' with { type: 'json' };
 import { mkdir, copyFile, readFile, lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +7,7 @@ import { artifactHash } from './artifacts.mjs';
 import fontFiles from '../web/fonts/manifest.json' with { type: 'json' };
 export const staticFiles = [
   ...browserModules,
+  ...Object.keys(imageAssets),
   ...fontFiles,
   'index.html',
   'fonts/OFL.txt',

@@ -137,7 +137,7 @@ body {
     width: auto;
   }
   .job-table th:nth-child(2) {
-    width: 90px;
+    width: 120px;
   }
   .job-table th:nth-child(3) {
     width: 160px;
@@ -187,26 +187,6 @@ body {
   body > header .header-actions {
     margin: 0;
     justify-self: end;
-  }
-
-  .workbench-filters {
-    display: grid;
-    grid-template-columns: minmax(220px, 1fr) auto;
-    width: min(100%, 760px);
-    margin-left: auto;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .workbench-filters .search-row,
-  .workbench-filters .toolbar {
-    margin: 0;
-  }
-  .workbench-filters .toolbar {
-    display: grid !important;
-    grid-template-columns: 150px 190px;
-  }
-  .workbench-filters .filter-toggle {
-    display: none;
   }
 }
 @media (max-width: 720px) {
@@ -277,4 +257,9 @@ body {
     min-height: 25.6px;
     font-size: 12.8px;
   }
+}
+
+.sort-control {
+  white-space: nowrap;
+  flex-wrap: nowrap;
 }

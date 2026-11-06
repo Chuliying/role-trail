@@ -18,7 +18,9 @@ export function createNavigation(ui, onChange, canLeave = () => true) {
         ? p.get('view')
         : defaults.page,
       tab: [...ui.decisions.map((d) => d.id), 'archive'].includes(p.get('decision'))
-        ? p.get('decision')
+        ? p.get('decision') === 'archive'
+          ? 'passed'
+          : p.get('decision')
         : defaults.tab,
       query: (p.get('q') || '').slice(0, 500),
       sort,

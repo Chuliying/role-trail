@@ -15,6 +15,8 @@ test('deployment wrapper copies exactly the canonical static app and no private 
   try {
     const result = await deployment.buildDeployment(join(dir, 'web'));
     assert.ok(result.files.includes('app.js'));
+    for (const file of ['favicon.ico', 'favicon-32.png', 'apple-touch-icon.png', 'filters.mjs'])
+      assert.ok(result.files.includes(file));
     for (const file of result.files)
       assert.deepEqual(
         await readFile(join(dir, 'web', file)),

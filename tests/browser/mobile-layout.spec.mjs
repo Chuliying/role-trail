@@ -96,9 +96,11 @@ for (const engine of ['chromium', 'webkit']) {
         await page.locator('#main').evaluate(async (n) => {
           await Promise.all(n.getAnimations().map((a) => a.finished.catch(() => {})));
         });
+        await page.locator('#filter-toggle').click();
         await page.locator('input[type="search"]').fill('Engineer');
         expect(await page.locator('#main').evaluate((n) => n.getAnimations().length)).toBe(0);
         await page.locator('input[type="search"]').fill('');
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
         await rows.first().locator('.job-title').click();
         expect(await modal.evaluate((n) => getComputedStyle(n).animationName)).toBe(
           reduced ? 'none' : 'reader-enter',

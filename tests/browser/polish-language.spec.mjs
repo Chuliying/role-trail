@@ -27,7 +27,7 @@ test('desktop navigation centers independently; filters and table share a compac
     const geometry = await page.evaluate(() => {
       const rect = (s) => document.querySelector(s).getBoundingClientRect();
       const nav = rect('header nav'),
-        filters = rect('.workbench-filters'),
+        filters = rect('#filter-toggle'),
         heading = rect('.page-heading'),
         cell = document.querySelector('td');
       const label = document.querySelector('.tabs button');
@@ -49,7 +49,7 @@ test('desktop navigation centers independently; filters and table share a compac
       };
     });
     expect(Math.abs(geometry.center - width / 2)).toBeLessThan(1);
-    expect(geometry.filterWidth).toBeLessThanOrEqual(760);
+    expect(geometry.filterWidth).toBe(44);
     expect(Math.abs(geometry.right)).toBeLessThan(1);
     expect(geometry.padding).toBe('20px');
     expect(geometry.gap).toBeCloseTo(8, 0);

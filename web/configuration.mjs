@@ -606,6 +606,8 @@ export const settings = {
       verified: 'verified',
       excluded: 'excluded',
       unverified: 'unverified',
+      Apply: 'Apply',
+      Reset: 'Reset',
     },
     'zh-TW': {
       'View full research': '完整搜尋紀錄',
@@ -934,6 +936,8 @@ export const settings = {
       verified: '已查證',
       excluded: '已排除',
       unverified: '待查證',
+      Apply: '套用',
+      Reset: '重設',
     },
   },
 };

@@ -13,17 +13,15 @@ test('desktop shares centered edges and groups search controls without overflow'
         main: bounds('main'),
         brand: bounds('.brand'),
         heading: bounds('.page-heading'),
-        search: bounds('input[type=search]'),
-        filter: bounds('select[aria-label="Minimum fit"]'),
-        sort: bounds('select[aria-label="Sort opportunities"]'),
+        filter: bounds('#filter-toggle'),
         overflow: document.documentElement.scrollWidth > innerWidth,
       };
     });
     expect(layout.main.width).toBeLessThanOrEqual(1208);
     expect(Math.abs(layout.main.x - (width - layout.main.width) / 2)).toBeLessThan(2);
     expect(Math.abs(layout.brand.x - layout.heading.x)).toBeLessThan(2);
-    expect(Math.abs(layout.search.y - layout.filter.y)).toBeLessThan(2);
-    expect(Math.abs(layout.search.y - layout.sort.y)).toBeLessThan(2);
+    expect(layout.filter.width).toBe(44);
+    expect(Math.abs(layout.filter.right - layout.heading.right)).toBeLessThan(2);
     expect(layout.overflow).toBe(false);
     await expect(page.locator('header #profile-toggle')).toHaveCount(0);
     await page.screenshot({ path: `test-results/desktop-${width}.png`, fullPage: true });

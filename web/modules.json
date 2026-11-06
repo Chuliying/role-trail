@@ -3,6 +3,7 @@
   "configuration.mjs",
   "controls.mjs",
   "editor.mjs",
+  "filters.mjs",
   "i18n.mjs",
   "markdown.mjs",
   "navigation.mjs",

@@ -300,5 +300,7 @@
   "Resolve eligibility checks": "完成資格查證",
   "verified": "已查證",
   "excluded": "已排除",
-  "unverified": "待查證"
+  "unverified": "待查證",
+  "Apply": "套用",
+  "Reset": "重設"
 }

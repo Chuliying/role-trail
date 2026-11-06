@@ -32,8 +32,10 @@ test('URL restores filters, score direction and view across reload and history',
   page,
 }) => {
   await page.goto('/?view=jobs&decision=review&q=Product&fit=7&sort=score&direction=asc');
+  await page.locator('#filter-toggle').click();
   await expect(page.getByRole('searchbox')).toHaveValue('Product');
   await expect(page.getByLabel('Minimum fit')).toHaveValue('7');
+  await page.keyboard.press('Escape');
   await expect(page.locator('th[aria-sort=ascending]')).toContainText('Fit');
   await expect(page.locator('.job-title')).toHaveCount(1);
   await page.getByRole('button', { name: 'Research', exact: true }).click();
@@ -41,8 +43,10 @@ test('URL restores filters, score direction and view across reload and history',
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Research log', exact: true })).toBeVisible();
   await page.goBack();
+  await page.locator('#filter-toggle').click();
   await expect(page.getByRole('searchbox')).toHaveValue('Product');
   await expect(page.getByLabel('Minimum fit')).toHaveValue('7');
+  await page.keyboard.press('Escape');
   await page.goForward();
   await expect(page.getByRole('heading', { name: 'Research log', exact: true })).toBeVisible();
 });
@@ -51,11 +55,15 @@ test('invalid navigation params normalize and search editing does not create a h
   page,
 }) => {
   await page.goto('/?view=invalid&fit=999&sort=oops&direction=evil');
+  await page.locator('#filter-toggle').click();
   await expect(page.getByRole('searchbox')).toBeVisible();
   await expect(page.getByLabel('Minimum fit')).toHaveValue('0');
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Preparation', exact: true }).click();
   await page.getByRole('button', { name: 'Opportunities', exact: true }).click();
+  await page.locator('#filter-toggle').click();
   await page.getByRole('searchbox').fill('Design');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
   await expect(page).toHaveURL(/q=Design/);
   await page.goBack();
   await expect(page.getByRole('heading', { name: 'Preparation', exact: true })).toBeVisible();
@@ -112,5 +120,6 @@ test('browser back respects dirty editor cancellation and acceptance', async ({ 
   page.once('dialog', (dialog) => dialog.accept());
   await page.goBack();
   await expect(page.locator('#editor')).not.toBeVisible();
+  await page.locator('#filter-toggle').click();
   await expect(page.getByRole('searchbox')).toBeVisible();
 });

@@ -81,6 +81,7 @@ test('search keeps the composition input mounted until Chinese text is committed
   page,
 }) => {
   await page.goto('/');
+  await page.locator('#filter-toggle').click();
   const search = page.getByRole('searchbox');
   await expect(search).toBeVisible();
   await search.evaluate((input) => {
@@ -102,6 +103,7 @@ test('search keeps the composition input mounted until Chinese text is committed
     ),
   );
   await expect(page.getByRole('searchbox')).toHaveValue('工程');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
   await expect(page.locator('.job-row')).toHaveCount(0);
 });
 

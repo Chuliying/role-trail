@@ -1,0 +1,98 @@
+/* One list control; a bounded popover on desktop and a bottom sheet on phones. */
+.list-filter-toggle {
+  position: relative;
+}
+.list-filter-toggle.has-filters::after {
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--action);
+}
+#list-filters {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  width: min(360px, calc(100vw - 24px));
+  max-width: none;
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 12px 36px #1e243020;
+}
+#list-filters::backdrop {
+  background: #1e243014;
+  backdrop-filter: none;
+}
+#list-filters form {
+  margin: 0;
+}
+.filter-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 4px 20px;
+}
+.filter-panel-heading h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.filter-fields {
+  display: grid;
+  gap: 16px;
+  padding: 12px 20px 24px;
+}
+.filter-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+.filter-field > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.filter-field input,
+.filter-field select {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+}
+.filter-panel-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding: 16px 20px;
+}
+.filter-panel-actions button {
+  min-width: 88px;
+}
+@media (max-width: 720px) {
+  #list-filters {
+    left: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-height: 90dvh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: 0;
+  }
+  #list-filters::backdrop {
+    background: #1e243044;
+  }
+  .filter-panel-actions {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  .filter-panel-actions .primary {
+    flex: 1;
+  }
+}

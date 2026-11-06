@@ -56,7 +56,7 @@ test('review, shortlist, task, tailored resume and archive survive reload', asyn
     .getByRole('button', { name: 'Archive', exact: true })
     .click();
   await page.getByRole('button', { name: 'Close opportunity' }).click();
-  await page.getByRole('button', { name: 'Archive', exact: true }).click();
+  await page.getByRole('button', { name: 'Passed', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Product Engineer', exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -534,11 +534,10 @@ test('Traditional Chinese mobile keeps the compact original workspace shell', as
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
-    await expect(page.getByLabel('最低契合分數')).toBeVisible();
-    await page.getByRole('button', { name: '篩選', exact: true }).click();
     await expect(page.getByLabel('最低契合分數')).not.toBeVisible();
     await page.getByRole('button', { name: '篩選', exact: true }).click();
     await expect(page.getByLabel('最低契合分數')).toBeVisible();
+    await page.keyboard.press('Escape');
     await page.getByRole('button', { name: '工作區工具', exact: true }).click();
     await expect(page.getByRole('button', { name: '貼上 JD', exact: true })).toBeVisible();
     await page.screenshot({ path: 'test-results/zh-mobile-tools.png' });
@@ -628,7 +627,7 @@ test('touch cards avoid sticky hover, redundant totals and long-text overflow', 
     expect(restored.ok()).toBeTruthy();
     await page.goto('/');
     expect.soft(await page.locator('.page-heading p').count()).toBe(0);
-    const archive = page.getByRole('button', { name: 'Archive', exact: true });
+    const archive = page.getByRole('button', { name: 'Filters', exact: true });
     await expect.soft(archive.locator('svg')).toHaveCount(1);
     expect.soft((await archive.textContent()).trim()).toBe('');
     const title = page.getByRole('button', { name: job.title, exact: true });

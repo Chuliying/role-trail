@@ -1,3 +1,4 @@
+import imageAssets from '../web/assets.json' with { type: 'json' };
 import browserModules from '../web/modules.json' with { type: 'json' };
 import { workspaceDelta } from '../web/sync.mjs';
 import { artifactHash } from './artifacts.mjs';
@@ -47,6 +48,7 @@ export function authorized(req, { cloud, key, platformProtected = false }) {
 }
 const root = fileURLToPath(new URL('../web/', import.meta.url));
 const assets = {
+  ...Object.fromEntries(Object.entries(imageAssets).map(([p, mime]) => ['/' + p, [p, mime]])),
   ...Object.fromEntries(browserModules.map((p) => ['/' + p, [p, 'text/javascript']])),
   ...Object.fromEntries(
     fontFiles.map((p) => [

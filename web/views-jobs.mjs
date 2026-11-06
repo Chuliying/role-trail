@@ -1,3 +1,4 @@
+import { filterControl } from './filters.mjs';
 // Rendering only; effects and current workspace are supplied by the controller.
 export function createViewsJobs(context) {
   const displayedScore = (job) =>
@@ -41,12 +42,13 @@ export function createViewsJobs(context) {
     );
   }
   function jobs() {
-    const all = context.state.jobs.filter((j) =>
-      context.view.tab === 'archive'
-        ? context.archived(j)
-        : !context.archived(j) &&
-          (context.state.reviews[j.id]?.status || 'review') === context.view.tab,
-    );
+    const inBucket = (j, tab) => {
+      const decision = context.state.reviews[j.id]?.status || 'review';
+      return tab === 'passed'
+        ? context.archived(j) || decision === 'passed'
+        : !context.archived(j) && decision === tab;
+    };
+    const all = context.state.jobs.filter((j) => inBucket(j, context.view.tab));
     const rows = all
       .filter(
         (j) =>
@@ -69,91 +71,15 @@ export function createViewsJobs(context) {
           : direction * (Date.parse(a.searchedAt) - Date.parse(b.searchedAt)) ||
               displayedScore(b) - displayedScore(a);
       });
-    let composing = false;
-    const updateSearch = (e) => {
-      if (composing || e.isComposing) return;
-      context.view.query = e.target.value;
-      const start = e.target.selectionStart;
-      context.render();
-      const n = context.$('input[type=search]');
-      n.focus();
-      n.setSelectionRange(start, start);
-    };
-    const search = context.el('input', {
-      type: 'search',
-      placeholder: context.t('Search roles, companies or skills'),
-      'aria-label': context.t('Search opportunities'),
-      value: context.view.query,
-      oncompositionstart: () => {
-        composing = true;
-      },
-      oncompositionend: (e) => {
-        composing = false;
-        updateSearch(e);
-      },
-      oninput: updateSearch,
-    });
-    const sorter = context.el(
-      'select',
-      {
-        'aria-label': context.t('Sort opportunities'),
-        title:
-          context.t(context.ui.sortOptions.find((s) => s.id === context.view.sort).description) +
-          ' · ' +
-          context.t(
-            context.view.sortDirection === 'asc' ? context.t('Ascending') : context.t('Descending'),
-          ),
-        onchange: (e) => {
-          context.view.sort = e.target.value;
-          context.view.sortDirection = context.ui.sortOptions.find(
-            (s) => s.id === context.view.sort,
-          ).direction;
-          context.render();
-        },
-      },
-      ...context.ui.sortOptions.map((s) =>
-        context.el('option', { value: s.id }, context.t(s.label)),
-      ),
-    );
-    sorter.value = context.view.sort;
-    const filter = context.el(
-      'select',
-      {
-        'aria-label': context.t('Minimum fit'),
-        onchange: (e) => {
-          context.view.minimum = Number(e.target.value);
-          context.render();
-        },
-      },
-      ...context.ui.fitFilters.map((f) =>
-        context.el('option', { value: f.value }, context.t(f.label)),
-      ),
-    );
-    filter.value = String(context.view.minimum);
     context.main.replaceChildren(
-      context.heading(
-        context.t('Opportunities'),
-        null,
-        context.iconButton(
-          context.t('Archive'),
-          'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7',
-          () => {
-            context.view.tab = 'archive';
-            context.render();
-          },
-          'quiet archive-view',
-        ),
-      ),
+      context.heading(context.t('Opportunities'), null, filterControl(context)),
       context.el(
         'div',
         { class: 'tabs', role: 'group', 'aria-label': context.t('Application decisions') },
         Object.entries(context.labels)
           .filter(([v]) => v !== 'archive')
           .map(([v, label]) => {
-            const count = context.state.jobs.filter(
-              (j) =>
-                !context.archived(j) && (context.state.reviews[j.id]?.status || 'review') === v,
-            ).length;
+            const count = context.state.jobs.filter((j) => inBucket(j, v)).length;
             const b = context.button(
               label,
               () => {
@@ -168,29 +94,6 @@ export function createViewsJobs(context) {
             b.append(context.el('span', { class: 'tab-count', 'aria-hidden': 'true' }, count));
             return b;
           }),
-      ),
-      context.el(
-        'div',
-        { class: 'workbench-filters' },
-        context.el(
-          'div',
-          { class: 'search-row' },
-          search,
-          context.button(
-            context.t('Filters'),
-            () => {
-              context.filtersOpen = !context.filtersOpen;
-              context.render();
-            },
-            'filter-toggle',
-          ),
-        ),
-        context.el(
-          'div',
-          { class: 'toolbar', hidden: !context.filtersOpen ? '' : null },
-          filter,
-          sorter,
-        ),
       ),
     );
     if (!rows.length) {
@@ -291,7 +194,6 @@ export function createViewsJobs(context) {
                       evidence?.focus({ preventScroll: true });
                     },
                   }),
-                  context.archived(j) ? context.badge(context.t('Archived'), 'danger') : null,
                 ),
                 context.el(
                   'div',

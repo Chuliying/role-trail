@@ -22,7 +22,6 @@ let collecting = false;
 let refreshing = false;
 let renderedView = null;
 let detailTab = 'jd';
-let filtersOpen = true;
 let state,
   currentJob = null;
 const $ = (s) => document.querySelector(s),
@@ -401,12 +400,6 @@ const viewContext = {
   },
   get el() {
     return el;
-  },
-  get filtersOpen() {
-    return filtersOpen;
-  },
-  set filtersOpen(value) {
-    filtersOpen = value;
   },
   get freshness() {
     return freshness;
