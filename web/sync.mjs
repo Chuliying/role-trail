@@ -9,6 +9,7 @@ const arrays = new Set([
   'preparations',
   'resumeRequests',
   'resumeScores',
+  'resumeChecks',
 ]);
 const fields = new Set([
   'migration',
@@ -25,6 +26,7 @@ const fields = new Set([
   'preparations',
   'resumeRequests',
   'resumeScores',
+  'resumeChecks',
   'runs',
   'schedule',
 ]);

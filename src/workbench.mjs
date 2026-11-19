@@ -5,7 +5,13 @@ import { join } from 'node:path';
 import { positiveFresh, canonical, freshness } from '../web/status.mjs';
 import { validateSchedule } from './schedule-config.mjs';
 import { privateWorkspace, validateProfile, validateFeeds } from './onboarding.mjs';
-import { scoreResults, validateStoredScore } from './resume-score.mjs';
+import {
+  scoreResults,
+  validateStoredScore,
+  validateResumeCheck,
+  newResumeCheck,
+  checkLimits,
+} from './resume-score.mjs';
 export const hash = (x) =>
   createHash('sha256')
     .update(typeof x === 'string' ? x : JSON.stringify(canonical(x)))
@@ -231,6 +237,7 @@ export function validateState(s) {
     'preparations',
     'resumeRequests',
     'resumeScores',
+    'resumeChecks',
     'runs',
     'schedule',
   ]);
@@ -386,11 +393,22 @@ export function validateState(s) {
       const key = x?.jobId + ':' + x?.version;
       if (seen.has(key)) throw Error('Duplicate resume score');
       seen.add(key);
+      if (!object(x)) throw Error('Invalid resume score');
+      const { jobId, version, rubric, createdAt, ...score } = x;
+      date(createdAt);
       validateStoredScore(
-        x,
-        s.resumes.find((r) => r.jobId === x.jobId && r.version === x.version),
+        score,
+        rubric,
+        s.resumes.find((r) => r.jobId === jobId && r.version === version)?.content,
       );
     }
+  }
+  if (s.resumeChecks !== undefined) {
+    if (!Array.isArray(s.resumeChecks) || s.resumeChecks.length > checkLimits.records)
+      throw Error('Invalid resume checks');
+    s.resumeChecks.forEach(validateResumeCheck);
+    if (new Set(s.resumeChecks.map((c) => c.id)).size !== s.resumeChecks.length)
+      throw Error('Duplicate resume check');
   }
   for (const r of s.runs) validateRun(r);
   if (s.schedule !== null) validateSchedule(s.schedule);
@@ -724,6 +742,33 @@ export function transition(current, a) {
       ...(s.resumeScores || []).filter((x) => x.jobId !== r.jobId || x.version !== r.version),
       record,
     ];
+  } else if (a.type === 'resumeCheck') {
+    // Queues an original resume for a rubric score. No model runs here.
+    keys(a, ['type', 'title', 'content', 'rubric']);
+    s.resumeChecks ||= [];
+    if (s.resumeChecks.length >= checkLimits.records)
+      throw Error('Too many resume checks; remove an old one first');
+    s.resumeChecks.push(
+      newResumeCheck({
+        id: randomUUID(),
+        title: a.title,
+        content: a.content,
+        rubric: a.rubric,
+        at: now(),
+      }),
+    );
+  } else if (a.type === 'resumeCheckResult') {
+    keys(a, ['type', 'id', 'results']);
+    const c = s.resumeChecks?.find((c) => c.id === a.id);
+    if (!c) throw Error('Unknown resume check');
+    if (!Array.isArray(a.results)) throw Error('Resume score results required');
+    c.score = scoreResults(c.rubric, c.content, a.results);
+    c.status = 'completed';
+    c.updatedAt = now();
+  } else if (a.type === 'resumeCheckRemove') {
+    keys(a, ['type', 'id']);
+    if (!s.resumeChecks?.some((c) => c.id === a.id)) throw Error('Unknown resume check');
+    s.resumeChecks = s.resumeChecks.filter((c) => c.id !== a.id);
   } else if (a.type === 'preparation') {
     keys(a, [
       'type',

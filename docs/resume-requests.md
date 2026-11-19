@@ -7,6 +7,8 @@ The website stores work; Codex or Claude writes the resume. No LLM API key is ne
 3. The agent reads the JD and evidence and writes the resume with its host LLM. Previously approved resumes can help check existing facts; they do not make every proposed claim true. Missing personal contribution or contradictory evidence requires a specific clarification. Save the request as `blocked` with that question instead of inventing facts or marking all capabilities confirmed.
 4. Save the new resume through the `resume` action with current JD hash, confirmed capability IDs and concrete adjustment notes. Inspect and save the PDF using the existing PDF workflow. Mark the request completed only after the new saved draft exists; reference its version. Completion is **draft ready for review**, not user approval or application.
 
+A queued entry on the Resume check page follows the same rule: the page saves the resume text and rubric, and a connected agent scores it on its next run. See [rubric scoring](data-contract.md#resume-rubric-scoring).
+
 ## Request states
 
 | Stored state | Meaning |

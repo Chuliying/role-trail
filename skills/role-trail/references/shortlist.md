@@ -22,6 +22,8 @@ Produce a PDF with the supplied renderer or another available renderer whose out
 
 When the user has asked for a rubric score and supplied a rubric, run `resume-score --job ID` after saving the resume, score it as the packet instructs, check the results with `resume-score-check`, and save the packet's `resumeScore` action. Read [the rules](../../../docs/agent-workflow.md#resume-rubric-score) first. Skip this step otherwise; it is not required by `work-check`.
 
+Separately, score every queued entry in the packet's `resumeChecks` (original resumes the user submitted on the Resume check page) and save its `resumeCheckResult` action. `work-check` reports the ones left queued.
+
 ## Interview preparation
 
 After saving the resume, refresh the shortlist packet to obtain `preparationAction` with the current JD hash, resume version and content hash. Use confirmed capability IDs and write a Markdown preparation document containing:

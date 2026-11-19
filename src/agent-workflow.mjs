@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { sourceDefinition } from './configuration.mjs';
+import { scorePacket } from './resume-score.mjs';
 import {
   hash,
   now,
@@ -87,6 +88,18 @@ export function workPacket(s, mode = 'daily') {
         adjustments: [],
       },
     })),
+    resumeChecks: (s.resumeChecks || [])
+      .filter((c) => c.status === 'queued')
+      .map((c) => ({
+        id: c.id,
+        title: c.title,
+        packet: scorePacket({
+          rubric: c.rubric,
+          content: c.content,
+          source: 'workspace',
+          action: { type: 'resumeCheckResult', id: c.id },
+        }),
+      })),
     baseline: {
       profileHash: hash(s.profile),
       jobIds: s.jobs.map((j) => j.id),
@@ -154,6 +167,9 @@ export function checkWork(s, p, runId) {
     if (!current || ['queued', 'blocked'].includes(current.status))
       add('resume_request_pending', request.id + (current?.note ? ': ' + current.note : ''));
   }
+  for (const check of p.resumeChecks || [])
+    if (s.resumeChecks?.find((c) => c.id === check.id)?.status === 'queued')
+      add('resume_check_pending', check.id);
   const sourceLimitations = run?.coverage.filter((c) => c.status !== 'searched') || [];
   return {
     packetId: p.id,

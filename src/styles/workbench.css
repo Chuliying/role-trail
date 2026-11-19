@@ -368,6 +368,20 @@ h1 {
 .disclosure > p:last-child {
   margin-bottom: 0;
 }
+.resume-check textarea {
+  width: 100%;
+  font-size: 14px;
+}
+.resume-check-card + .resume-check-card {
+  margin-top: 16px;
+}
+.resume-check-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  max-height: 320px;
+  overflow: auto;
+}
 .rubric-score {
   margin-block: 16px 24px;
 }

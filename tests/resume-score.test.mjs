@@ -9,6 +9,7 @@ import { emptyState, transition, validateState } from '../src/workbench.mjs';
 import { demoActions } from '../src/demo.mjs';
 import { draftAction } from '../src/resume.mjs';
 import { workspaceDelta, mergeWorkspaceDelta } from '../web/sync.mjs';
+import { workPacket, checkWork } from '../src/agent-workflow.mjs';
 import {
   validateRubric,
   scorePacket,
@@ -221,7 +222,7 @@ function storedAction(s, change = {}) {
     rubric,
     content: r.content,
     source: 'workspace',
-    action: { type: 'resumeScore', jobId: r.jobId, version: r.version },
+    action: { type: 'resumeScore', jobId: r.jobId, version: r.version, rubric },
   });
   const one = {
     ...p.resultShape,
@@ -435,6 +436,127 @@ test('CLI builds a workspace packet whose action saves through the action comman
     const saved = run(['action', '--workspace', w, '--file', actionFile]);
     assert.equal(saved.status, 0, saved.stderr);
     assert.equal(state().resumeScores[0].total, 12);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+const checkResult = (packet, score = 10) => ({
+  ...packet.resultShape,
+  checkedAt: new Date().toISOString(),
+  summary: 'Synthetic scoring run.',
+  categories: packet.resultShape.categories.map((c) => ({
+    ...c,
+    score,
+    evidence: [quote[c.key]],
+  })),
+});
+test('resumeCheck queues an original resume without a job; the agent result completes it', () => {
+  let s = demoActions().reduce(transition, emptyState());
+  const before = structuredClone({ jobs: s.jobs, reviews: s.reviews, resumes: s.resumes });
+  s = transition(s, { type: 'resumeCheck', title: ' Master resume ', content: resume, rubric });
+  const check = s.resumeChecks[0];
+  assert.equal(check.status, 'queued');
+  assert.equal(check.title, 'Master resume');
+  assert.equal(check.score, null);
+  const packet = workPacket(s, 'shortlist');
+  assert.equal(packet.resumeChecks.length, 1);
+  assert.deepEqual(packet.resumeChecks[0].packet.actionShape, {
+    type: 'resumeCheckResult',
+    id: check.id,
+    results: [],
+  });
+  assert.ok(checkWork(s, packet).issues.some((i) => i.code === 'resume_check_pending'));
+  const results = [8, 10].map((n) => checkResult(packet.resumeChecks[0].packet, n));
+  s = transition(s, { ...packet.resumeChecks[0].packet.actionShape, results });
+  assert.equal(s.resumeChecks[0].status, 'completed');
+  assert.equal(s.resumeChecks[0].score.total, 32);
+  assert.deepEqual(s.resumeChecks[0].score.totalRange, [32, 40]);
+  assert.ok(!checkWork(s, packet).issues.some((i) => i.code === 'resume_check_pending'));
+  assert.equal(workPacket(s, 'shortlist').resumeChecks.length, 0);
+  assert.deepEqual({ jobs: s.jobs, reviews: s.reviews, resumes: s.resumes }, before);
+  validateState(structuredClone(s));
+  s = transition(s, { type: 'resumeCheckRemove', id: check.id });
+  assert.equal(s.resumeChecks.length, 0);
+});
+
+test('resume checks reject bad input, unknown ids, forged scores and unbounded growth', () => {
+  let s = demoActions().reduce(transition, emptyState());
+  const add = { type: 'resumeCheck', title: 'Master resume', content: resume, rubric };
+  assert.throws(() => transition(s, { ...add, title: ' ' }), /title/);
+  assert.throws(() => transition(s, { ...add, content: '%PDF-1.7' }), /plain text/);
+  assert.throws(() => transition(s, { ...add, rubric: { ...rubric, categories: [] } }), /categor/);
+  assert.throws(() => transition(s, { ...add, score: { total: 99 } }), /Unexpected field/);
+  assert.throws(
+    () => transition(s, { type: 'resumeCheckResult', id: 'missing', results: [] }),
+    /Unknown resume check/,
+  );
+  assert.throws(() => transition(s, { type: 'resumeCheckRemove', id: 'missing' }), /Unknown/);
+  s = transition(s, add);
+  const packet = workPacket(s, 'shortlist').resumeChecks[0].packet;
+  assert.throws(
+    () =>
+      transition(s, {
+        type: 'resumeCheckResult',
+        id: s.resumeChecks[0].id,
+        results: [{ ...checkResult(packet), resumeHash: 'f'.repeat(64) }],
+      }),
+    /Stale resume binding/,
+  );
+  const forged = structuredClone(
+    transition(s, {
+      type: 'resumeCheckResult',
+      id: s.resumeChecks[0].id,
+      results: [checkResult(packet)],
+    }),
+  );
+  forged.resumeChecks[0].score.total = 105;
+  assert.throws(() => validateState(forged), /Invalid resume score/);
+  const queuedWithScore = structuredClone(s);
+  queuedWithScore.resumeChecks[0].status = 'completed';
+  assert.throws(() => validateState(queuedWithScore), /Invalid resume check/);
+  for (let i = 1; i < 20; i++) s = transition(s, add);
+  assert.throws(() => transition(s, add), /Too many/);
+  const delta = workspaceDelta(emptyState(), s);
+  assert.equal(delta.changes.resumeChecks.upsert.length, 20);
+});
+
+test('CLI writes a packet for a queued resume check and saves its result', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'role-check-'));
+  try {
+    const run = (args) => spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8' });
+    const w = join(root, 'workspace'),
+      file = (name) => join(root, name);
+    assert.equal(run(['demo', '--workspace', w]).status, 0);
+    await writeFile(
+      file('add.json'),
+      JSON.stringify({ type: 'resumeCheck', title: 'Master resume', content: resume, rubric }),
+    );
+    assert.equal(run(['action', '--workspace', w, '--file', file('add.json')]).status, 0);
+    const state = () => JSON.parse(run(['state', '--workspace', w]).stdout);
+    const id = state().resumeChecks[0].id;
+    const made = run([
+      'resume-score',
+      '--workspace',
+      w,
+      '--check',
+      id,
+      '--output',
+      file('packet.json'),
+    ]);
+    assert.equal(made.status, 0, made.stderr);
+    assert.notEqual(
+      run(['resume-score', '--workspace', w, '--check', 'nope', '--output', file('x.json')]).status,
+      0,
+    );
+    const packet = JSON.parse(await readFile(file('packet.json'), 'utf8'));
+    await writeFile(
+      file('result.json'),
+      JSON.stringify({ ...packet.actionShape, results: [checkResult(packet)] }),
+    );
+    const saved = run(['action', '--workspace', w, '--file', file('result.json')]);
+    assert.equal(saved.status, 0, saved.stderr);
+    assert.equal(state().resumeChecks[0].score.total, 40);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

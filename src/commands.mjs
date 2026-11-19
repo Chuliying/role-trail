@@ -21,6 +21,7 @@ Workbench (private workspace outside Git):
   collect --workspace DIR             Run configured sources; preserve coverage
   evaluate --workspace DIR --job ID   Write a bounded assessment packet for your agent
   resume-score --rubric FILE (--file RESUME_TEXT | --workspace DIR --job ID) --output FILE
+  resume-score --workspace DIR --check ID --output FILE   Packet for a queued resume check
                                       Write a rubric scoring packet for your agent (no LLM call)
   resume-score-check --packet FILE --file RESULTS --output FILE
                                       Validate agent results and compute totals
@@ -52,7 +53,7 @@ const options = {
   restore: ['workspace', 'remote', 'file', 'revision'],
   collect: ['workspace', 'remote'],
   evaluate: ['workspace', 'remote', 'job'],
-  'resume-score': ['workspace', 'remote', 'job', 'rubric', 'file', 'output'],
+  'resume-score': ['workspace', 'remote', 'job', 'check', 'rubric', 'file', 'output'],
   'resume-score-check': ['packet', 'file', 'output'],
   draft: ['workspace', 'remote', 'job'],
   'resume-pdf': ['workspace', 'remote', 'job', 'output'],
@@ -185,8 +186,10 @@ export async function run(command, args) {
     return;
   }
   if (command === 'resume-score') {
-    if (!o.rubric) throw Error('--rubric required');
-    if (!!o.file === !!o.job) throw Error('Choose exactly one of --file or --job');
+    if ([o.file, o.job, o.check].filter(Boolean).length !== 1)
+      throw Error('Choose exactly one of --file, --job or --check');
+    if (!!o.rubric === !!o.check)
+      throw Error('--rubric is required with --file or --job; a check carries its own rubric');
     if (o.file && (o.workspace || o.remote || o.database))
       throw Error('--file scoring does not read a workspace');
   }
@@ -341,15 +344,28 @@ export async function run(command, args) {
       ),
     );
     return;
+  } else if (command === 'resume-score' && o.check) {
+    const check = s.resumeChecks?.find((c) => c.id === o.check);
+    if (!check) throw Error('Valid --check required');
+    const { scorePacket } = await import('./resume-score.mjs');
+    const packet = scorePacket({
+      rubric: check.rubric,
+      content: check.content,
+      source: 'workspace',
+      action: { type: 'resumeCheckResult', id: check.id },
+    });
+    console.log(await privateOutput(o.output, JSON.stringify(packet, null, 2) + '\n'));
+    return;
   } else if (command === 'resume-score') {
     const r = s.resumes.filter((r) => r.jobId === o.job).sort((a, b) => b.version - a.version)[0];
     if (!r) throw Error('Save a resume for this job first');
     const { scorePacket } = await import('./resume-score.mjs');
+    const rubric = JSON.parse(await readFile(resolve(o.rubric), 'utf8'));
     const packet = scorePacket({
-      rubric: JSON.parse(await readFile(resolve(o.rubric), 'utf8')),
+      rubric,
       content: r.content,
       source: 'workspace',
-      action: { type: 'resumeScore', jobId: r.jobId, version: r.version },
+      action: { type: 'resumeScore', jobId: r.jobId, version: r.version, rubric },
     });
     console.log(await privateOutput(o.output, JSON.stringify(packet, null, 2) + '\n'));
     return;

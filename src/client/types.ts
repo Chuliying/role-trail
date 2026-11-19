@@ -1,5 +1,5 @@
 export type Decision = 'review' | 'shortlisted' | 'applied' | 'passed';
-export type Page = 'jobs' | 'tasks' | 'research' | 'profile';
+export type Page = 'jobs' | 'tasks' | 'research' | 'profile' | 'check';
 export type DetailTab = 'jd' | 'fit' | 'preparation';
 export interface View {
   page: Page;
@@ -107,9 +107,7 @@ export interface ResumeRequest {
   status: string;
   note?: string;
 }
-export interface ResumeScore {
-  jobId: string;
-  version: number;
+export interface RubricResult {
   rubricTitle: string;
   summary: string;
   categories: {
@@ -131,6 +129,18 @@ export interface ResumeScore {
   runs: number;
   totalRange: [number, number];
   checkedAt: string;
+}
+export interface ResumeScore extends RubricResult {
+  jobId: string;
+  version: number;
+}
+export interface ResumeCheck {
+  id: string;
+  title: string;
+  content: string;
+  status: 'queued' | 'completed';
+  createdAt: string;
+  score: RubricResult | null;
 }
 export interface Coverage {
   source: string;
@@ -165,6 +175,7 @@ export interface Workspace {
   preparations: Preparation[];
   resumeRequests: ResumeRequest[];
   resumeScores?: ResumeScore[];
+  resumeChecks?: ResumeCheck[];
   runs: Run[];
   submissions: { jobId: string }[];
   schedule?: { status: string; time: string; timezone: string; lastResult?: string };

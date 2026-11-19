@@ -2,70 +2,8 @@ import { useWorkspace } from '../../workspace';
 import { t, latestResume } from '../../domain';
 import { Button, MutationButton, Disclosure, Link } from '../../components/controls';
 import { Markdown } from '../../components/Markdown';
-import type { Job, ResumeScore } from '../../types';
-const spread = ([low, high]: [number, number]) => (low === high ? '' : ` (${low}–${high})`);
-function RubricScore({ score: s }: { score: ResumeScore }) {
-  return (
-    <div className="rubric-score" id="rubric-score">
-      <h3>{t('Rubric score')}</h3>
-      <p className="meta">
-        <strong>{s.total + ' / ' + s.maxTotal}</strong>
-        {spread(s.totalRange) +
-          ' · ' +
-          s.rubricTitle +
-          ' · ' +
-          t('Scoring runs: ') +
-          s.runs +
-          ' · ' +
-          s.checkedAt.slice(0, 10)}
-      </p>
-      <p className="muted">
-        {t(
-          'An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.',
-        )}
-      </p>
-      <p>{s.summary}</p>
-      <Disclosure label="Score breakdown and evidence">
-        {s.categories.map((c) => (
-          <div key={c.key}>
-            <h4>{c.label + ' · ' + c.score + ' / ' + c.max + spread(c.range)}</h4>
-            {c.note ? <p>{c.note}</p> : null}
-            <ul>
-              {c.evidence.map((e, i) => (
-                <li key={i}>“{e}”</li>
-              ))}
-              {c.gaps.map((g, i) => (
-                <li key={'gap' + i} className="muted">
-                  {t('Gap: ') + g}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-        {s.bonus.length ? (
-          <div>
-            <h4>{t('Bonus') + ' · +' + s.bonusTotal}</h4>
-            <ul>
-              {s.bonus.map((b) => (
-                <li key={b.key}>{b.label + ' +' + b.points + ' — “' + b.evidence[0] + '”'}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-        {s.deductions.length ? (
-          <div>
-            <h4>{t('Deductions') + ' · −' + s.deductionTotal}</h4>
-            <ul>
-              {s.deductions.map((d, i) => (
-                <li key={i}>{d.reason + ' −' + d.points}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </Disclosure>
-    </div>
-  );
-}
+import { RubricScore } from '../../components/RubricScore';
+import type { Job } from '../../types';
 export function ResumeSection({ job: j }: { job: Job }) {
   const { state, staleResumes, action, jsonEditor, notify } = useWorkspace();
   const r = latestResume(state!, j.id);
@@ -144,7 +82,7 @@ export function ResumeSection({ job: j }: { job: Job }) {
               <li key={i}>{a}</li>
             ))}
           </ul>
-          {score ? <RubricScore score={score} /> : null}
+          {score ? <RubricScore score={score} id="rubric-score" /> : null}
           <Markdown text={r.content} />
           <div className="actions">
             <Link url={pdfURL}>{t(r.pdfHash ? 'Open saved PDF ↗' : 'Print / save PDF ↗')}</Link>

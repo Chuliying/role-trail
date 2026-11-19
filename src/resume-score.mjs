@@ -137,7 +137,7 @@ export function scorePacket({ rubric, content, source = 'file', action = null })
       bonus: [],
       deductions: [],
     },
-    ...(action ? { actionShape: { ...action, rubric: r, results: [] } } : {}),
+    ...(action ? { actionShape: { ...action, results: [] } } : {}),
   };
 }
 
@@ -266,14 +266,11 @@ export const scoreResults = (rubric, content, results) =>
     (Array.isArray(results) ? results : [results]).map((x) => scoreResult(rubric, content, x)),
   );
 
-// Structural check for a record already stored in workspace state.
-export function validateStoredScore(record, resume) {
+// Structural check for a score already stored in workspace state.
+export function validateStoredScore(record, rubric, content) {
   keys(
     record,
     [
-      'jobId',
-      'version',
-      'rubric',
       'rubricId',
       'rubricTitle',
       'rubricHash',
@@ -290,15 +287,14 @@ export function validateStoredScore(record, resume) {
       'maxTotal',
       'runs',
       'totalRange',
-      'createdAt',
     ],
     'resume score',
   );
-  const r = validateRubric(record.rubric);
+  const r = validateRubric(rubric);
   if (
-    !resume ||
+    typeof content !== 'string' ||
     record.rubricHash !== digest(r) ||
-    record.resumeHash !== resumeHash(resume.content) ||
+    record.resumeHash !== resumeHash(content) ||
     !sha.test(record.rubricHash) ||
     record.rubricId !== r.id ||
     !whole(record.runs, 1, limits.runs) ||
@@ -325,9 +321,43 @@ export function validateStoredScore(record, resume) {
     record.total !== record.base + record.bonusTotal - record.deductionTotal ||
     record.maxTotal !== r.categories.reduce((n, c) => n + c.max, 0) + r.bonusMax ||
     !Array.isArray(record.totalRange) ||
-    !(record.totalRange[0] <= record.total && record.total <= record.totalRange[1]) ||
-    !Number.isFinite(Date.parse(record.createdAt))
+    !(record.totalRange[0] <= record.total && record.total <= record.totalRange[1])
   )
     fail('Invalid resume score');
   return record;
+}
+
+export const checkLimits = { records: 20, title: 200 };
+// A resume check is an original resume (not tied to a job) waiting for, or holding, a rubric score.
+export function validateResumeCheck(c) {
+  keys(
+    c,
+    ['id', 'title', 'content', 'rubric', 'status', 'createdAt', 'updatedAt', 'score'],
+    'resume check',
+  );
+  text(c.id, 100, 'resume check id');
+  text(c.title, checkLimits.title, 'resume check title');
+  resumeText(c.content);
+  validateRubric(c.rubric);
+  if (
+    !['queued', 'completed'].includes(c.status) ||
+    (c.status === 'queued') !== (c.score === null) ||
+    !Number.isFinite(Date.parse(c.createdAt)) ||
+    !Number.isFinite(Date.parse(c.updatedAt))
+  )
+    fail('Invalid resume check');
+  if (c.score) validateStoredScore(c.score, c.rubric, c.content);
+  return c;
+}
+export function newResumeCheck({ id, title, content, rubric, at }) {
+  return validateResumeCheck({
+    id,
+    title: typeof title === 'string' ? title.trim() : title,
+    content,
+    rubric: validateRubric(rubric),
+    status: 'queued',
+    createdAt: at,
+    updatedAt: at,
+    score: null,
+  });
 }
