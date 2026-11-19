@@ -9,14 +9,32 @@ const resume =
   '# Alex Morgan (synthetic)\n\n- Built an accessible component library used by four product teams.';
 test('resume check page queues an original resume and shows the agent score', async ({ page }) => {
   const read = async () => (await page.request.get('/api/state')).json();
+  // Earlier specs may have replaced the fixture's capabilities, so add one for the profile fill.
+  const seeded = await page.request.post('/api/action', {
+    headers,
+    data: {
+      revision: (await read()).revision,
+      action: {
+        type: 'capability',
+        id: 'resume-check-ui',
+        claim: 'Built an accessible component library in a synthetic project.',
+        tags: ['React'],
+        evidence: ['Synthetic evidence. Not a real candidate.'],
+        status: 'confirmed',
+      },
+    },
+  });
+  expect(seeded.ok(), await seeded.text()).toBe(true);
   await page.goto('/');
-  await page.locator('#tools-toggle').click();
-  await page.locator('#resume-check').click();
+  await page.locator('header nav [data-page="check"]').click();
   await expect(page).toHaveURL(/view=check/);
   await expect(page.getByRole('heading', { name: 'Resume check', level: 1 })).toBeVisible();
   const queue = page.getByRole('button', { name: 'Queue for agent', exact: true });
   await queue.click();
   await expect(page.locator('#notice')).toContainText('Resume text is required.');
+  await page.getByRole('button', { name: 'Use current profile', exact: true }).click();
+  await expect(page.locator('#resume-check-title')).toHaveValue('Current profile');
+  await expect(page.locator('#resume-check-content')).toHaveValue(/## Confirmed experience\n\n- /);
   const title = 'Synthetic master resume ' + Date.now();
   await page.locator('#resume-check-title').fill(title);
   await page.locator('#resume-check-content').fill(resume);

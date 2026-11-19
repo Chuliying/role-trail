@@ -99,7 +99,6 @@ function Shell() {
     if (id === 'import-research') importResearch();
     if (id === 'collect') return collect();
     if (id === 'profile-toggle') setView({ page: 'profile' });
-    if (id === 'resume-check') setView({ page: 'check' });
     if (id === 'refresh') return refresh({ checkVersion: true });
   }
   return (

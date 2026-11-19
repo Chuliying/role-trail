@@ -107,7 +107,7 @@ The host agent fills `resultShape` once per scoring run: `{rubricHash,resumeHash
 - bonus points that are not one of the rule's listed values, unknown bonuses, and deductions when `deductionMax` is 0;
 - results bound to a different rubric or resume text.
 
-The Resume check page in the tools menu saves a `resumeCheck`. Work packets list queued checks under `resumeChecks`, each with a ready scoring `packet` and `actionShape`; `resume-score --workspace DIR --check ID --output PACKET` writes the same packet for one check. `work-check` reports `resume_check_pending` for checks from the packet that are still queued.
+The Resume check page in the top navigation saves a `resumeCheck`. Work packets list queued checks under `resumeChecks`, each with a ready scoring `packet` and `actionShape`; `resume-score --workspace DIR --check ID --output PACKET` writes the same packet for one check. `work-check` reports `resume_check_pending` for checks from the packet that are still queued.
 
 Totals come from code: category sum, plus bonus capped at `bonusMax`, minus deductions capped at `deductionMax`. With several runs the report shows the run with the median total in full, each category's observed range and the total range.
 

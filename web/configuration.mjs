@@ -121,6 +121,10 @@ export const settings = {
         id: 'research',
         label: 'Research',
       },
+      {
+        id: 'check',
+        label: 'Resume check',
+      },
     ],
     decisions: [
       {
@@ -193,11 +197,6 @@ export const settings = {
         id: 'collect',
         label: 'Search now',
         group: 'research',
-      },
-      {
-        id: 'resume-check',
-        label: 'Resume check',
-        group: 'workspace',
       },
       {
         id: 'profile-toggle',
@@ -668,6 +667,10 @@ export const settings = {
       'Scored · ': 'Scored · ',
       'Show resume text': 'Show resume text',
       'Check name': 'Check name',
+      'Use current profile': 'Use current profile',
+      'Current profile': 'Current profile',
+      'Fills the form from your saved profile and confirmed experience. You can edit it before queuing.':
+        'Fills the form from your saved profile and confirmed experience. You can edit it before queuing.',
     },
     'zh-TW': {
       'View full research': '完整搜尋紀錄',
@@ -1052,6 +1055,10 @@ export const settings = {
       'Scored · ': '已評分 · ',
       'Show resume text': '顯示履歷文字',
       'Check name': '健檢名稱',
+      'Use current profile': '使用目前的個人資料',
+      'Current profile': '目前的個人資料',
+      'Fills the form from your saved profile and confirmed experience. You can edit it before queuing.':
+        '用已儲存的個人資料與已確認的經歷填入表單，送出前可以修改。',
     },
   },
 };

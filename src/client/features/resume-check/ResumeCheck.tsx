@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useWorkspace } from '../../workspace';
 import { t, errorText } from '../../domain';
-import { Heading, MutationButton, Disclosure } from '../../components/controls';
+import { Button, Heading, MutationButton, Disclosure } from '../../components/controls';
 import { RubricScore } from '../../components/RubricScore';
 import exampleRubric from '../../../../examples/rubric.json';
 const initialRubric = JSON.stringify(exampleRubric, null, 2);
@@ -12,6 +12,22 @@ export function ResumeCheck() {
     [rubric, setRubric] = useState(initialRubric);
   if (!state) return null;
   const checks = [...(state.resumeChecks || [])].reverse();
+  const confirmed = state.capabilities.filter((c) => c.status === 'confirmed');
+  // Builds resume text from saved data only; nothing is inferred or added.
+  function useProfile() {
+    const p = state!.profile!;
+    setTitle(t('Current profile'));
+    setContent(
+      [
+        '# ' + p.name,
+        [p.location, p.languages.join(' / ')].filter(Boolean).join(' · '),
+        '## Target roles',
+        p.targetRoles.map((r) => '- ' + r).join('\n'),
+        '## Confirmed experience',
+        confirmed.map((c) => '- ' + c.claim).join('\n'),
+      ].join('\n\n'),
+    );
+  }
   async function submit() {
     if (!content.trim()) {
       notify(t('Resume text is required.'));
@@ -51,6 +67,16 @@ export function ResumeCheck() {
       <div className="grid resume-check">
         <section className="card" id="resume-check-form">
           <h2>{t('New resume check')}</h2>
+          <div className="actions">
+            <Button disabled={!state.profile || !confirmed.length} onClick={useProfile}>
+              {t('Use current profile')}
+            </Button>
+          </div>
+          <p className="muted">
+            {t(
+              'Fills the form from your saved profile and confirmed experience. You can edit it before queuing.',
+            )}
+          </p>
           <label>
             {t('Check name')}
             <input

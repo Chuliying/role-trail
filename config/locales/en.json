@@ -345,5 +345,8 @@
   "Queued for agent · ": "Queued for agent · ",
   "Scored · ": "Scored · ",
   "Show resume text": "Show resume text",
-  "Check name": "Check name"
+  "Check name": "Check name",
+  "Use current profile": "Use current profile",
+  "Current profile": "Current profile",
+  "Fills the form from your saved profile and confirmed experience. You can edit it before queuing.": "Fills the form from your saved profile and confirmed experience. You can edit it before queuing."
 }
