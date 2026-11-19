@@ -53,19 +53,21 @@ export function draftAction(state, jobId) {
     ],
   };
 }
+// Escape first, then allow only bold. Agent-written drafts use ### and **bold**.
+const inline = (s) => escapeHTML(s).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 export function resumeHTML(resume) {
   const blocks = resume.content
     .split(/\r?\n/)
     .filter((x) => x.trim())
     .map((line) => {
-      if (line.startsWith('# ')) return '<h1>' + escapeHTML(line.slice(2)) + '</h1>';
-      if (line.startsWith('## ')) return '<h2>' + escapeHTML(line.slice(3)) + '</h2>';
-      if (/^[-*] /.test(line))
-        return '<div class="bullet">• ' + escapeHTML(line.slice(2)) + '</div>';
-      return '<p>' + escapeHTML(line) + '</p>';
+      if (line.startsWith('# ')) return '<h1>' + inline(line.slice(2)) + '</h1>';
+      if (line.startsWith('## ')) return '<h2>' + inline(line.slice(3)) + '</h2>';
+      if (line.startsWith('### ')) return '<h3>' + inline(line.slice(4)) + '</h3>';
+      if (/^[-*] /.test(line)) return '<div class="bullet">• ' + inline(line.slice(2)) + '</div>';
+      return '<p>' + inline(line) + '</p>';
     })
     .join('\n');
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Resume</title><style>@page{size:A4;margin:18mm}*{box-sizing:border-box}body{font:11pt/1.55 Arial,sans-serif;color:#18202b;max-width:174mm;margin:24px auto;padding:16px}h1{font-size:24pt;margin:0 0 6pt}h2{font-size:12pt;margin:18pt 0 7pt;border-bottom:1px solid #bbb;padding-bottom:5pt}p{margin:5pt 0}.bullet{margin:8pt 0;break-inside:avoid}h1,h2{break-after:avoid}@media print{body{margin:0;padding:0}}</style><body>${blocks}</body></html>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Resume</title><style>@page{size:A4;margin:18mm}*{box-sizing:border-box}body{font:11pt/1.55 Arial,sans-serif;color:#18202b;max-width:174mm;margin:24px auto;padding:16px}h1{font-size:24pt;margin:0 0 6pt}h2{font-size:12pt;margin:18pt 0 7pt;border-bottom:1px solid #bbb;padding-bottom:5pt}h3{font-size:11pt;margin:12pt 0 3pt}p{margin:5pt 0}.bullet{margin:8pt 0;break-inside:avoid}h1,h2,h3{break-after:avoid}@media print{body{margin:0;padding:0}}</style><body>${blocks}</body></html>`;
 }
 export const capabilityDigest = (state, ids) =>
   hash(ids.map((id) => state.capabilities.find((c) => c.id === id)));
