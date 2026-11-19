@@ -368,6 +368,16 @@ h1 {
 .disclosure > p:last-child {
   margin-bottom: 0;
 }
+.rubric-score {
+  margin-block: 16px 24px;
+}
+.rubric-score h4 {
+  margin: 16px 0 4px;
+  font-size: 14px;
+}
+.rubric-score ul {
+  margin-top: 4px;
+}
 .todo .disclosure {
   margin: 0;
 }

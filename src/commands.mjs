@@ -20,6 +20,10 @@ Workbench (private workspace outside Git):
   restore --workspace DIR --file FILE --revision NUMBER
   collect --workspace DIR             Run configured sources; preserve coverage
   evaluate --workspace DIR --job ID   Write a bounded assessment packet for your agent
+  resume-score --rubric FILE (--file RESUME_TEXT | --workspace DIR --job ID) --output FILE
+                                      Write a rubric scoring packet for your agent (no LLM call)
+  resume-score-check --packet FILE --file RESULTS --output FILE
+                                      Validate agent results and compute totals
   draft --workspace DIR [--job ID]     Create deterministic starter text (no LLM)
   pdf-save --workspace DIR|--remote --job ID --file PDF
   backup --workspace DIR|--remote --output PRIVATE_DIRECTORY
@@ -48,6 +52,8 @@ const options = {
   restore: ['workspace', 'remote', 'file', 'revision'],
   collect: ['workspace', 'remote'],
   evaluate: ['workspace', 'remote', 'job'],
+  'resume-score': ['workspace', 'remote', 'job', 'rubric', 'file', 'output'],
+  'resume-score-check': ['packet', 'file', 'output'],
   draft: ['workspace', 'remote', 'job'],
   'resume-pdf': ['workspace', 'remote', 'job', 'output'],
   'pdf-save': ['workspace', 'remote', 'job', 'file'],
@@ -155,6 +161,42 @@ export async function run(command, args) {
     const b = JSON.parse(await readFile(resolve(o.file), 'utf8'));
     transition(emptyState(), { type: 'research', ...b });
     console.log('Research bundle valid');
+    return;
+  }
+  if (command === 'resume-score-check') {
+    const { scoreResults } = await import('./resume-score.mjs');
+    if (!o.packet || !o.file) throw Error('--packet and --file required');
+    const packet = JSON.parse(await readFile(resolve(o.packet), 'utf8'));
+    if (packet?.kind !== 'resume-score') throw Error('Resume score packet required');
+    const report = scoreResults(
+      packet.rubric,
+      packet.resume?.content,
+      JSON.parse(await readFile(resolve(o.file), 'utf8')),
+    );
+    await privateOutput(o.output, JSON.stringify(report, null, 2) + '\n');
+    console.log(
+      JSON.stringify({
+        total: report.total,
+        maxTotal: report.maxTotal,
+        totalRange: report.totalRange,
+        runs: report.runs,
+      }),
+    );
+    return;
+  }
+  if (command === 'resume-score') {
+    if (!o.rubric) throw Error('--rubric required');
+    if (!!o.file === !!o.job) throw Error('Choose exactly one of --file or --job');
+    if (o.file && (o.workspace || o.remote || o.database))
+      throw Error('--file scoring does not read a workspace');
+  }
+  if (command === 'resume-score' && o.file) {
+    const { scorePacket } = await import('./resume-score.mjs');
+    const packet = scorePacket({
+      rubric: JSON.parse(await readFile(resolve(o.rubric), 'utf8')),
+      content: await readFile(resolve(o.file), 'utf8'),
+    });
+    console.log(await privateOutput(o.output, JSON.stringify(packet, null, 2) + '\n'));
     return;
   }
   if (command.startsWith('legacy-')) {
@@ -298,6 +340,18 @@ export async function run(command, args) {
         JSON.stringify(packet, null, 2),
       ),
     );
+    return;
+  } else if (command === 'resume-score') {
+    const r = s.resumes.filter((r) => r.jobId === o.job).sort((a, b) => b.version - a.version)[0];
+    if (!r) throw Error('Save a resume for this job first');
+    const { scorePacket } = await import('./resume-score.mjs');
+    const packet = scorePacket({
+      rubric: JSON.parse(await readFile(resolve(o.rubric), 'utf8')),
+      content: r.content,
+      source: 'workspace',
+      action: { type: 'resumeScore', jobId: r.jobId, version: r.version },
+    });
+    console.log(await privateOutput(o.output, JSON.stringify(packet, null, 2) + '\n'));
     return;
   } else if (command === 'draft') {
     const jobs = o.job

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { positiveFresh, canonical, freshness } from '../web/status.mjs';
 import { validateSchedule } from './schedule-config.mjs';
 import { privateWorkspace, validateProfile, validateFeeds } from './onboarding.mjs';
+import { scoreResults, validateStoredScore } from './resume-score.mjs';
 export const hash = (x) =>
   createHash('sha256')
     .update(typeof x === 'string' ? x : JSON.stringify(canonical(x)))
@@ -229,6 +230,7 @@ export function validateState(s) {
     'resumes',
     'preparations',
     'resumeRequests',
+    'resumeScores',
     'runs',
     'schedule',
   ]);
@@ -375,6 +377,19 @@ export function validateState(s) {
       const key = p.jobId + ':' + p.version;
       if (versions.has(key)) throw Error('Duplicate preparation');
       versions.add(key);
+    }
+  }
+  if (s.resumeScores !== undefined) {
+    if (!Array.isArray(s.resumeScores)) throw Error('Invalid resume scores');
+    const seen = new Set();
+    for (const x of s.resumeScores) {
+      const key = x?.jobId + ':' + x?.version;
+      if (seen.has(key)) throw Error('Duplicate resume score');
+      seen.add(key);
+      validateStoredScore(
+        x,
+        s.resumes.find((r) => r.jobId === x.jobId && r.version === x.version),
+      );
     }
   }
   for (const r of s.runs) validateRun(r);
@@ -690,6 +705,25 @@ export function transition(current, a) {
       throw Error('Invalid resume review');
     if (resumeStale(s, r)) throw Error('Resume is stale');
     r.reviewStatus = a.status;
+  } else if (a.type === 'resumeScore') {
+    // A rubric estimate of one saved resume version. It never changes fit assessments,
+    // eligibility facts, resume approval or personal decisions.
+    keys(a, ['type', 'jobId', 'version', 'rubric', 'results']);
+    job();
+    const r = s.resumes.find((r) => r.jobId === a.jobId && r.version === a.version);
+    if (!r) throw Error('Unknown resume version');
+    if (!Array.isArray(a.results)) throw Error('Resume score results required');
+    const record = {
+      jobId: r.jobId,
+      version: r.version,
+      rubric: a.rubric,
+      ...scoreResults(a.rubric, r.content, a.results),
+      createdAt: now(),
+    };
+    s.resumeScores = [
+      ...(s.resumeScores || []).filter((x) => x.jobId !== r.jobId || x.version !== r.version),
+      record,
+    ];
   } else if (a.type === 'preparation') {
     keys(a, [
       'type',

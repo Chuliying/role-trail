@@ -1,0 +1,47 @@
+{
+  "id": "example-product-engineer",
+  "title": "Product engineer (synthetic example rubric)",
+  "notes": "Example only. Copy it to your private workspace and rewrite the categories, weights and guidance for your own target role. Weights here are not a hiring standard.",
+  "categories": [
+    {
+      "key": "delivery",
+      "label": "Shipped work and ownership",
+      "max": 35,
+      "guidance": "High (25-35): several shipped products or features with the candidate's own responsibility, decisions and outcome stated. Medium (12-24): shipped work with partial ownership or unclear outcome. Low (1-11): tasks listed without scope or result. 0: no shipped work described."
+    },
+    {
+      "key": "technical_depth",
+      "label": "Technical depth",
+      "max": 30,
+      "guidance": "High (20-30): describes design tradeoffs, reliability, performance, testing or data modelling in concrete terms. Medium (10-19): names appropriate techniques with some detail. Low (1-9): technology lists without what was built. 0: no technical content."
+    },
+    {
+      "key": "collaboration",
+      "label": "Collaboration and communication",
+      "max": 20,
+      "guidance": "High (14-20): concrete examples of working with design, product, users or other engineers, reviews, documentation or mentoring. Medium (7-13): collaboration mentioned without detail. Low (1-6): only generic soft-skill words. 0: none."
+    },
+    {
+      "key": "clarity",
+      "label": "Clarity and verifiability",
+      "max": 15,
+      "guidance": "High (11-15): specific, consistent, dated entries and links a reviewer could check. Medium (6-10): mostly clear with some vague entries. Low (1-5): hard to tell what the candidate did. 0: unreadable or contradictory."
+    }
+  ],
+  "bonusRules": [
+    {
+      "key": "public_work",
+      "label": "Public work a reviewer can open",
+      "points": [2, 4],
+      "description": "A portfolio, repository, talk or article link is given in the resume. 2 for one link, 4 for several distinct kinds. Do not judge popularity."
+    },
+    {
+      "key": "measured_outcome",
+      "label": "Measured outcome",
+      "points": [3],
+      "description": "At least one result is stated with a number and what was measured."
+    }
+  ],
+  "bonusMax": 6,
+  "deductionMax": 10
+}

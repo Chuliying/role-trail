@@ -8,6 +8,7 @@ const arrays = new Set([
   'resumes',
   'preparations',
   'resumeRequests',
+  'resumeScores',
 ]);
 const fields = new Set([
   'migration',
@@ -23,11 +24,12 @@ const fields = new Set([
   'resumes',
   'preparations',
   'resumeRequests',
+  'resumeScores',
   'runs',
   'schedule',
 ]);
 const keyOf = (field, row) =>
-  ['resumes', 'preparations'].includes(field)
+  ['resumes', 'preparations', 'resumeScores'].includes(field)
     ? JSON.stringify([row.jobId, row.version])
     : field === 'submissions'
       ? row.jobId

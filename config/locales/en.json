@@ -319,5 +319,12 @@
   "Use latest": "Use latest",
   "Workspace changed again. Your draft is kept; review and save again.": "Workspace changed again. Your draft is kept; review and save again.",
   "Some fields changed elsewhere. Compare them below; your draft is kept.": "Some fields changed elsewhere. Compare them below; your draft is kept.",
-  "Choices applied to your draft. Review it, then save.": "Choices applied to your draft. Review it, then save."
+  "Choices applied to your draft. Review it, then save.": "Choices applied to your draft. Review it, then save.",
+  "Rubric score": "Rubric score",
+  "Scoring runs: ": "Scoring runs: ",
+  "An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.": "An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.",
+  "Score breakdown and evidence": "Score breakdown and evidence",
+  "Gap: ": "Gap: ",
+  "Bonus": "Bonus",
+  "Deductions": "Deductions"
 }

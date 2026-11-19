@@ -631,6 +631,14 @@ export const settings = {
         'Some fields changed elsewhere. Compare them below; your draft is kept.',
       'Choices applied to your draft. Review it, then save.':
         'Choices applied to your draft. Review it, then save.',
+      'Rubric score': 'Rubric score',
+      'Scoring runs: ': 'Scoring runs: ',
+      'An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.':
+        'An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.',
+      'Score breakdown and evidence': 'Score breakdown and evidence',
+      'Gap: ': 'Gap: ',
+      Bonus: 'Bonus',
+      Deductions: 'Deductions',
     },
     'zh-TW': {
       'View full research': '完整搜尋紀錄',
@@ -983,6 +991,14 @@ export const settings = {
       'Some fields changed elsewhere. Compare them below; your draft is kept.':
         '部分欄位已在其他地方變更。草稿已保留，請在下方比對。',
       'Choices applied to your draft. Review it, then save.': '選擇已套用到草稿，請確認後儲存。',
+      'Rubric score': 'Rubric 評分',
+      'Scoring runs: ': '評分次數：',
+      'An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.':
+        '這是 agent 依此 rubric 給的估計，每次評分可能不同；不代表錄取機率，也不是資格查核。',
+      'Score breakdown and evidence': '分項分數與依據',
+      'Gap: ': '缺口：',
+      Bonus: '加分',
+      Deductions: '扣分',
     },
   },
 };
