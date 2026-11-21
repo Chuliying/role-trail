@@ -73,7 +73,7 @@ Send one action via `action --workspace DIR --file FILE`, or API `/api/action`:
 - `resumeReview`: `{type,jobId,version,status:"approved"|"changes_requested"}`. Rejects a changed JD, profile or capability evidence.
 - `resumeScore`: `{type,jobId,version,rubric,results:[]}` saves a rubric estimate for one saved resume version. Take the shape from a `resume-score --job` packet. The store validates 1–5 results against the rubric and that version's text, computes totals and replaces any earlier score for the same version. Client-supplied totals are rejected. See [rubric scoring](#resume-rubric-scoring).
 - `resumeCheck`: `{type,title,content,rubric}` queues an original resume (plain text or Markdown, not tied to a job) for a rubric score. No model runs. At most 20 checks are kept.
-- `resumeCheckResult`: `{type,id,results:[]}` saves the agent's 1–5 results for a queued check; the store validates them against that check's own rubric and text and computes totals. `resumeCheckRemove`: `{type,id}` deletes a check.
+- `resumeCheckResult`: `{type,id,results:[]}` saves the agent's 1–5 results for a queued check; the store validates them against that check's own rubric and text and computes totals. At the current workspace revision, an identical retry preserves the completed check and its revision. A different result conflicts; queue a new check to score it again. `resumeCheckRemove`: `{type,id}` deletes a check.
 - `schedule`: `{type,schedule:{status:"active"|"paused",time:"09:00",timezone:"Europe/London"}}`. This saves timing, not an installed runner.
 
 Research imports preserve decisions, tasks, resume versions and manual archives. Do not use `restore` as a daily research importer. Archive restoration does not override a factual exclusion. Resume approval is independent of Applied.
@@ -107,8 +107,8 @@ The host agent fills `resultShape` once per scoring run: `{rubricHash,resumeHash
 - bonus points that are not one of the rule's listed values, unknown bonuses, and deductions when `deductionMax` is 0;
 - results bound to a different rubric or resume text.
 
-The Resume check page in the top navigation saves a `resumeCheck`. Work packets list queued checks under `resumeChecks`, each with a ready scoring `packet` and `actionShape`; `resume-score --workspace DIR --check ID --output PACKET` writes the same packet for one check. `work-check` reports `resume_check_pending` for checks from the packet that are still queued.
+The Resume check page in the Tools menu requires a saved profile and saves a `resumeCheck`. Work packets list queued checks under `resumeChecks`, each with a ready scoring `packet` and `actionShape`; `resume-score --workspace DIR --check ID --output PACKET` writes the same packet for one check. `work-check` reports `resume_check_pending` for checks from the packet that are still queued.
 
-Totals come from code: category sum, plus bonus capped at `bonusMax`, minus deductions capped at `deductionMax`. With several runs the report shows the run with the median total in full, each category's observed range and the total range.
+Totals come from code: category sum, plus bonus capped at `bonusMax`, minus deductions capped at `deductionMax`. The displayed maximum includes only bonus points the rules can award, up to the cap. Restore revalidates the retained run and bounds the reported ranges. Individual non-median runs are not retained. With several runs the report shows the run with the median total in full, each category's observed range and the total range. Even run counts use the lower median. Deductions can bring the total below zero.
 
 Quote matching proves the text exists in the resume, not that the claim is true or that the score is right. Scores differ between runs and models. They are not a hiring probability, do not establish eligibility and never change assessments, decisions or resume approval.

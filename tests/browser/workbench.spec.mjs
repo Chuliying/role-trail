@@ -525,7 +525,7 @@ test('Traditional Chinese mobile keeps the compact original workspace shell', as
     await page.goto('/');
     await expect(page.getByRole('heading', { name: '職缺清單', exact: true })).toBeVisible();
     await expect(page.locator('header .brand')).toHaveText('ROLE TRAIL');
-    await expect(page.locator('nav button')).toHaveCount(4);
+    await expect(page.locator('nav button')).toHaveCount(3);
     await expect(page.locator('.tabs button')).toHaveCount(4);
     await expect(page.getByRole('button', { name: '貼上 JD', exact: true })).not.toBeVisible();
     const card = page.locator('tbody tr').first();

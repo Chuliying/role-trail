@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { emptyState, transition, validateState } from '../src/workbench.mjs';
+import { LocalStore, emptyState, transition, validateState } from '../src/workbench.mjs';
 import { demoActions } from '../src/demo.mjs';
 import { draftAction } from '../src/resume.mjs';
 import { workspaceDelta, mergeWorkspaceDelta } from '../web/sync.mjs';
@@ -557,6 +557,154 @@ test('CLI writes a packet for a queued resume check and saves its result', async
     const saved = run(['action', '--workspace', w, '--file', file('result.json')]);
     assert.equal(saved.status, 0, saved.stderr);
     assert.equal(state().resumeChecks[0].score.total, 40);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('maximum includes only reachable bonus points, even with an unused cap', () => {
+  for (const [bonusRules, bonusMax, expected] of [
+    [[], 10, 100],
+    [[rubric.bonusRules[0]], 10, 104],
+    [rubric.bonusRules, 3, 103],
+  ]) {
+    const custom = { ...rubric, bonusRules, bonusMax };
+    const p = scorePacket({ rubric: custom, content: resume });
+    const run = result(p, {
+      categories: custom.categories.map((c) => ({
+        key: c.key,
+        score: c.max,
+        evidence: [quote[c.key]],
+        note: '',
+        gaps: [],
+      })),
+      bonus: bonusRules.map((b) => ({
+        key: b.key,
+        points: Math.max(...b.points),
+        evidence: [quote.delivery],
+      })),
+    });
+    const report = scoreResults(custom, resume, [run]);
+    assert.equal(report.maxTotal, expected);
+    assert.equal(report.total, report.maxTotal);
+  }
+});
+
+test('stored scores validate retained evidence, derived fields and possible run ranges', () => {
+  const source = workspaceWithResume();
+  const saved = transition(source, storedAction(source));
+  for (const change of [
+    (s) => {
+      s.categories[0].evidence = [];
+    },
+    (s) => {
+      s.categories[0].evidence = ['A different synthetic resume sentence.'];
+    },
+    (s) => {
+      s.bonusTotal = 1;
+      s.total++;
+      s.totalRange = [s.total, s.total];
+    },
+    (s) => {
+      s.deductions = [{ reason: 'Synthetic deduction', points: 2 }];
+    },
+    (s) => {
+      s.checkedAt = null;
+    },
+    (s) => {
+      s.categories[0].range = [-1, s.categories[0].score];
+    },
+    (s) => {
+      s.totalRange = [s.total - 1, s.total];
+    },
+    (s) => {
+      s.categories[0].range[1] = s.categories[0].max + 1;
+    },
+    (s) => {
+      s.runs = 3;
+      s.categories[0].range[0] = 0.5;
+    },
+    (s) => {
+      s.categories[0].label = 'Another category';
+    },
+    (s) => {
+      s.rubricTitle = 'Another rubric';
+    },
+    (s) => {
+      s.runs = 2;
+      s.totalRange = [s.total - 1, s.total + 1];
+    },
+    (s) => {
+      s.bonus = [
+        {
+          key: 'public_work',
+          label: rubric.bonusRules[0].label,
+          points: 1,
+          evidence: s.categories[0].evidence,
+        },
+      ];
+    },
+  ]) {
+    const backup = structuredClone(saved);
+    change(backup.resumeScores[0]);
+    assert.throws(() => validateState(backup));
+  }
+  assert.deepEqual(validateState(JSON.parse(JSON.stringify(saved))), saved);
+});
+
+test('completed checks accept an identical retry and preserve the first result on conflict', () => {
+  const queued = transition(demoActions().reduce(transition, emptyState()), {
+    type: 'resumeCheck',
+    title: 'Original',
+    content: resume,
+    rubric,
+  });
+  const p = workPacket(queued, 'shortlist').resumeChecks[0].packet;
+  const action = { ...p.actionShape, results: [checkResult(p, 5)] };
+  const done = transition(queued, action);
+  assert.deepEqual(transition(done, structuredClone(action)), done);
+  assert.throws(() => transition(done, { ...action, results: [checkResult(p, 4)] }), /conflict/i);
+  assert.equal(done.resumeChecks[0].score.total, 20);
+  for (const invalid of [false, undefined]) {
+    const backup = structuredClone(done);
+    backup.resumeChecks[0].score = invalid;
+    assert.throws(() => validateState(backup));
+  }
+});
+
+test('queueing explains the profile prerequisite on an empty workspace', () => {
+  assert.throws(
+    () =>
+      transition(emptyState(), { type: 'resumeCheck', title: 'Original', content: resume, rubric }),
+    /profile/i,
+  );
+});
+
+test('restore rejects a queued check without the profile needed by its agent workflow', () => {
+  const queued = transition(demoActions().reduce(transition, emptyState()), {
+    type: 'resumeCheck',
+    title: 'Original',
+    content: resume,
+    rubric,
+  });
+  assert.throws(
+    () => validateState({ ...emptyState(), resumeChecks: queued.resumeChecks }),
+    /profile/i,
+  );
+});
+
+test('restore keeps the current workspace when a retained score is incomplete', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'resume-score-restore-'));
+  try {
+    const store = new LocalStore(root);
+    const state = workspaceWithResume();
+    const backup = transition(state, storedAction(state));
+    const saved = await store.restore(0, JSON.parse(JSON.stringify(backup)));
+    assert.deepEqual(await store.read(), saved);
+    const incomplete = structuredClone(backup);
+    incomplete.resumeScores[0].categories[0].evidence = [];
+    await assert.rejects(store.restore(saved.revision, incomplete), /evidence/i);
+    assert.deepEqual(await store.read(), saved);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

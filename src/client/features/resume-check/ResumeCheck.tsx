@@ -1,32 +1,44 @@
-import { useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useWorkspace } from '../../workspace';
 import { t, errorText } from '../../domain';
 import { Button, Heading, MutationButton, Disclosure } from '../../components/controls';
 import { RubricScore } from '../../components/RubricScore';
 import exampleRubric from '../../../../examples/rubric.json';
-const initialRubric = JSON.stringify(exampleRubric, null, 2);
-export function ResumeCheck() {
-  const { state, action, notify } = useWorkspace(),
-    [title, setTitle] = useState(''),
-    [content, setContent] = useState(''),
-    [rubric, setRubric] = useState(initialRubric);
+export const emptyResumeCheckDraft = {
+  title: '',
+  content: '',
+  rubric: JSON.stringify(exampleRubric, null, 2),
+};
+type Draft = typeof emptyResumeCheckDraft;
+export function ResumeCheck({
+  draft,
+  setDraft,
+}: {
+  draft: Draft;
+  setDraft: Dispatch<SetStateAction<Draft>>;
+}) {
+  const { state, action, notify } = useWorkspace();
+  const { title, content, rubric } = draft;
   if (!state) return null;
   const checks = [...(state.resumeChecks || [])].reverse();
   const confirmed = state.capabilities.filter((c) => c.status === 'confirmed');
   // Builds resume text from saved data only; nothing is inferred or added.
   function useProfile() {
+    if ((title || content) && !confirm(t('Discard unsaved changes?'))) return;
     const p = state!.profile!;
-    setTitle(t('Current profile'));
-    setContent(
-      [
+    setDraft({
+      ...draft,
+      title: t('Current profile'),
+      content: [
         '# ' + p.name,
         [p.location, p.languages.join(' / ')].filter(Boolean).join(' · '),
+        ...(p.portfolio ? [p.portfolio] : []),
         '## Target roles',
         p.targetRoles.map((r) => '- ' + r).join('\n'),
         '## Confirmed experience',
         confirmed.map((c) => '- ' + c.claim).join('\n'),
       ].join('\n\n'),
-    );
+    });
   }
   async function submit() {
     if (!content.trim()) {
@@ -48,8 +60,9 @@ export function ResumeCheck() {
         rubric: parsed,
       });
       if (ok) {
-        setTitle('');
-        setContent('');
+        setDraft((current) =>
+          current === draft ? { ...current, title: '', content: '' } : current,
+        );
         notify(t('Queued. Codex / Claude scores it on its next run.'));
       }
       return ok;
@@ -83,7 +96,7 @@ export function ResumeCheck() {
               id="resume-check-title"
               maxLength={200}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
             />
           </label>
           <label>
@@ -93,7 +106,7 @@ export function ResumeCheck() {
               rows={12}
               maxLength={100000}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => setDraft({ ...draft, content: e.target.value })}
             />
           </label>
           <p className="muted">
@@ -113,11 +126,12 @@ export function ResumeCheck() {
               rows={14}
               spellCheck={false}
               value={rubric}
-              onChange={(e) => setRubric(e.target.value)}
+              onChange={(e) => setDraft({ ...draft, rubric: e.target.value })}
             />
           </Disclosure>
           <div className="actions">
-            <MutationButton className="primary" onClick={submit}>
+            {!state.profile && <p>{t('Create your profile before queuing a resume check.')}</p>}
+            <MutationButton disabled={!state.profile} className="primary" onClick={submit}>
               {t('Queue for agent')}
             </MutationButton>
           </div>

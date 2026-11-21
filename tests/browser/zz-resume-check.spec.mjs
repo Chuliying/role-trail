@@ -1,5 +1,6 @@
 // Runs late: it adds synthetic resume checks to the shared fixture workspace.
 import { test, expect } from '@playwright/test';
+import { emptyState } from '../../src/workbench.mjs';
 const headers = {
   'Content-Type': 'application/json',
   Origin: 'http://127.0.0.1:4319',
@@ -26,7 +27,11 @@ test('resume check page queues an original resume and shows the agent score', as
   });
   expect(seeded.ok(), await seeded.text()).toBe(true);
   await page.goto('/');
-  await page.locator('header nav [data-page="check"]').click();
+  const openCheck = async () => {
+    await page.locator('#tools-toggle').click();
+    await page.locator('#resume-check').click();
+  };
+  await openCheck();
   await expect(page).toHaveURL(/view=check/);
   await expect(page.getByRole('heading', { name: 'Resume check', level: 1 })).toBeVisible();
   const queue = page.getByRole('button', { name: 'Queue for agent', exact: true });
@@ -35,9 +40,19 @@ test('resume check page queues an original resume and shows the agent score', as
   await page.getByRole('button', { name: 'Use current profile', exact: true }).click();
   await expect(page.locator('#resume-check-title')).toHaveValue('Current profile');
   await expect(page.locator('#resume-check-content')).toHaveValue(/## Confirmed experience\n\n- /);
+  const portfolio = (await read()).profile.portfolio;
+  if (portfolio)
+    expect(await page.locator('#resume-check-content').inputValue()).toContain(portfolio);
   const title = 'Synthetic master resume ' + Date.now();
   await page.locator('#resume-check-title').fill(title);
   await page.locator('#resume-check-content').fill(resume);
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('button', { name: 'Use current profile', exact: true }).click();
+  await expect(page.locator('#resume-check-content')).toHaveValue(resume);
+  await page.locator('nav [data-page="jobs"]').click();
+  await openCheck();
+  await expect(page.locator('#resume-check-title')).toHaveValue(title);
+  await expect(page.locator('#resume-check-content')).toHaveValue(resume);
   await queue.click();
   const card = page.locator('.resume-check-card', { hasText: title });
   await expect(card).toContainText('Queued for agent');
@@ -94,4 +109,11 @@ test('resume check page queues an original resume and shows the agent score', as
   page.once('dialog', (dialog) => dialog.accept());
   await card.getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(card).toHaveCount(0);
+});
+
+test('an empty workspace explains how to enable the queue', async ({ page }) => {
+  await page.route('**/api/state', (route) => route.fulfill({ json: emptyState() }));
+  await page.goto('/?view=check');
+  await expect(page.getByRole('button', { name: 'Queue for agent', exact: true })).toBeDisabled();
+  await expect(page.getByText('Create your profile before queuing a resume check.')).toBeVisible();
 });

@@ -99,13 +99,13 @@ export function validateConfiguration(c) {
   if (c.ui.version !== 1) fail();
   text(c.ui.brand, 60);
   text(c.ui.title, 60);
-  enumRows(c.ui.navigation, ['jobs', 'tasks', 'research', 'check']);
+  enumRows(c.ui.navigation, ['jobs', 'tasks', 'research']);
   enumRows(c.ui.decisions, ['review', 'shortlisted', 'applied', 'passed']);
   enumRows(c.ui.sortOptions, ['recent', 'score', 'company'], ['description', 'direction']);
   if (c.ui.sortOptions.some((s) => !['asc', 'desc'].includes(s.direction))) fail();
   enumRows(
     c.ui.tools,
-    ['paste-jd', 'import-research', 'collect', 'profile-toggle', 'refresh'],
+    ['paste-jd', 'import-research', 'collect', 'resume-check', 'profile-toggle', 'refresh'],
     ['group'],
   );
   if (c.ui.tools.some((s) => !['research', 'workspace'].includes(s.group))) fail();

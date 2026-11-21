@@ -20,10 +20,6 @@
     {
       "id": "research",
       "label": "Research"
-    },
-    {
-      "id": "check",
-      "label": "Resume check"
     }
   ],
   "decisions": [
@@ -97,6 +93,11 @@
       "id": "collect",
       "label": "Search now",
       "group": "research"
+    },
+    {
+      "id": "resume-check",
+      "label": "Resume check",
+      "group": "workspace"
     },
     {
       "id": "profile-toggle",

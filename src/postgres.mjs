@@ -77,7 +77,12 @@ export class PostgresStore {
       if (!r.rows.length) throw Error('Run db-migrate first');
       const s = validateState(r.rows[0].state);
       if (s.revision !== revision) throw Error('Revision conflict');
-      const next = validateState(await fn(s, c));
+      const next = await fn(s, c);
+      if (next === s) {
+        await c.query('COMMIT');
+        return s;
+      }
+      validateState(next);
       if (Buffer.byteLength(JSON.stringify(next)) > 3_500_000)
         throw Error(
           'Cloud workspace exceeds 3.5 MB; export and use local storage or a new workspace. Previous state was preserved.',

@@ -7,7 +7,7 @@ import { Opportunity } from './features/opportunity/Opportunity';
 import { Preparation } from './features/preparation/Preparation';
 import { Profile } from './features/profile/Profile';
 import { Research } from './features/research/Research';
-import { ResumeCheck } from './features/resume-check/ResumeCheck';
+import { ResumeCheck, emptyResumeCheckDraft } from './features/resume-check/ResumeCheck';
 import { Editor } from './components/Editor';
 import type { Page } from './types';
 import { DataProvider } from './api/client';
@@ -57,6 +57,22 @@ function Login() {
     </form>
   );
 }
+// Keep an unsent resume in memory across page changes, scoped to the open workspace.
+function WorkspacePage({ page }: { page: Page }) {
+  const [draft, setDraft] = useState(emptyResumeCheckDraft);
+  switch (page) {
+    case 'jobs':
+      return <Jobs />;
+    case 'tasks':
+      return <Preparation />;
+    case 'research':
+      return <Research />;
+    case 'check':
+      return <ResumeCheck draft={draft} setDraft={setDraft} />;
+    case 'profile':
+      return <Profile />;
+  }
+}
 function Shell() {
   const {
     state,
@@ -99,6 +115,7 @@ function Shell() {
     if (id === 'import-research') importResearch();
     if (id === 'collect') return collect();
     if (id === 'profile-toggle') setView({ page: 'profile' });
+    if (id === 'resume-check') setView({ page: 'check' });
     if (id === 'refresh') return refresh({ checkVersion: true });
   }
   return (
@@ -210,16 +227,8 @@ function Shell() {
             ) : (
               <Skeleton kind="workspace" label={tr('Loading workspace…')} />
             )
-          ) : view.page === 'jobs' ? (
-            <Jobs />
-          ) : view.page === 'tasks' ? (
-            <Preparation />
-          ) : view.page === 'research' ? (
-            <Research />
-          ) : view.page === 'check' ? (
-            <ResumeCheck />
           ) : (
-            <Profile />
+            <WorkspacePage page={view.page} />
           )}
         </main>
         <div id="notice" role="status" aria-live="polite" className={notice ? 'visible' : ''}>

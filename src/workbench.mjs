@@ -407,6 +407,8 @@ export function validateState(s) {
     if (!Array.isArray(s.resumeChecks) || s.resumeChecks.length > checkLimits.records)
       throw Error('Invalid resume checks');
     s.resumeChecks.forEach(validateResumeCheck);
+    if (!s.profile && s.resumeChecks.some((check) => check.status === 'queued'))
+      throw Error('Create your profile before queuing a resume check.');
     if (new Set(s.resumeChecks.map((c) => c.id)).size !== s.resumeChecks.length)
       throw Error('Duplicate resume check');
   }
@@ -745,6 +747,7 @@ export function transition(current, a) {
   } else if (a.type === 'resumeCheck') {
     // Queues an original resume for a rubric score. No model runs here.
     keys(a, ['type', 'title', 'content', 'rubric']);
+    if (!s.profile) throw Error('Create your profile before queuing a resume check.');
     s.resumeChecks ||= [];
     if (s.resumeChecks.length >= checkLimits.records)
       throw Error('Too many resume checks; remove an old one first');
@@ -762,7 +765,12 @@ export function transition(current, a) {
     const c = s.resumeChecks?.find((c) => c.id === a.id);
     if (!c) throw Error('Unknown resume check');
     if (!Array.isArray(a.results)) throw Error('Resume score results required');
-    c.score = scoreResults(c.rubric, c.content, a.results);
+    const score = scoreResults(c.rubric, c.content, a.results);
+    if (c.status === 'completed') {
+      if (hash(c.score) === hash(score)) return current;
+      throw Error('Resume check conflict: another result has already been saved');
+    }
+    c.score = score;
     c.status = 'completed';
     c.updatedAt = now();
   } else if (a.type === 'resumeCheckRemove') {
@@ -937,6 +945,7 @@ export class LocalStore {
       const s = await this.read();
       if (revision !== s.revision) throw Error('Revision conflict');
       const next = await fn(s);
+      if (next === s) return s;
       await writeFile(temp, JSON.stringify(next, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
       await rename(temp, join(dir, 'workspace.json'));
       return next;

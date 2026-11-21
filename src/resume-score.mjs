@@ -13,7 +13,6 @@ const digest = (x) =>
   createHash('sha256')
     .update(typeof x === 'string' ? x : JSON.stringify(canonical(x)))
     .digest('hex');
-const sha = /^[a-f0-9]{64}$/;
 const key = /^[a-z][a-z0-9_]{0,49}$/;
 function keys(x, allowed, name) {
   if (!object(x) || Object.keys(x).some((k) => !allowed.includes(k)))
@@ -37,7 +36,7 @@ export function validateRubric(r) {
     ['id', 'title', 'categories', 'bonusRules', 'bonusMax', 'deductionMax', 'notes'],
     'rubric',
   );
-  if (!/^[a-z][a-z0-9-]{0,59}$/.test(r.id || '')) fail('Invalid rubric id');
+  if (typeof r.id !== 'string' || !/^[a-z][a-z0-9-]{0,59}$/.test(r.id)) fail('Invalid rubric id');
   text(r.title, 200, 'rubric title');
   if (r.notes !== undefined) text(r.notes, 4000, 'rubric notes', false);
   if (!Array.isArray(r.categories) || !r.categories.length || r.categories.length > 12)
@@ -45,18 +44,20 @@ export function validateRubric(r) {
   const seen = new Set();
   for (const c of r.categories) {
     keys(c, ['key', 'label', 'max', 'guidance'], 'category');
-    if (!key.test(c.key || '') || seen.has(c.key)) fail('Invalid category key');
+    if (typeof c.key !== 'string' || !key.test(c.key) || seen.has(c.key))
+      fail('Invalid category key');
     seen.add(c.key);
     text(c.label, 200, 'category label');
     text(c.guidance, 4000, 'category guidance');
     if (!whole(c.max, 1, 100)) fail('Category max must be an integer 1–100');
   }
-  const rules = r.bonusRules || [];
+  const rules = r.bonusRules === undefined ? [] : r.bonusRules;
   if (!Array.isArray(rules) || rules.length > 20) fail('Invalid bonus rules');
   const bonus = new Set();
   for (const b of rules) {
     keys(b, ['key', 'label', 'points', 'description'], 'bonus rule');
-    if (!key.test(b.key || '') || bonus.has(b.key)) fail('Invalid bonus key');
+    if (typeof b.key !== 'string' || !key.test(b.key) || bonus.has(b.key))
+      fail('Invalid bonus key');
     bonus.add(b.key);
     text(b.label, 200, 'bonus label');
     text(b.description, 2000, 'bonus description');
@@ -141,9 +142,8 @@ export function scorePacket({ rubric, content, source = 'file', action = null })
   };
 }
 
-function quotes(list, content, name, required) {
+function quotes(list, haystack, name, required) {
   if (!Array.isArray(list) || list.length > 8) fail('Invalid evidence: ' + name);
-  const haystack = squash(content);
   for (const q of list) {
     text(q, limits.quoteMax, name + ' evidence');
     const needle = squash(q);
@@ -157,7 +157,7 @@ function quotes(list, content, name, required) {
 // Validates one model result against the rubric and resume, then computes totals.
 export function scoreResult(rubric, content, result) {
   const r = validateRubric(rubric);
-  resumeText(content);
+  const haystack = squash(resumeText(content));
   keys(
     result,
     ['rubricHash', 'resumeHash', 'checkedAt', 'summary', 'categories', 'bonus', 'deductions'],
@@ -188,7 +188,7 @@ export function scoreResult(rubric, content, result) {
       label: c.label,
       max: c.max,
       score: row.score,
-      evidence: quotes(row.evidence, content, c.key, row.score > 0),
+      evidence: quotes(row.evidence, haystack, c.key, row.score > 0),
       note: text(row.note || '', 2000, c.key + ' note', false),
       gaps: row.gaps,
     };
@@ -206,7 +206,7 @@ export function scoreResult(rubric, content, result) {
       key: b.key,
       label: rule.label,
       points: b.points,
-      evidence: quotes(b.evidence, content, b.key, true),
+      evidence: quotes(b.evidence, haystack, b.key, true),
     };
   });
   const listed = result.deductions || [];
@@ -218,6 +218,7 @@ export function scoreResult(rubric, content, result) {
     return { reason: text(d.reason, 1000, 'deduction reason'), points: d.points };
   });
   const sum = (rows, k) => rows.reduce((n, x) => n + x[k], 0);
+  const availableBonus = r.bonusRules.reduce((total, rule) => total + Math.max(...rule.points), 0);
   const base = sum(categories, 'score'),
     bonusTotal = Math.min(sum(bonus, 'points'), r.bonusMax),
     deductionTotal = Math.min(sum(deductions, 'points'), r.deductionMax);
@@ -235,7 +236,7 @@ export function scoreResult(rubric, content, result) {
     bonusTotal,
     deductionTotal,
     total: base + bonusTotal - deductionTotal,
-    maxTotal: sum(r.categories, 'max') + r.bonusMax,
+    maxTotal: sum(r.categories, 'max') + Math.min(availableBonus, r.bonusMax),
   };
 }
 
@@ -261,67 +262,51 @@ export function aggregate(scored) {
   };
 }
 
-export const scoreResults = (rubric, content, results) =>
-  aggregate(
-    (Array.isArray(results) ? results : [results]).map((x) => scoreResult(rubric, content, x)),
-  );
+export function scoreResults(rubric, content, results) {
+  const runs = Array.isArray(results) ? results : [results];
+  if (!runs.length || runs.length > limits.runs) fail('Provide 1–' + limits.runs + ' results');
+  return aggregate(runs.map((run) => scoreResult(rubric, content, run)));
+}
 
-// Structural check for a score already stored in workspace state.
+// Only the representative run is retained. Other observations can be checked for
+// valid bounds, but cannot be reconstructed from their reported range.
 export function validateStoredScore(record, rubric, content) {
-  keys(
-    record,
-    [
-      'rubricId',
-      'rubricTitle',
-      'rubricHash',
-      'resumeHash',
-      'checkedAt',
-      'summary',
-      'categories',
-      'bonus',
-      'deductions',
-      'base',
-      'bonusTotal',
-      'deductionTotal',
-      'total',
-      'maxTotal',
-      'runs',
-      'totalRange',
-    ],
-    'resume score',
-  );
-  const r = validateRubric(rubric);
+  if (!object(record) || typeof content !== 'string') fail('Invalid resume score');
+  const { runs, totalRange, ...median } = record;
   if (
-    typeof content !== 'string' ||
-    record.rubricHash !== digest(r) ||
-    record.resumeHash !== resumeHash(content) ||
-    !sha.test(record.rubricHash) ||
-    record.rubricId !== r.id ||
-    !whole(record.runs, 1, limits.runs) ||
-    !Array.isArray(record.categories) ||
-    record.categories.length !== r.categories.length ||
-    record.categories.some((c, i) => {
-      const rule = r.categories[i];
-      return (
-        c.key !== rule.key ||
-        c.max !== rule.max ||
-        !whole(c.score, 0, rule.max) ||
-        !Array.isArray(c.evidence) ||
-        !Array.isArray(c.gaps) ||
-        !Array.isArray(c.range) ||
-        c.range.length !== 2 ||
-        !(c.range[0] <= c.score && c.score <= c.range[1])
-      );
-    }) ||
-    !Array.isArray(record.bonus) ||
-    !Array.isArray(record.deductions) ||
-    record.base !== record.categories.reduce((n, c) => n + c.score, 0) ||
-    !whole(record.bonusTotal, 0, r.bonusMax) ||
-    !whole(record.deductionTotal, 0, r.deductionMax) ||
-    record.total !== record.base + record.bonusTotal - record.deductionTotal ||
-    record.maxTotal !== r.categories.reduce((n, c) => n + c.max, 0) + r.bonusMax ||
-    !Array.isArray(record.totalRange) ||
-    !(record.totalRange[0] <= record.total && record.total <= record.totalRange[1])
+    !whole(runs, 1, limits.runs) ||
+    !Array.isArray(median.categories) ||
+    median.categories.length > 12 ||
+    !Array.isArray(median.bonus) ||
+    median.bonus.length > 20
+  )
+    fail('Invalid resume score');
+  function validRange(pair, value, min, max) {
+    return (
+      Array.isArray(pair) &&
+      pair.length === 2 &&
+      whole(pair[0], min, value) &&
+      whole(pair[1], value, max) &&
+      (runs > 1 || pair[0] === pair[1])
+    );
+  }
+  const categories = median.categories.map(({ range, ...category }) => {
+    if (!validRange(range, category.score, 0, category.max)) fail('Invalid resume score range');
+    return category;
+  });
+  const expected = scoreResult(rubric, content, {
+    rubricHash: median.rubricHash,
+    resumeHash: median.resumeHash,
+    checkedAt: median.checkedAt,
+    summary: median.summary,
+    categories: categories.map(({ label, max, ...row }) => row),
+    bonus: median.bonus.map(({ label, ...rule }) => rule),
+    deductions: median.deductions,
+  });
+  if (
+    digest(expected) !== digest({ ...median, categories }) ||
+    !validRange(totalRange, expected.total, -(rubric.deductionMax || 0), expected.maxTotal) ||
+    (runs === 2 && totalRange[0] !== expected.total)
   )
     fail('Invalid resume score');
   return record;
@@ -341,7 +326,9 @@ export function validateResumeCheck(c) {
   validateRubric(c.rubric);
   if (
     !['queued', 'completed'].includes(c.status) ||
-    (c.status === 'queued') !== (c.score === null) ||
+    (c.status === 'queued' ? c.score !== null : !object(c.score)) ||
+    typeof c.createdAt !== 'string' ||
+    typeof c.updatedAt !== 'string' ||
     !Number.isFinite(Date.parse(c.createdAt)) ||
     !Number.isFinite(Date.parse(c.updatedAt))
   )
