@@ -78,6 +78,13 @@ test('tailoring uses confirmed claims only, records adjustments, invalidates app
     /stale/i,
   );
   assert.doesNotMatch(resume.resumeHTML({ content: '<script>alert(1)</script>' }), /<script>/);
+  const rendered = resume.resumeHTML({
+    content: '### Example Co. — Data team\n**Engineer** (2024)\n- **Backend:** Python <b>x</b>',
+  });
+  assert.match(rendered, /<h3>Example Co. — Data team<\/h3>/);
+  assert.match(rendered, /<p><strong>Engineer<\/strong> \(2024\)<\/p>/);
+  assert.match(rendered, /• <strong>Backend:<\/strong> Python &lt;b&gt;x&lt;\/b&gt;/);
+  assert.doesNotMatch(rendered, /###|\*\*/);
 });
 test('collectors retain truthful coverage and distinguish updates from original posting', async () => {
   assert.equal(typeof collector.collect, 'function');

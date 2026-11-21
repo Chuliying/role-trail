@@ -24,6 +24,8 @@ Current pending/approved resumes are kept. Missing, stale or changes-requested d
 
 Research imports preserve personal records. New run IDs carry a canonical content hash: the same payload can be retried, while changed content at the same ID is rejected. Old runs without a hash remain non-retryable. Object-key order is normalized so PostgreSQL JSONB doesn't change bindings. Older incompatible resume digests remain stored but require regeneration/review.
 
+A resume rubric score is optional. The CLI and store verify that every scored category has a quote present in the resume text and that totals follow the rubric; they cannot verify that a quoted claim is true or that the agent judged it well. The score is bound to one resume version and one rubric.
+
 `work-check` detects missing run coverage, missing/stale shortlist documents and changes to protected personal state during a run. It cannot establish that a web observation is true, a resume is well written, a PDF was inspected or a scheduled task actually ran. The agent must provide that evidence separately.
 
 ## Limits to account for

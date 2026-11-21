@@ -195,6 +195,11 @@ export const settings = {
         group: 'research',
       },
       {
+        id: 'resume-check',
+        label: 'Resume check',
+        group: 'workspace',
+      },
+      {
         id: 'profile-toggle',
         label: 'Profile',
         group: 'workspace',
@@ -631,6 +636,44 @@ export const settings = {
         'Some fields changed elsewhere. Compare them below; your draft is kept.',
       'Choices applied to your draft. Review it, then save.':
         'Choices applied to your draft. Review it, then save.',
+      'Rubric score': 'Rubric score',
+      'Scoring runs: ': 'Scoring runs: ',
+      'An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.':
+        'An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.',
+      'Score breakdown and evidence': 'Score breakdown and evidence',
+      'Gap: ': 'Gap: ',
+      Bonus: 'Bonus',
+      Deductions: 'Deductions',
+      'Resume check': 'Resume check',
+      'Score an original resume against a rubric. It is not tied to a job.':
+        'Score an original resume against a rubric. It is not tied to a job.',
+      'New resume check': 'New resume check',
+      'Resume text': 'Resume text',
+      'Paste plain text or Markdown. PDF files are not read here; ask your agent to extract the text.':
+        'Paste plain text or Markdown. PDF files are not read here; ask your agent to extract the text.',
+      'Rubric (JSON)': 'Rubric (JSON)',
+      'The example rubric is a starting point, not a hiring standard. Rewrite it for your target role.':
+        'The example rubric is a starting point, not a hiring standard. Rewrite it for your target role.',
+      'Queue for agent': 'Queue for agent',
+      'Queued. Codex / Claude scores it on its next run.':
+        'Queued. Codex / Claude scores it on its next run.',
+      'Waiting for your next agent run. This page does not start an AI session.':
+        'Waiting for your next agent run. This page does not start an AI session.',
+      'No resume checks yet.': 'No resume checks yet.',
+      Remove: 'Remove',
+      'Remove this resume check?': 'Remove this resume check?',
+      'Resume text is required.': 'Resume text is required.',
+      'Rubric must be valid JSON.': 'Rubric must be valid JSON.',
+      'Queued for agent · ': 'Queued for agent · ',
+      'Scored · ': 'Scored · ',
+      'Show resume text': 'Show resume text',
+      'Check name': 'Check name',
+      'Use current profile': 'Use current profile',
+      'Current profile': 'Current profile',
+      'Fills the form from your saved profile and confirmed experience. You can edit it before queuing.':
+        'Fills the form from your saved profile and confirmed experience. You can edit it before queuing.',
+      'Create your profile before queuing a resume check.':
+        'Create your profile before queuing a resume check.',
     },
     'zh-TW': {
       'View full research': '完整搜尋紀錄',
@@ -983,6 +1026,43 @@ export const settings = {
       'Some fields changed elsewhere. Compare them below; your draft is kept.':
         '部分欄位已在其他地方變更。草稿已保留，請在下方比對。',
       'Choices applied to your draft. Review it, then save.': '選擇已套用到草稿，請確認後儲存。',
+      'Rubric score': 'Rubric 評分',
+      'Scoring runs: ': '評分次數：',
+      'An agent estimate under this rubric. Scores vary between runs. Not a hiring probability or eligibility check.':
+        '這是 agent 依此 rubric 給的估計，每次評分可能不同；不代表錄取機率，也不是資格查核。',
+      'Score breakdown and evidence': '分項分數與依據',
+      'Gap: ': '缺口：',
+      Bonus: '加分',
+      Deductions: '扣分',
+      'Resume check': '履歷健檢',
+      'Score an original resume against a rubric. It is not tied to a job.':
+        '用 rubric 評分一份原始履歷，不綁定職缺。',
+      'New resume check': '新增健檢',
+      'Resume text': '履歷文字',
+      'Paste plain text or Markdown. PDF files are not read here; ask your agent to extract the text.':
+        '貼上純文字或 Markdown。這裡不讀 PDF；請讓 agent 先把文字抽出來。',
+      'Rubric (JSON)': '評分標準（JSON）',
+      'The example rubric is a starting point, not a hiring standard. Rewrite it for your target role.':
+        '範例 rubric 只是起點，不是錄用標準；請依你的目標職位改寫。',
+      'Queue for agent': '送出等待 agent',
+      'Queued. Codex / Claude scores it on its next run.':
+        '已排入。Codex / Claude 下次執行時會評分。',
+      'Waiting for your next agent run. This page does not start an AI session.':
+        '等待下一次 agent 執行。這個頁面不會啟動 AI。',
+      'No resume checks yet.': '還沒有健檢紀錄。',
+      Remove: '移除',
+      'Remove this resume check?': '要移除這筆健檢嗎？',
+      'Resume text is required.': '請貼上履歷文字。',
+      'Rubric must be valid JSON.': '評分標準必須是有效的 JSON。',
+      'Queued for agent · ': '等待 agent · ',
+      'Scored · ': '已評分 · ',
+      'Show resume text': '顯示履歷文字',
+      'Check name': '健檢名稱',
+      'Use current profile': '使用目前的個人資料',
+      'Current profile': '目前的個人資料',
+      'Fills the form from your saved profile and confirmed experience. You can edit it before queuing.':
+        '用已儲存的個人資料與已確認的經歷填入表單，送出前可以修改。',
+      'Create your profile before queuing a resume check.': '請先建立個人資料，再送出履歷健檢。',
     },
   },
 };

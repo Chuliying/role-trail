@@ -2,12 +2,14 @@ import { useWorkspace } from '../../workspace';
 import { t, latestResume } from '../../domain';
 import { Button, MutationButton, Disclosure, Link } from '../../components/controls';
 import { Markdown } from '../../components/Markdown';
+import { RubricScore } from '../../components/RubricScore';
 import type { Job } from '../../types';
 export function ResumeSection({ job: j }: { job: Job }) {
   const { state, staleResumes, action, jsonEditor, notify } = useWorkspace();
   const r = latestResume(state!, j.id);
   const request = state!.resumeRequests?.filter((x) => x.jobId === j.id).at(-1),
-    queued = request?.status === 'queued';
+    queued = request?.status === 'queued',
+    score = r && state!.resumeScores?.find((x) => x.jobId === j.id && x.version === r.version);
   const pdfURL = r
     ? '/api/resume?job=' + j.id + '&version=' + r.version + (r.pdfHash ? '&format=pdf' : '')
     : '';
@@ -80,6 +82,7 @@ export function ResumeSection({ job: j }: { job: Job }) {
               <li key={i}>{a}</li>
             ))}
           </ul>
+          {score ? <RubricScore score={score} id="rubric-score" /> : null}
           <Markdown text={r.content} />
           <div className="actions">
             <Link url={pdfURL}>{t(r.pdfHash ? 'Open saved PDF ↗' : 'Print / save PDF ↗')}</Link>

@@ -95,6 +95,11 @@
       "group": "research"
     },
     {
+      "id": "resume-check",
+      "label": "Resume check",
+      "group": "workspace"
+    },
+    {
       "id": "profile-toggle",
       "label": "Profile",
       "group": "workspace"

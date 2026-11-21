@@ -37,6 +37,7 @@ The [onboarding guide](BOOTSTRAP.md) and [bundled skill](skills/role-trail/SKILL
 | Fit and eligibility | The agent saves a 1–10 assessment with evidence and gaps. Eligibility needs its own sources and dates. A high score is not permission to work in a country or a prediction of an offer. |
 | Your decisions | Move roles through To Review, Shortlisted, Applied and Passed. Archive manually and keep preparation todos. Research does not make these decisions for you. |
 | Resumes | Request a resume for a role, or prepare shortlisted roles. The website queues work; a connected Codex/Claude run writes the draft and explains the edits. It does not start a model session itself. The agent tailors confirmed experience to the JD. The app keeps versions and review status, with printable HTML and local PDF output. Current pending/approved drafts aren't regenerated on every run. |
+| Resume rubric score | Optional. Give the agent a rubric for your target role (see `examples/rubric.json`). It scores a resume per category with verbatim quotes; the CLI rejects unsupported scores and computes totals. Repeated runs show a range. The Resume check page (Tools menu) queues an original resume, not tied to a job, for the same scoring on the next agent run. This is a screening estimate, separate from fit, eligibility and your decision. |
 | Interview preparation | The agent writes role-specific project examples, possible concerns, practice questions and questions for the employer. The app saves versions and evidence snapshots, and flags changed JD/resume/evidence bindings. |
 | Shared workspace | Use local JSON or your own PostgreSQL and authenticated API. Agents read the same current state. Revision checks prevent silent overwrites. |
 | Scheduled work | A real host LLM task loads the skill, researches, assesses, prepares and saves results. `workflow` supplies current inputs; `work-check` checks saved deliverables and personal-state changes. The feed-only runner is available separately. |
@@ -68,6 +69,12 @@ node bin/role-trail.mjs draft --workspace "$HOME/.local/share/role-trail"
 npx playwright install chromium
 node bin/role-trail.mjs resume-pdf --workspace "$HOME/.local/share/role-trail" \
   --job JOB_ID --output "$HOME/.local/share/role-trail/resume.pdf"
+
+# Optional rubric score: write a packet for your agent, then validate its results (no LLM call)
+node bin/role-trail.mjs resume-score --rubric /private/rubric.json \
+  --file /private/resume.md --output /private/score-packet.json
+node bin/role-trail.mjs resume-score-check --packet /private/score-packet.json \
+  --file /private/score-results.json --output /private/score-report.json
 
 node bin/role-trail.mjs help
 ```
@@ -127,6 +134,7 @@ A new installation uses the workflow above. Moving an existing tracker also requ
 The paste-JD review entry and human application decision were inspired by
 [career-ops](https://github.com/career-ops-hq/career-ops) by Santiago Fernández de Valderrama.
 This implementation is original; no career-ops code is copied. Credits do not imply endorsement.
+The optional resume rubric score adapts the method of [hiring-agent](https://github.com/interviewstreet/hiring-agent) by HackerRank ([MIT](https://github.com/interviewstreet/hiring-agent/blob/master/LICENSE), reviewed at commit `e0ece80`): a per-role rubric, model-supplied evidence and code-computed totals. Here the host agent does the scoring, evidence must be quoted from the resume, GitHub popularity is not used and repeated runs report a range. No upstream code, prompts or rubric text are included.
 The interview preparation method adapts [How to Get an Offer](https://github.com/AIPMAndy/how-to-get-offer) by AIPMAndy / AI 酋长 Andy under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), adding cited experience, separate eligibility and decisions, and versioned records. No upstream application code is included.
 
 [Himalayas](https://himalayas.app) and [We Work Remotely](https://weworkremotely.com/remote-job-rss-feed) supply attributed listings when configured. WWR uses its public category RSS feeds; keep each listing linked back to WWR. Preserve its source and application links. JD formatting uses [Marked](https://github.com/markedjs/marked) (MIT; bundled license in `web/vendor/marked-LICENSE.md`) for Markdown tokens and [Turndown](https://github.com/mixmark-io/turndown) (MIT) for provider HTML conversion. The reader builds allowed DOM elements without executing raw HTML or loading embedded images. Bundled React and TanStack Query MIT notices are in `web/vendor/runtime-LICENSE.txt`; other dependency licenses are retained by npm. Project source: [MIT](LICENSE).

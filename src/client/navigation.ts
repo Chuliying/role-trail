@@ -19,7 +19,7 @@ function readView(): View {
   const tab = p.get('decision');
   return {
     ...defaultView,
-    page: ['jobs', 'tasks', 'research', 'profile'].includes(p.get('view') || '')
+    page: ['jobs', 'tasks', 'research', 'profile', 'check'].includes(p.get('view') || '')
       ? (p.get('view') as View['page'])
       : 'jobs',
     tab: [...ui.decisions.map((d) => d.id), 'archive'].includes(tab || '')

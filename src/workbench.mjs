@@ -5,6 +5,13 @@ import { join } from 'node:path';
 import { positiveFresh, canonical, freshness } from '../web/status.mjs';
 import { validateSchedule } from './schedule-config.mjs';
 import { privateWorkspace, validateProfile, validateFeeds } from './onboarding.mjs';
+import {
+  scoreResults,
+  validateStoredScore,
+  validateResumeCheck,
+  newResumeCheck,
+  checkLimits,
+} from './resume-score.mjs';
 export const hash = (x) =>
   createHash('sha256')
     .update(typeof x === 'string' ? x : JSON.stringify(canonical(x)))
@@ -229,6 +236,8 @@ export function validateState(s) {
     'resumes',
     'preparations',
     'resumeRequests',
+    'resumeScores',
+    'resumeChecks',
     'runs',
     'schedule',
   ]);
@@ -376,6 +385,32 @@ export function validateState(s) {
       if (versions.has(key)) throw Error('Duplicate preparation');
       versions.add(key);
     }
+  }
+  if (s.resumeScores !== undefined) {
+    if (!Array.isArray(s.resumeScores)) throw Error('Invalid resume scores');
+    const seen = new Set();
+    for (const x of s.resumeScores) {
+      const key = x?.jobId + ':' + x?.version;
+      if (seen.has(key)) throw Error('Duplicate resume score');
+      seen.add(key);
+      if (!object(x)) throw Error('Invalid resume score');
+      const { jobId, version, rubric, createdAt, ...score } = x;
+      date(createdAt);
+      validateStoredScore(
+        score,
+        rubric,
+        s.resumes.find((r) => r.jobId === jobId && r.version === version)?.content,
+      );
+    }
+  }
+  if (s.resumeChecks !== undefined) {
+    if (!Array.isArray(s.resumeChecks) || s.resumeChecks.length > checkLimits.records)
+      throw Error('Invalid resume checks');
+    s.resumeChecks.forEach(validateResumeCheck);
+    if (!s.profile && s.resumeChecks.some((check) => check.status === 'queued'))
+      throw Error('Create your profile before queuing a resume check.');
+    if (new Set(s.resumeChecks.map((c) => c.id)).size !== s.resumeChecks.length)
+      throw Error('Duplicate resume check');
   }
   for (const r of s.runs) validateRun(r);
   if (s.schedule !== null) validateSchedule(s.schedule);
@@ -690,6 +725,58 @@ export function transition(current, a) {
       throw Error('Invalid resume review');
     if (resumeStale(s, r)) throw Error('Resume is stale');
     r.reviewStatus = a.status;
+  } else if (a.type === 'resumeScore') {
+    // A rubric estimate of one saved resume version. It never changes fit assessments,
+    // eligibility facts, resume approval or personal decisions.
+    keys(a, ['type', 'jobId', 'version', 'rubric', 'results']);
+    job();
+    const r = s.resumes.find((r) => r.jobId === a.jobId && r.version === a.version);
+    if (!r) throw Error('Unknown resume version');
+    if (!Array.isArray(a.results)) throw Error('Resume score results required');
+    const record = {
+      jobId: r.jobId,
+      version: r.version,
+      rubric: a.rubric,
+      ...scoreResults(a.rubric, r.content, a.results),
+      createdAt: now(),
+    };
+    s.resumeScores = [
+      ...(s.resumeScores || []).filter((x) => x.jobId !== r.jobId || x.version !== r.version),
+      record,
+    ];
+  } else if (a.type === 'resumeCheck') {
+    // Queues an original resume for a rubric score. No model runs here.
+    keys(a, ['type', 'title', 'content', 'rubric']);
+    if (!s.profile) throw Error('Create your profile before queuing a resume check.');
+    s.resumeChecks ||= [];
+    if (s.resumeChecks.length >= checkLimits.records)
+      throw Error('Too many resume checks; remove an old one first');
+    s.resumeChecks.push(
+      newResumeCheck({
+        id: randomUUID(),
+        title: a.title,
+        content: a.content,
+        rubric: a.rubric,
+        at: now(),
+      }),
+    );
+  } else if (a.type === 'resumeCheckResult') {
+    keys(a, ['type', 'id', 'results']);
+    const c = s.resumeChecks?.find((c) => c.id === a.id);
+    if (!c) throw Error('Unknown resume check');
+    if (!Array.isArray(a.results)) throw Error('Resume score results required');
+    const score = scoreResults(c.rubric, c.content, a.results);
+    if (c.status === 'completed') {
+      if (hash(c.score) === hash(score)) return current;
+      throw Error('Resume check conflict: another result has already been saved');
+    }
+    c.score = score;
+    c.status = 'completed';
+    c.updatedAt = now();
+  } else if (a.type === 'resumeCheckRemove') {
+    keys(a, ['type', 'id']);
+    if (!s.resumeChecks?.some((c) => c.id === a.id)) throw Error('Unknown resume check');
+    s.resumeChecks = s.resumeChecks.filter((c) => c.id !== a.id);
   } else if (a.type === 'preparation') {
     keys(a, [
       'type',
@@ -858,6 +945,7 @@ export class LocalStore {
       const s = await this.read();
       if (revision !== s.revision) throw Error('Revision conflict');
       const next = await fn(s);
+      if (next === s) return s;
       await writeFile(temp, JSON.stringify(next, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
       await rename(temp, join(dir, 'workspace.json'));
       return next;

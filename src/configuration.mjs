@@ -105,7 +105,7 @@ export function validateConfiguration(c) {
   if (c.ui.sortOptions.some((s) => !['asc', 'desc'].includes(s.direction))) fail();
   enumRows(
     c.ui.tools,
-    ['paste-jd', 'import-research', 'collect', 'profile-toggle', 'refresh'],
+    ['paste-jd', 'import-research', 'collect', 'resume-check', 'profile-toggle', 'refresh'],
     ['group'],
   );
   if (c.ui.tools.some((s) => !['research', 'workspace'].includes(s.group))) fail();
